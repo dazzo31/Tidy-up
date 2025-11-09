@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TidyUp.Models.Enums;
 
@@ -8,6 +9,12 @@ namespace TidyUp.Models.Domain;
 /// <summary>
 /// Base class for all file conditions.
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(ConditionGroup), "group")]
+[JsonDerivedType(typeof(FileNameCondition), "fileName")]
+[JsonDerivedType(typeof(FileExtensionCondition), "fileExtension")]
+[JsonDerivedType(typeof(FileSizeCondition), "fileSize")]
+[JsonDerivedType(typeof(FileDateCondition), "fileDate")]
 public abstract partial class Condition : ObservableObject
 {
     /// <summary>

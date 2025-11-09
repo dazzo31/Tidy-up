@@ -82,6 +82,12 @@ public class ActionExecutor : IActionExecutor
                 };
             }
 
+            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
+            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(fullDestPath))
+            {
+                await Task.Run(() => File.Delete(fullDestPath));
+            }
+
             // Retry logic for locked files
             await RetryAsync(async () =>
             {
@@ -188,6 +194,12 @@ public class ActionExecutor : IActionExecutor
                 };
             }
 
+            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
+            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
+            {
+                await Task.Run(() => File.Delete(newPath));
+            }
+
             // Retry logic
             await RetryAsync(async () =>
             {
@@ -230,6 +242,12 @@ public class ActionExecutor : IActionExecutor
                     Type = ActionResultType.Skipped,
                     ErrorMessage = "Operation skipped due to conflict"
                 };
+            }
+
+            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
+            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
+            {
+                await Task.Run(() => File.Delete(newPath));
             }
 
             // Retry logic

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TidyUp.Models.Enums;
 
@@ -6,6 +7,14 @@ namespace TidyUp.Models.Domain;
 /// <summary>
 /// Base class for all file actions.
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(MoveFileAction), "move")]
+[JsonDerivedType(typeof(CopyFileAction), "copy")]
+[JsonDerivedType(typeof(RenameFileAction), "rename")]
+[JsonDerivedType(typeof(DeleteFileAction), "delete")]
+[JsonDerivedType(typeof(ChangeExtensionAction), "changeExtension")]
+[JsonDerivedType(typeof(ExtractArchiveAction), "extractArchive")]
+[JsonDerivedType(typeof(RunCommandAction), "runCommand")]
 public abstract partial class FileAction : ObservableObject
 {
     /// <summary>
