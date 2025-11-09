@@ -126,7 +126,7 @@
                             <TextBlock Text="• {FileSizeMB} - File size in megabytes" Margin="0,4"/>
                         </StackPanel>
                         
-                        <TextBlock Text="Date & Time" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        <TextBlock Text="Date &amp; Time" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
                         <StackPanel Margin="16,0,0,16">
                             <TextBlock Text="• {Year} - Current year (4 digits, e.g., '2025')" Margin="0,4"/>
                             <TextBlock Text="• {Month} - Current month number (2 digits, e.g., '01')" Margin="0,4"/>

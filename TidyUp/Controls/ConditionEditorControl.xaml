@@ -86,11 +86,13 @@
                                     <!-- Condition Type Selector -->
                                     <ComboBox Grid.Column="0"
                                              SelectionChanged="ConditionType_SelectionChanged"
-                                             Margin="0,0,8,0">
-                                        <ComboBoxItem Content="File Name" Tag="FileName"/>
-                                        <ComboBoxItem Content="Extension" Tag="Extension"/>
-                                        <ComboBoxItem Content="File Size" Tag="Size"/>
-                                        <ComboBoxItem Content="Date" Tag="Date"/>
+                                             Margin="0,0,8,0"
+                                             SelectedValuePath="Tag"
+                                             SelectedValue="{Binding Discriminator}">
+                                        <ComboBoxItem Content="File Name" Tag="FileNameCondition"/>
+                                        <ComboBoxItem Content="Extension" Tag="FileExtensionCondition"/>
+                                        <ComboBoxItem Content="File Size" Tag="FileSizeCondition"/>
+                                        <ComboBoxItem Content="Date" Tag="FileDateCondition"/>
                                     </ComboBox>
 
                                     <!-- Condition Editor -->

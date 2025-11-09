@@ -37,6 +37,9 @@
         
         <!-- Ctrl+T: Test Rule -->
         <KeyBinding Key="T" Modifiers="Control" Command="{Binding TestRuleCommand}"/>
+        
+        <!-- F1: Help -->
+        <KeyBinding Key="F1" Command="{Binding ViewHelpCommand}"/>
     </Window.InputBindings>
     
     <Grid>
@@ -127,6 +130,12 @@
                             Command="{Binding ViewLogsCommand}"
                             Margin="2">
                         <materialDesign:PackIcon Kind="History" Width="20" Height="20"/>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignToolButton}"
+                            ToolTip="Help (F1)"
+                            Command="{Binding ViewHelpCommand}"
+                            Margin="2">
+                        <materialDesign:PackIcon Kind="HelpCircle" Width="20" Height="20"/>
                     </Button>
                     <Button Style="{StaticResource MaterialDesignToolButton}"
                             ToolTip="Settings"
@@ -256,6 +265,9 @@
                                             <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
@@ -274,6 +286,9 @@
                                             <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
                                                 <Setter Property="Text" Value="Logs"/>
                                             </DataTrigger>
+                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                                <Setter Property="Text" Value="Help"/>
+                                            </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
@@ -289,6 +304,9 @@
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
                                         </Style.Triggers>
@@ -322,6 +340,9 @@
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                         <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding CurrentView}" Value="Help">
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -550,6 +571,20 @@
                                 </Style>
                             </views:LogsView.Style>
                         </views:LogsView>
+
+                        <!-- Help View -->
+                        <views:HelpView>
+                            <views:HelpView.Style>
+                                <Style TargetType="views:HelpView">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </views:HelpView.Style>
+                        </views:HelpView>
                     </Grid>
 
                     <!-- Save Button (only for Rule Editor) -->
@@ -558,11 +593,14 @@
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
+                            <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                     <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CurrentView}" Value="Help">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                     </DataTrigger>
                                 </Style.Triggers>

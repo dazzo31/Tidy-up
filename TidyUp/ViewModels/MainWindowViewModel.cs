@@ -417,6 +417,16 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Navigates to Help view.
+    /// </summary>
+    [RelayCommand]
+    private void ViewHelp()
+    {
+        CurrentView = NavigationView.Help;
+        StatusMessage = "Help";
+    }
+
+    /// <summary>
     /// Navigates back to rule editor.
     /// </summary>
     [RelayCommand]
