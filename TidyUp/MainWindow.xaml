@@ -564,12 +564,12 @@
                     </ScrollViewer>
 
                         <!-- Settings View -->
-                        <views:SettingsView DataContext="{Binding SettingsViewModel}">
+                        <views:SettingsView DataContext="{Binding DataContext.SettingsViewModel, RelativeSource={RelativeSource AncestorType=Window}}">
                             <views:SettingsView.Style>
                                 <Style TargetType="views:SettingsView">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
+                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Settings">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -578,12 +578,12 @@
                         </views:SettingsView>
 
                         <!-- Logs View -->
-                        <views:LogsView DataContext="{Binding LogsViewModel}">
+                        <views:LogsView DataContext="{Binding DataContext.LogsViewModel, RelativeSource={RelativeSource AncestorType=Window}}">
                             <views:LogsView.Style>
                                 <Style TargetType="views:LogsView">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Logs">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
@@ -597,7 +597,7 @@
                                 <Style TargetType="views:HelpView">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Help">
                                             <Setter Property="Visibility" Value="Visible"/>
                                         </DataTrigger>
                                     </Style.Triggers>
