@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TidyUp.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4a797c5ae7ee59f0065501b0f1db455244ff433b")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e25f6800edcfda817b28fea5748b41bbda112b3b")]
 [assembly: System.Reflection.AssemblyProductAttribute("TidyUp.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TidyUp.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

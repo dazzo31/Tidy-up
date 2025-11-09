@@ -160,6 +160,7 @@
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
@@ -168,10 +169,23 @@
                             Padding="12,8">
                         <TextBlock Text="Rules" FontSize="14" FontWeight="SemiBold"/>
                     </Border>
+                    
+                    <!-- Search Box -->
+                    <TextBox Grid.Row="1"
+                            Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                            materialDesign:HintAssist.Hint="Search rules..."
+                            materialDesign:TextFieldAssist.HasClearButton="True"
+                            Margin="8,8,8,4">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+                                <Setter Property="materialDesign:HintAssist.Foreground" Value="{DynamicResource MaterialDesignBody}"/>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
 
                     <!-- Rules ListBox -->
-                    <ListBox Grid.Row="1" 
-                             ItemsSource="{Binding Rules}"
+                    <ListBox Grid.Row="2" 
+                             ItemsSource="{Binding FilteredRules}"
                              SelectedItem="{Binding SelectedRule}"
                              Style="{StaticResource MaterialDesignListBox}"
                              Margin="0">

@@ -24,6 +24,22 @@ public partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<Rule> _rules = new();
 
+    [ObservableProperty]
+    private ObservableCollection<Rule> _filteredRules = new();
+
+    private string _searchText = string.Empty;
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (SetProperty(ref _searchText, value))
+            {
+                FilterRules();
+            }
+        }
+    }
+
     private Rule? _selectedRule;
     
     public Rule? SelectedRule
@@ -93,6 +109,7 @@ public partial class MainWindowViewModel : ObservableObject
             {
                 Rules.Add(rule);
             }
+            FilterRules();
             StatusMessage = $"Loaded {rules.Count} rule(s)";
         }
         catch (Exception ex)
@@ -117,6 +134,7 @@ public partial class MainWindowViewModel : ObservableObject
             ExecutionOrder = Rules.Count
         };
         Rules.Add(newRule);
+        FilterRules();
         SelectedRule = newRule;
         StatusMessage = "New rule created";
     }
@@ -167,6 +185,36 @@ public partial class MainWindowViewModel : ObservableObject
     private bool CanSaveRule() => SelectedRule != null && !string.IsNullOrWhiteSpace(SelectedRule.Name);
 
     /// <summary>
+    /// Filters rules based on search text.
+    /// </summary>
+    private void FilterRules()
+    {
+        FilteredRules.Clear();
+        
+        if (string.IsNullOrWhiteSpace(SearchText))
+        {
+            // No filter - show all rules
+            foreach (var rule in Rules)
+            {
+                FilteredRules.Add(rule);
+            }
+        }
+        else
+        {
+            // Filter by name or description
+            var searchLower = SearchText.ToLowerInvariant();
+            foreach (var rule in Rules)
+            {
+                if (rule.Name.ToLowerInvariant().Contains(searchLower) ||
+                    (rule.Description?.ToLowerInvariant().Contains(searchLower) ?? false))
+                {
+                    FilteredRules.Add(rule);
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Deletes the selected rule.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanDeleteRule))]
@@ -195,6 +243,7 @@ public partial class MainWindowViewModel : ObservableObject
         {
             await _ruleRepository.DeleteAsync(SelectedRule.Id);
             Rules.Remove(SelectedRule);
+            FilterRules();
             SelectedRule = null;
             StatusMessage = "Rule deleted successfully";
         }
