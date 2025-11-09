@@ -188,6 +188,11 @@
                              ItemsSource="{Binding FilteredRules}"
                              SelectedItem="{Binding SelectedRule}"
                              Style="{StaticResource MaterialDesignListBox}"
+                             AllowDrop="True"
+                             PreviewMouseLeftButtonDown="RuleListBox_PreviewMouseLeftButtonDown"
+                             PreviewMouseMove="RuleListBox_PreviewMouseMove"
+                             Drop="RuleListBox_Drop"
+                             DragOver="RuleListBox_DragOver"
                              Margin="0">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
