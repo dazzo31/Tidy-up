@@ -96,3 +96,5 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Markdig.d
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Markdig.Wpf.dll
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpWindow.baml
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpWindow.g.cs
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Controls\VariableInserterPopup.baml
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Controls\VariableInserterPopup.g.cs

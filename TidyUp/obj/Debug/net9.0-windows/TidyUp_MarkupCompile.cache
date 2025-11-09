@@ -10,11 +10,11 @@ none
 false
 TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR_GREATER;NET7_0_OR_GREATER;NET8_0_OR_GREATER;NET9_0_OR_GREATER;NETCOREAPP3_0_OR_GREATER;NETCOREAPP3_1_OR_GREATER;WINDOWS7_0_OR_GREATER
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\App.xaml
-111368158473
+12-289815743
 22139878026
-57-1896807475
+581050448963
 227921723510
-Controls\ActionEditorControl.xaml;Controls\ConditionEditorControl.xaml;MainWindow.xaml;Views\FirstRunWindow.xaml;Views\HelpView.xaml;Views\HelpWindow.xaml;Views\LogsView.xaml;Views\LogViewerWindow.xaml;Views\RulePreviewWindow.xaml;Views\SettingsView.xaml;Views\SettingsWindow.xaml;
+Controls\ActionEditorControl.xaml;Controls\ConditionEditorControl.xaml;Controls\VariableInserterPopup.xaml;MainWindow.xaml;Views\FirstRunWindow.xaml;Views\HelpView.xaml;Views\HelpWindow.xaml;Views\LogsView.xaml;Views\LogViewerWindow.xaml;Views\RulePreviewWindow.xaml;Views\SettingsView.xaml;Views\SettingsWindow.xaml;
 
 False
 

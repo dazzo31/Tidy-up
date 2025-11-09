@@ -118,12 +118,22 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBox Grid.Column="0"
+                                                    <TextBox x:Name="MoveDestinationTextBox"
+                                                            Grid.Column="0"
                                                             Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Destination Path (can use variables like {filename})"
-                                                            Margin="0,0,8,0"/>
+                                                            Margin="0,0,4,0"/>
                                                     <Button Grid.Column="1"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Insert Variable"
+                                                           Click="InsertVariable_Click"
+                                                           Tag="MoveDestinationTextBox"
+                                                           Margin="0,0,4,0">
+                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                    </Button>
+                                                    <Button Grid.Column="2"
                                                            Style="{StaticResource MaterialDesignIconButton}"
                                                            ToolTip="Browse for folder"
                                                            Click="BrowseDestinationFolder_Click"
@@ -150,12 +160,22 @@
                                                     <Grid.ColumnDefinitions>
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <TextBox Grid.Column="0"
+                                                    <TextBox x:Name="CopyDestinationTextBox"
+                                                            Grid.Column="0"
                                                             Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Destination Path (can use variables like {filename})"
-                                                            Margin="0,0,8,0"/>
+                                                            Margin="0,0,4,0"/>
                                                     <Button Grid.Column="1"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Insert Variable"
+                                                           Click="InsertVariable_Click"
+                                                           Tag="CopyDestinationTextBox"
+                                                           Margin="0,0,4,0">
+                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                    </Button>
+                                                    <Button Grid.Column="2"
                                                            Style="{StaticResource MaterialDesignIconButton}"
                                                            ToolTip="Browse for folder"
                                                            Click="BrowseDestinationFolder_Click"
@@ -172,10 +192,25 @@
                                         <!-- Rename Action Template -->
                                         <DataTemplate DataType="{x:Type domain:RenameFileAction}">
                                             <StackPanel>
-                                                <TextBox Text="{Binding NamePattern, UpdateSourceTrigger=PropertyChanged}"
-                                                        materialDesign:HintAssist.Hint="Name Pattern (e.g., {filename}_{date})"
-                                                        Margin="0,0,0,8"/>
-                                                <TextBlock Text="💡 Variables: {filename}, {extension}, {created_date}, {counter}, etc."
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox x:Name="RenamePatternTextBox"
+                                                            Grid.Column="0"
+                                                            Text="{Binding NamePattern, UpdateSourceTrigger=PropertyChanged}"
+                                                            materialDesign:HintAssist.Hint="Name Pattern (e.g., {filename}_{date})"
+                                                            Margin="0,0,4,0"/>
+                                                    <Button Grid.Column="1"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Insert Variable"
+                                                           Click="InsertVariable_Click"
+                                                           Tag="RenamePatternTextBox">
+                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                    </Button>
+                                                </Grid>
+                                                <TextBlock Text="💡 Click the variable button to insert variables"
                                                           Opacity="0.7"
                                                           FontSize="11"/>
                                             </StackPanel>
