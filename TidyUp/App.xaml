@@ -15,6 +15,7 @@
             <!-- Converters -->
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:EnumToItemsSourceConverter x:Key="EnumToItemsSourceConverter" />
+            <converters:ActionTypeConverter x:Key="ActionTypeConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

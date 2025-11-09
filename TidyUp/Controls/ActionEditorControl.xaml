@@ -82,7 +82,7 @@
                                                   FontSize="18" 
                                                   FontWeight="Bold"
                                                   Margin="0,0,12,0"/>
-                                        <TextBlock Text="Action Type" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding Converter={StaticResource ActionTypeConverter}}" FontWeight="SemiBold"/>
                                     </StackPanel>
 
                                     <!-- Action buttons -->

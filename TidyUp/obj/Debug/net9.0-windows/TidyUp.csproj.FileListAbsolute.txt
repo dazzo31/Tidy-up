@@ -86,3 +86,5 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\Log
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\LogsView.g.cs
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\FirstRunWindow.baml
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\FirstRunWindow.g.cs
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpView.baml
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpView.g.cs
