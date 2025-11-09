@@ -18,5 +18,10 @@ public enum NavigationView
     /// <summary>
     /// Log viewer view.
     /// </summary>
-    Logs
+    Logs,
+    
+    /// <summary>
+    /// Help and About view.
+    /// </summary>
+    Help
 }

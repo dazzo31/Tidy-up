@@ -1,0 +1,307 @@
+<UserControl x:Class="TidyUp.Views.HelpView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" d:DesignWidth="900">
+    
+    <Grid>
+        <TabControl Style="{StaticResource MaterialDesignTabControl}" Margin="16">
+            
+            <!-- Getting Started Tab -->
+            <TabItem Header="Getting Started">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel MaxWidth="800">
+                        <TextBlock Text="Getting Started with TidyUp" FontSize="24" FontWeight="Bold" Margin="0,0,0,16"/>
+                        
+                        <TextBlock Text="What is TidyUp?" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        <TextBlock TextWrapping="Wrap" Margin="0,0,0,16">
+                            TidyUp is an intelligent file organization manager that automatically organizes your files based on rules you define. 
+                            It monitors folders for new or modified files, checks them against your conditions, and performs actions like moving, 
+                            copying, or renaming them.
+                        </TextBlock>
+                        
+                        <TextBlock Text="Quick Start: Create Your First Rule" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 1: Click 'New Rule' (Ctrl+N)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Create a new rule from the toolbar" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 2: Add Monitored Folders" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Go to Folders tab → Add Folder → Browse to the folder you want to monitor" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 3: Define Conditions" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Go to Conditions tab → Add Condition → Choose file name, extension, size, or date" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 4: Define Actions" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Go to Actions tab → Add Action → Choose Move, Copy, Rename, Delete, or Change Extension" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 5: Test Your Rule (IMPORTANT!)" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Click Test Rule (Ctrl+T) → Preview shows what would happen without making changes" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8" Background="{DynamicResource MaterialDesignChipBackground}">
+                            <StackPanel>
+                                <TextBlock Text="Step 6: Save and Enable" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Save Rule (Ctrl+S) → Check 'Enabled' → Save again" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <TextBlock Text="Keyboard Shortcuts" FontSize="18" FontWeight="SemiBold" Margin="0,24,0,8"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+N" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="Create New Rule" Margin="0,4"/>
+                            
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+S" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="Save Rule" Margin="0,4"/>
+                            
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+T" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="Test/Preview Rule" Margin="0,4"/>
+                            
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="Delete" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="Delete Selected Rule" Margin="0,4"/>
+                            
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="Space" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="Toggle Enable/Disable" Margin="0,4"/>
+                            
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="F5" FontFamily="Consolas" Margin="0,4"/>
+                            <TextBlock Grid.Row="5" Grid.Column="1" Text="Refresh Rules List" Margin="0,4"/>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Variables Tab -->
+            <TabItem Header="Variables">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel MaxWidth="800">
+                        <TextBlock Text="Variables Reference" FontSize="24" FontWeight="Bold" Margin="0,0,0,16"/>
+                        
+                        <TextBlock Text="Variables allow you to create dynamic file names and paths. Use them in action destinations and rename patterns." 
+                                   TextWrapping="Wrap" Margin="0,0,0,16"/>
+                        
+                        <TextBlock Text="Syntax: {VariableName}" FontFamily="Consolas" FontSize="14" 
+                                   Background="{DynamicResource MaterialDesignChipBackground}" Padding="8" Margin="0,0,0,16"/>
+                        
+                        <TextBlock Text="File Information" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        <StackPanel Margin="16,0,0,16">
+                            <TextBlock Text="• {FileName} - Original file name without extension" Margin="0,4"/>
+                            <TextBlock Text="• {FileNameWithExtension} - Original file name with extension" Margin="0,4"/>
+                            <TextBlock Text="• {FileExtension} - File extension (e.g., 'pdf', 'jpg')" Margin="0,4"/>
+                            <TextBlock Text="• {FileSize} - File size in bytes" Margin="0,4"/>
+                            <TextBlock Text="• {FileSizeKB} - File size in kilobytes" Margin="0,4"/>
+                            <TextBlock Text="• {FileSizeMB} - File size in megabytes" Margin="0,4"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="Date & Time" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        <StackPanel Margin="16,0,0,16">
+                            <TextBlock Text="• {Year} - Current year (4 digits, e.g., '2025')" Margin="0,4"/>
+                            <TextBlock Text="• {Month} - Current month number (2 digits, e.g., '01')" Margin="0,4"/>
+                            <TextBlock Text="• {MonthName} - Current month name (e.g., 'January')" Margin="0,4"/>
+                            <TextBlock Text="• {Day} - Current day (2 digits)" Margin="0,4"/>
+                            <TextBlock Text="• {Hour} - Current hour (24-hour, 2 digits)" Margin="0,4"/>
+                            <TextBlock Text="• {Minute} - Current minute (2 digits)" Margin="0,4"/>
+                            <TextBlock Text="• {Second} - Current second (2 digits)" Margin="0,4"/>
+                            <TextBlock Text="• {Date} - Full date (YYYY-MM-DD)" Margin="0,4"/>
+                            <TextBlock Text="• {Time} - Full time (HH-MM-SS)" Margin="0,4"/>
+                            <TextBlock Text="• {DateTime} - Full date and time" Margin="0,4"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="File Dates" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                        <StackPanel Margin="16,0,0,16">
+                            <TextBlock Text="• {CreationDate} - File creation date" Margin="0,4"/>
+                            <TextBlock Text="• {ModifiedDate} - File modification date" Margin="0,4"/>
+                            <TextBlock Text="• {CreationYear} - Year file was created" Margin="0,4"/>
+                            <TextBlock Text="• {ModifiedYear} - Year file was modified" Margin="0,4"/>
+                        </StackPanel>
+                        
+                        <TextBlock Text="Examples" FontSize="18" FontWeight="SemiBold" Margin="0,24,0,8"/>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Organize by Date" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Destination: C:\Photos\{Year}\{MonthName}\{FileName}" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Result: C:\Photos\2025\November\vacation.jpg" FontFamily="Consolas" FontSize="11" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="12" Margin="0,0,0,8">
+                            <StackPanel>
+                                <TextBlock Text="Add Timestamp to Name" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="Rename: {FileName}_{DateTime}" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Result: document_2025-11-09_14-30-45.pdf" FontFamily="Consolas" FontSize="11" Opacity="0.7"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Examples Tab -->
+            <TabItem Header="Examples">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel MaxWidth="800">
+                        <TextBlock Text="Common Examples" FontSize="24" FontWeight="Bold" Margin="0,0,0,16"/>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="1. Organize Downloads by File Type" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Use Case: Automatically sort downloads into category folders" Opacity="0.8" Margin="0,0,0,8"/>
+                                <TextBlock Text="Folders: C:\Users\YourName\Downloads" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Conditions: File extension is '.pdf'" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Actions: Move to C:\Users\YourName\Documents\PDF" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Tip: Create separate rules for each file type category" FontStyle="Italic" Opacity="0.6" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="2. Backup Photos by Date" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Use Case: Organize photos into yearly and monthly folders" Opacity="0.8" Margin="0,0,0,8"/>
+                                <TextBlock Text="Folders: C:\Users\YourName\Pictures\Camera" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Conditions: File extension is '.jpg' OR '.png' OR '.heic'" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Actions: Move to C:\Users\YourName\Pictures\Archive\{CreationYear}\{Month}-{MonthName}" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Result: Pictures\Archive\2025\11-November\IMG_1234.jpg" FontFamily="Consolas" FontSize="11" Opacity="0.7" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="3. Screenshot Organizer" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Use Case: Automatically rename and organize screenshots" Opacity="0.8" Margin="0,0,0,8"/>
+                                <TextBlock Text="Folders: C:\Users\YourName\Pictures" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Conditions: File name contains 'Screenshot'" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Actions:" FontSize="12" Margin="0,8,0,4"/>
+                                <TextBlock Text="  1. Rename to: Screenshot_{Date}_{Time}" FontFamily="Consolas" FontSize="12" Margin="16,0,0,4"/>
+                                <TextBlock Text="  2. Move to: C:\Users\YourName\Pictures\Screenshots\{Year}\{Month}" FontFamily="Consolas" FontSize="12" Margin="16,0,0,4"/>
+                                <TextBlock Text="Result: Screenshots\2025\11\Screenshot_2025-11-09_14-30-00.png" FontFamily="Consolas" FontSize="11" Opacity="0.7" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                            <StackPanel>
+                                <TextBlock Text="4. Auto-Archive Old Documents" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="Use Case: Move documents older than 90 days to archive" Opacity="0.8" Margin="0,0,0,8"/>
+                                <TextBlock Text="Folders: C:\Users\YourName\Documents\Active" FontFamily="Consolas" FontSize="12" Margin="0,0,0,4"/>
+                                <TextBlock Text="Conditions:" FontSize="12" Margin="0,8,0,4"/>
+                                <TextBlock Text="  • File date (Modified) is older than 90 days" FontSize="12" Margin="16,0,0,4"/>
+                                <TextBlock Text="  • AND File extension is '.docx' OR '.pdf'" FontSize="12" Margin="16,0,0,4"/>
+                                <TextBlock Text="Actions: Move to C:\Users\YourName\Documents\Archive\{ModifiedYear}" FontFamily="Consolas" FontSize="12" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,12" Background="{DynamicResource SecondaryHueLightBrush}">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <materialDesign:PackIcon Kind="Lightbulb" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Pro Tip" FontSize="16" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <TextBlock TextWrapping="Wrap">
+                                    Always use the Test/Preview feature (Ctrl+T) before enabling a rule. This shows you exactly what would happen without actually moving or changing any files!
+                                </TextBlock>
+                            </StackPanel>
+                        </materialDesign:Card>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- About Tab -->
+            <TabItem Header="About">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                    <StackPanel MaxWidth="800" HorizontalAlignment="Center">
+                        <materialDesign:PackIcon Kind="FolderCog" Width="80" Height="80" 
+                                                HorizontalAlignment="Center" Margin="0,24,0,16"/>
+                        
+                        <TextBlock Text="TidyUp" FontSize="32" FontWeight="Bold" 
+                                   HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                        
+                        <TextBlock Text="Intelligent File Organization Manager" FontSize="16" 
+                                   HorizontalAlignment="Center" Opacity="0.7" Margin="0,0,0,32"/>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Version" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="1.0.0" FontSize="14"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Built With" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="• .NET 9.0 WPF" Margin="0,4"/>
+                                <TextBlock Text="• Material Design In XAML" Margin="0,4"/>
+                                <TextBlock Text="• Entity Framework Core" Margin="0,4"/>
+                                <TextBlock Text="• SQLite Database" Margin="0,4"/>
+                                <TextBlock Text="• CommunityToolkit.Mvvm" Margin="0,4"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Features" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                                <TextBlock Text="✓ Automatic file organization" Margin="0,4"/>
+                                <TextBlock Text="✓ Real-time folder monitoring" Margin="0,4"/>
+                                <TextBlock Text="✓ Powerful condition system with AND/OR logic" Margin="0,4"/>
+                                <TextBlock Text="✓ 20+ dynamic variables" Margin="0,4"/>
+                                <TextBlock Text="✓ Preview/Test mode (dry run)" Margin="0,4"/>
+                                <TextBlock Text="✓ Advanced logging and filtering" Margin="0,4"/>
+                                <TextBlock Text="✓ Import/Export rules" Margin="0,4"/>
+                                <TextBlock Text="✓ Conflict resolution strategies" Margin="0,4"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                            <StackPanel>
+                                <TextBlock Text="Database Location" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="%APPDATA%\TidyUp\tidyup.db" FontFamily="Consolas" FontSize="12"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <materialDesign:Card Padding="16" Margin="0,0,0,32">
+                            <StackPanel>
+                                <TextBlock Text="Settings Location" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                <TextBlock Text="%APPDATA%\TidyUp\settings.json" FontFamily="Consolas" FontSize="12"/>
+                            </StackPanel>
+                        </materialDesign:Card>
+                        
+                        <TextBlock Text="© 2025 TidyUp. All rights reserved." 
+                                   HorizontalAlignment="Center" Opacity="0.6" FontSize="12"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+            
+        </TabControl>
+    </Grid>
+</UserControl>
