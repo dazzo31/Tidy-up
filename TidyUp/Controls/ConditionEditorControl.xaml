@@ -13,6 +13,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="4"/>
+            <RowDefinition Height="200" MinHeight="100"/>
         </Grid.RowDefinitions>
 
         <!-- Toolbar -->
@@ -252,5 +254,173 @@
                   Opacity="0.7"
                   FontSize="11"
                   Margin="16,8"/>
+
+        <!-- GridSplitter -->
+        <GridSplitter Grid.Row="3" 
+                     Height="4" 
+                     HorizontalAlignment="Stretch"
+                     Background="{DynamicResource MaterialDesignDivider}"
+                     ResizeBehavior="PreviousAndNext"/>
+
+        <!-- Live Preview Panel -->
+        <Border Grid.Row="4" 
+               BorderBrush="{DynamicResource MaterialDesignDivider}"
+               BorderThickness="0,1,0,0"
+               Background="{DynamicResource MaterialDesignCardBackground}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Preview Header -->
+                <Border Grid.Row="0" 
+                       Background="{DynamicResource MaterialDesignDivider}" 
+                       Padding="12,8">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Eye" 
+                                                    Width="18" Height="18"
+                                                    VerticalAlignment="Center" 
+                                                    Margin="0,0,6,0"/>
+                            <TextBlock Text="Live Preview" 
+                                      FontSize="13" 
+                                      FontWeight="SemiBold"
+                                      VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding MatchingFilesCount, StringFormat=' ({0} matches)'}"
+                                      FontSize="12"
+                                      Opacity="0.7"
+                                      VerticalAlignment="Center"
+                                      Margin="4,0,0,0"/>
+                        </StackPanel>
+                        <Button DockPanel.Dock="Right"
+                               Style="{StaticResource MaterialDesignRaisedButton}"
+                               Command="{Binding RefreshPreviewCommand}"
+                               Height="28"
+                               Padding="12,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh" 
+                                                        Width="16" Height="16" 
+                                                        VerticalAlignment="Center" 
+                                                        Margin="0,0,4,0"/>
+                                <TextBlock Text="Refresh" 
+                                          VerticalAlignment="Center" 
+                                          FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+                    </DockPanel>
+                </Border>
+
+                <!-- Preview DataGrid -->
+                <DataGrid Grid.Row="1"
+                         ItemsSource="{Binding PreviewFiles}"
+                         AutoGenerateColumns="False"
+                         IsReadOnly="True"
+                         CanUserAddRows="False"
+                         CanUserDeleteRows="False"
+                         GridLinesVisibility="Horizontal"
+                         HeadersVisibility="All"
+                         SelectionMode="Single">
+                    <DataGrid.Resources>
+                        <Style TargetType="DataGridRow">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Matches}" Value="True">
+                                    <Setter Property="Background" Value="#E8F5E9"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.Resources>
+
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="✓" Width="40">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <materialDesign:PackIcon Width="18" Height="18" 
+                                                            HorizontalAlignment="Center">
+                                        <materialDesign:PackIcon.Style>
+                                            <Style TargetType="materialDesign:PackIcon">
+                                                <Setter Property="Kind" Value="Close"/>
+                                                <Setter Property="Foreground" Value="Gray"/>
+                                                <Setter Property="Opacity" Value="0.3"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Matches}" Value="True">
+                                                        <Setter Property="Kind" Value="Check"/>
+                                                        <Setter Property="Foreground" Value="Green"/>
+                                                        <Setter Property="Opacity" Value="1"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </materialDesign:PackIcon.Style>
+                                    </materialDesign:PackIcon>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="File Name" 
+                                           Binding="{Binding FileName}"
+                                           Width="*"
+                                           MinWidth="200"/>
+
+                        <DataGridTextColumn Header="Path" 
+                                           Binding="{Binding FolderPath}"
+                                           Width="2*"
+                                           MinWidth="250"/>
+
+                        <DataGridTextColumn Header="Size" 
+                                           Binding="{Binding FileSizeDisplay}"
+                                           Width="80"/>
+
+                        <DataGridTextColumn Header="Modified" 
+                                           Binding="{Binding ModifiedDate, StringFormat='{}{0:MM/dd/yyyy}'}"
+                                           Width="100"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Loading Indicator -->
+                <Grid Grid.Row="1" 
+                     Background="{DynamicResource MaterialDesignPaper}"
+                     Opacity="0.9">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoadingPreview}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                    IsIndeterminate="True"
+                                    Width="48" Height="48"/>
+                        <TextBlock Text="Scanning files..." 
+                                  FontSize="12"
+                                  Opacity="0.7"
+                                  HorizontalAlignment="Center"
+                                  Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Empty State -->
+                <TextBlock Grid.Row="1"
+                          Text="No monitored folders configured. Add folders in the 'Folders' tab."
+                          Opacity="0.6"
+                          FontStyle="Italic"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasMonitoredFolders}" Value="False">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </Border>
     </Grid>
 </UserControl>

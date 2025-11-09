@@ -1,8 +1,10 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
+using TidyUp.Models.ViewModels;
 
 namespace TidyUp.ViewModels;
 
@@ -17,10 +19,34 @@ public partial class ConditionEditorViewModel : ObservableObject
     [ObservableProperty]
     private object? _selectedItem;
 
+    [ObservableProperty]
+    private ObservableCollection<PreviewFileItem> _previewFiles = new();
+
+    [ObservableProperty]
+    private bool _isLoadingPreview;
+
+    [ObservableProperty]
+    private int _matchingFilesCount;
+
+    [ObservableProperty]
+    private bool _hasMonitoredFolders;
+
+    private List<MonitoredFolder> _monitoredFolders = new();
+    private CancellationTokenSource? _previewCts;
+
     public ConditionEditorViewModel()
     {
         // Initialize with empty root group
         RootCondition = new ConditionGroup { Operator = LogicOperator.And };
+
+        // Watch for condition changes to auto-refresh preview
+        PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(RootCondition))
+            {
+                _ = RefreshPreviewAsync();
+            }
+        };
     }
 
     /// <summary>
@@ -41,6 +67,9 @@ public partial class ConditionEditorViewModel : ObservableObject
 
         group.Conditions.Add(newCondition);
         SelectedItem = newCondition;
+        
+        // Refresh preview
+        _ = RefreshPreviewAsync();
     }
 
     /// <summary>
@@ -59,6 +88,9 @@ public partial class ConditionEditorViewModel : ObservableObject
 
         group.Conditions.Add(newGroup);
         SelectedItem = newGroup;
+        
+        // Refresh preview
+        _ = RefreshPreviewAsync();
     }
 
     /// <summary>
@@ -70,6 +102,9 @@ public partial class ConditionEditorViewModel : ObservableObject
         if (condition == null || RootCondition == null) return;
 
         RemoveConditionRecursive(RootCondition, condition);
+        
+        // Refresh preview
+        _ = RefreshPreviewAsync();
     }
 
     private bool RemoveConditionRecursive(ConditionGroup group, Condition target)
@@ -145,5 +180,128 @@ public partial class ConditionEditorViewModel : ObservableObject
             ConditionGroup => "Group",
             _ => "Unknown"
         };
+    }
+
+    /// <summary>
+    /// Sets the monitored folders to scan for preview.
+    /// </summary>
+    public void SetMonitoredFolders(List<MonitoredFolder> folders)
+    {
+        _monitoredFolders = folders ?? new List<MonitoredFolder>();
+        HasMonitoredFolders = _monitoredFolders.Any();
+        _ = RefreshPreviewAsync();
+    }
+
+    /// <summary>
+    /// Refreshes the live preview by scanning monitored folders.
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshPreviewAsync()
+    {
+        // Cancel any existing preview operation
+        _previewCts?.Cancel();
+        _previewCts = new CancellationTokenSource();
+        var token = _previewCts.Token;
+
+        if (!HasMonitoredFolders || RootCondition == null)
+        {
+            PreviewFiles.Clear();
+            MatchingFilesCount = 0;
+            return;
+        }
+
+        IsLoadingPreview = true;
+        PreviewFiles.Clear();
+
+        try
+        {
+            await Task.Run(() =>
+            {
+                var previewItems = new List<PreviewFileItem>();
+
+                foreach (var folder in _monitoredFolders)
+                {
+                    if (token.IsCancellationRequested) break;
+
+                    if (!Directory.Exists(folder.Path)) continue;
+
+                    try
+                    {
+                        var searchOption = folder.IncludeSubfolders
+                            ? SearchOption.AllDirectories
+                            : SearchOption.TopDirectoryOnly;
+
+                        var files = Directory.GetFiles(folder.Path, "*.*", searchOption);
+
+                        // Limit to first 500 files for performance
+                        foreach (var filePath in files.Take(500))
+                        {
+                            if (token.IsCancellationRequested) break;
+
+                            try
+                            {
+                                // Check exclusion patterns
+                                if (folder.ExclusionPatterns.Any(pattern =>
+                                    filePath.Contains(pattern, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    continue;
+                                }
+
+                                var fileInfo = new FileInfo(filePath);
+                                if (!fileInfo.Exists) continue;
+
+                                // Evaluate conditions
+                                bool matches = RootCondition.Evaluate(fileInfo);
+
+                                previewItems.Add(new PreviewFileItem
+                                {
+                                    FileName = fileInfo.Name,
+                                    FolderPath = fileInfo.DirectoryName ?? string.Empty,
+                                    FileSize = fileInfo.Length,
+                                    ModifiedDate = fileInfo.LastWriteTime,
+                                    Matches = matches
+                                });
+                            }
+                            catch
+                            {
+                                // Skip files that can't be accessed
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // Skip folders that can't be accessed
+                    }
+                }
+
+                if (!token.IsCancellationRequested)
+                {
+                    // Update UI on main thread
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        PreviewFiles.Clear();
+                        foreach (var item in previewItems.OrderByDescending(x => x.Matches))
+                        {
+                            PreviewFiles.Add(item);
+                        }
+                        MatchingFilesCount = previewItems.Count(x => x.Matches);
+                    });
+                }
+            }, token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Preview was cancelled, ignore
+        }
+        catch (Exception)
+        {
+            // Handle errors silently for now
+            PreviewFiles.Clear();
+            MatchingFilesCount = 0;
+        }
+        finally
+        {
+            IsLoadingPreview = false;
+        }
     }
 }

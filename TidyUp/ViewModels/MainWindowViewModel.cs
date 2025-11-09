@@ -58,6 +58,9 @@ public partial class MainWindowViewModel : ObservableObject
                     {
                         ActionEditor.Actions.Add(action);
                     }
+                    
+                    // Update preview with monitored folders
+                    ConditionEditor.SetMonitoredFolders(value.MonitoredFolders.ToList());
                 }
             }
         }
