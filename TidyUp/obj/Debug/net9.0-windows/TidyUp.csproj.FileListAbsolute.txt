@@ -100,3 +100,4 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Controls\
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Controls\VariableInserterPopup.g.cs
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\SharpCompress.dll
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\ZstdSharp.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Hardcodet.NotifyIcon.Wpf.dll

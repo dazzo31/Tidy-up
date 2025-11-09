@@ -3,7 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:TidyUp"
              xmlns:converters="clr-namespace:TidyUp.Converters"
-             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes">
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:tb="http://www.hardcodet.net/taskbar">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -16,6 +17,50 @@
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:EnumToItemsSourceConverter x:Key="EnumToItemsSourceConverter" />
             <converters:ActionTypeConverter x:Key="ActionTypeConverter" />
+            
+            <!-- System Tray Icon -->
+            <tb:TaskbarIcon x:Key="TrayIcon"
+                           ToolTipText="TidyUp - File Organization Manager"
+                           TrayLeftMouseDown="TrayIcon_TrayLeftMouseDown"
+                           TrayRightMouseDown="TrayIcon_TrayRightMouseDown">
+                <tb:TaskbarIcon.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Open TidyUp" Click="ShowMainWindow_Click" FontWeight="Bold">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="FolderCog" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="Pause Monitoring" Click="PauseMonitoring_Click">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Pause" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Resume Monitoring" Click="ResumeMonitoring_Click">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Play" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="View Logs" Click="ViewLogs_Click">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="History" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Settings" Click="OpenSettings_Click">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Settings" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <Separator />
+                        <MenuItem Header="Exit" Click="ExitApplication_Click">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="ExitToApp" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </tb:TaskbarIcon.ContextMenu>
+            </tb:TaskbarIcon>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

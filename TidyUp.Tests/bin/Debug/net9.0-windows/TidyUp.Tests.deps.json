@@ -49,6 +49,14 @@
           }
         }
       },
+      "Hardcodet.NotifyIcon.Wpf/2.0.1": {
+        "runtime": {
+          "lib/net8.0-windows7.0/Hardcodet.NotifyIcon.Wpf.dll": {
+            "assemblyVersion": "2.0.0.0",
+            "fileVersion": "2.0.1.2717"
+          }
+        }
+      },
       "Markdig/0.22.0": {
         "runtime": {
           "lib/netcoreapp3.1/Markdig.dll": {
@@ -854,6 +862,7 @@
       "TidyUp/1.0.0": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.4.0",
+          "Hardcodet.NotifyIcon.Wpf": "2.0.1",
           "Markdig.Wpf": "0.5.0.1",
           "MaterialDesignThemes": "5.3.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "9.0.10",
@@ -905,6 +914,13 @@
       "sha512": "sha512-m0kwcqBwvVel03FuMa7Ozo/oTaxYbjeNlcOhQFkyQpwX/8wks6RNl/Jnn58DCZVs6c2oG1RsCZw7HfKSaxLm3w==",
       "path": "fluentassertions/8.8.0",
       "hashPath": "fluentassertions.8.8.0.nupkg.sha512"
+    },
+    "Hardcodet.NotifyIcon.Wpf/2.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-dtxmeZXzV2GzSm91aZ3hqzgoeVoARSkDPVCYfhVUNyyKBWYxMgNC0EcLiSYxD4Uc4alq/2qb3SmV8DgAENLRLQ==",
+      "path": "hardcodet.notifyicon.wpf/2.0.1",
+      "hashPath": "hardcodet.notifyicon.wpf.2.0.1.nupkg.sha512"
     },
     "Markdig/0.22.0": {
       "type": "package",

@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "dgSpecHash": "zYzZEny7IKA=",
+  "dgSpecHash": "MKuvndZ9TwY=",
   "success": true,
   "projectFilePath": "C:\\Users\\dazzo\\OneDrive\\GitHub\\Tidy-up\\TidyUp\\TidyUp.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\dazzo\\.nuget\\packages\\communitytoolkit.mvvm\\8.4.0\\communitytoolkit.mvvm.8.4.0.nupkg.sha512",
+    "C:\\Users\\dazzo\\.nuget\\packages\\hardcodet.notifyicon.wpf\\2.0.1\\hardcodet.notifyicon.wpf.2.0.1.nupkg.sha512",
     "C:\\Users\\dazzo\\.nuget\\packages\\markdig\\0.22.0\\markdig.0.22.0.nupkg.sha512",
     "C:\\Users\\dazzo\\.nuget\\packages\\markdig.wpf\\0.5.0.1\\markdig.wpf.0.5.0.1.nupkg.sha512",
     "C:\\Users\\dazzo\\.nuget\\packages\\materialdesigncolors\\5.3.0\\materialdesigncolors.5.3.0.nupkg.sha512",

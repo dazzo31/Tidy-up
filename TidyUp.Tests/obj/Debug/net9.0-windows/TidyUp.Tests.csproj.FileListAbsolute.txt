@@ -165,3 +165,4 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Mar
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Markdig.Wpf.dll
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\SharpCompress.dll
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\ZstdSharp.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Hardcodet.NotifyIcon.Wpf.dll
