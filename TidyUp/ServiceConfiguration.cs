@@ -31,8 +31,8 @@ public static class ServiceConfiguration
         });
 
         // Repositories
-        services.AddScoped<IRuleRepository, RuleRepository>();
-        services.AddScoped<IActionLogRepository, ActionLogRepository>();
+        services.AddTransient<IRuleRepository, RuleRepository>();
+        services.AddTransient<IActionLogRepository, ActionLogRepository>();
         services.AddSingleton<SettingsRepository>();
 
         // Services
