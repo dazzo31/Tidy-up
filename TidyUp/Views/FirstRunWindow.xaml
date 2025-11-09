@@ -1,0 +1,326 @@
+<Window x:Class="TidyUp.Views.FirstRunWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="Welcome to TidyUp" 
+        Height="600" Width="800"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        Background="{DynamicResource MaterialDesignPaper}">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="24,16">
+            <StackPanel>
+                <TextBlock Text="Welcome to TidyUp" FontSize="24" FontWeight="Bold"/>
+                <TextBlock Text="Your intelligent file organization assistant" FontSize="14" Opacity="0.9" Margin="0,4,0,0"/>
+            </StackPanel>
+        </materialDesign:ColorZone>
+
+        <!-- Content Area -->
+        <Grid Grid.Row="1" Margin="24">
+            <!-- Step 1: Welcome -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStep}" Value="1">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <materialDesign:PackIcon Kind="FolderCog" Width="80" Height="80" 
+                                            HorizontalAlignment="Center" Margin="0,24,0,24"/>
+                    
+                    <TextBlock Text="Automate Your File Management" 
+                              FontSize="20" FontWeight="SemiBold" 
+                              HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    
+                    <TextBlock Text="TidyUp helps you organize files automatically with powerful rules:"
+                              FontSize="14" TextWrapping="Wrap" Margin="0,0,0,16" TextAlignment="Center"/>
+                    
+                    <StackPanel Margin="48,0">
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <TextBlock Text="Monitor folders for new files" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <TextBlock Text="Match files by name, extension, size, or date" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <TextBlock Text="Move, copy, rename, or delete files automatically" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <TextBlock Text="Use variables for dynamic file names" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,8">
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <TextBlock Text="Preview changes before applying them" FontSize="14" TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Step 2: Quick Example -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStep}" Value="2">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <TextBlock Text="Example: Organize Downloads" 
+                              FontSize="20" FontWeight="SemiBold" 
+                              Margin="0,0,0,24"/>
+                    
+                    <TextBlock Text="Let's say you want to automatically organize your Downloads folder:"
+                              FontSize="14" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,16" Background="{DynamicResource MaterialDesignChipBackground}">
+                        <StackPanel>
+                            <TextBlock Text="📂 Monitored Folder" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="C:\Users\YourName\Downloads" FontFamily="Consolas" Opacity="0.8"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,16" Background="{DynamicResource MaterialDesignChipBackground}">
+                        <StackPanel>
+                            <TextBlock Text="✅ Conditions" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="• File extension is .pdf OR .docx" Opacity="0.8"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,16" Background="{DynamicResource MaterialDesignChipBackground}">
+                        <StackPanel>
+                            <TextBlock Text="⚡ Actions" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                            <TextBlock Text="• Move to: C:\Users\YourName\Documents\{Year}\{Month}" Opacity="0.8" FontFamily="Consolas"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <TextBlock Text="Result: PDFs and Word documents are automatically moved to dated folders!"
+                              FontSize="14" FontStyle="Italic" Foreground="Green" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Step 3: Sample Rules -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStep}" Value="3">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <TextBlock Text="Want to get started quickly?" 
+                              FontSize="20" FontWeight="SemiBold" 
+                              Margin="0,0,0,16"/>
+                    
+                    <TextBlock Text="We can create a sample rule for you to explore:"
+                              FontSize="14" TextWrapping="Wrap" Margin="0,0,0,16"/>
+                    
+                    <CheckBox IsChecked="{Binding CreateSampleRule}"
+                             Content="Create a sample rule"
+                             FontWeight="SemiBold"
+                             Margin="0,0,0,16"/>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,0">
+                        <StackPanel>
+                            <TextBlock Text="Sample Rule: Organize Documents by Type" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
+                            
+                            <TextBlock Text="This rule will:" Opacity="0.8" Margin="0,0,0,8"/>
+                            <StackPanel Margin="16,0,0,16">
+                                <TextBlock Text="• Monitor your Downloads folder" Opacity="0.7" Margin="0,4"/>
+                                <TextBlock Text="• Match PDF, Word, and Excel files" Opacity="0.7" Margin="0,4"/>
+                                <TextBlock Text="• Move them to Documents with organized subfolders" Opacity="0.7" Margin="0,4"/>
+                                <TextBlock Text="• Be DISABLED by default (safe to explore)" Opacity="0.7" Margin="0,4" Foreground="Orange" FontWeight="SemiBold"/>
+                            </StackPanel>
+                            
+                            <TextBlock Text="You can enable it after reviewing, or use it as a template!" 
+                                      FontStyle="Italic" Opacity="0.7" FontSize="12"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Step 4: Settings -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStep}" Value="4">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel>
+                    <TextBlock Text="Configure Your Preferences" 
+                              FontSize="20" FontWeight="SemiBold" 
+                              Margin="0,0,0,16"/>
+                    
+                    <TextBlock Text="You can customize these settings now, or change them later from the Settings menu:"
+                              FontSize="14" TextWrapping="Wrap" Margin="0,0,0,24"/>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <TextBlock Text="Default Conflict Resolution" Margin="0,0,0,8" FontWeight="SemiBold"/>
+                            <ComboBox ItemsSource="{Binding AvailableConflictStrategies}"
+                                     SelectedItem="{Binding SelectedConflictStrategy}"
+                                     Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
+                            <TextBlock Text="What to do when a file already exists at the destination" 
+                                      FontSize="11" Opacity="0.7" Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding EnableSystemTray}"
+                                     Content="Enable system tray icon"
+                                     Margin="0,0,0,8"/>
+                            <TextBlock Text="Minimize to system tray instead of closing" 
+                                      FontSize="11" Opacity="0.7" Margin="20,0,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,12">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding EnableNotifications}"
+                                     Content="Enable desktop notifications"
+                                     Margin="0,0,0,8"/>
+                            <TextBlock Text="Get notified when rules process files" 
+                                      FontSize="11" Opacity="0.7" Margin="20,0,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                    
+                    <materialDesign:Card Padding="16" Margin="0,0,0,0">
+                        <StackPanel>
+                            <CheckBox IsChecked="{Binding ShowThisAgain}"
+                                     Content="Show this wizard on next startup"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+            </ScrollViewer>
+
+            <!-- Step 5: Finish -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStep}" Value="5">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="CheckCircleOutline" Width="80" Height="80" 
+                                            HorizontalAlignment="Center" Foreground="Green" Margin="0,0,0,24"/>
+                    
+                    <TextBlock Text="You're All Set!" 
+                              FontSize="24" FontWeight="Bold" 
+                              HorizontalAlignment="Center" Margin="0,0,0,16"/>
+                    
+                    <TextBlock Text="TidyUp is ready to help you organize your files."
+                              FontSize="14" HorizontalAlignment="Center" Margin="0,0,0,32"/>
+                    
+                    <TextBlock Text="Quick Tips:" FontWeight="SemiBold" FontSize="16" Margin="0,0,0,12"/>
+                    <StackPanel Margin="0,0,0,24">
+                        <TextBlock Text="• Press Ctrl+N to create a new rule" Margin="0,4"/>
+                        <TextBlock Text="• Use Ctrl+T to test a rule before enabling it" Margin="0,4"/>
+                        <TextBlock Text="• Check the Logs view to see what TidyUp has done" Margin="0,4"/>
+                        <TextBlock Text="• Visit the Help menu (F1) for detailed guides" Margin="0,4"/>
+                    </StackPanel>
+                    
+                    <Button Content="Start Using TidyUp" 
+                           Style="{StaticResource MaterialDesignRaisedButton}"
+                           Command="{Binding FinishCommand}"
+                           Padding="24,8"
+                           FontSize="16"
+                           HorizontalAlignment="Center"/>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Footer with Navigation -->
+        <Border Grid.Row="2" BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,1,0,0" Padding="24,16">
+            <Grid>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                    <TextBlock Text="{Binding CurrentStep}" FontSize="14" FontWeight="SemiBold"/>
+                    <TextBlock Text=" of 5" FontSize="14" Opacity="0.7"/>
+                </StackPanel>
+                
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="Previous" 
+                           Command="{Binding PreviousCommand}"
+                           Margin="0,0,8,0"
+                           Padding="16,8">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                                <Setter Property="IsEnabled" Value="True"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStep}" Value="1">
+                                        <Setter Property="IsEnabled" Value="False"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    
+                    <Button Content="Next" 
+                           Command="{Binding NextCommand}"
+                           Padding="16,8">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStep}" Value="5">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    
+                    <Button Content="Skip" 
+                           Command="{Binding FinishCommand}"
+                           Margin="8,0,0,0"
+                           Padding="16,8">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStep}" Value="5">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
