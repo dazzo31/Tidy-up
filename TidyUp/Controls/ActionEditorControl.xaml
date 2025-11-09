@@ -52,6 +52,17 @@
                                 <materialDesign:PackIcon Kind="FileDocument"/>
                             </MenuItem.Icon>
                         </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Extract Archive" Command="{Binding AddExtractArchiveActionCommand}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="ZipBox"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Run Command" Command="{Binding AddRunCommandActionCommand}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Console"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
                     </ContextMenu>
                 </Button.ContextMenu>
             </Button>
@@ -234,6 +245,88 @@
                                         <DataTemplate DataType="{x:Type domain:ChangeExtensionAction}">
                                             <TextBox Text="{Binding NewExtension, UpdateSourceTrigger=PropertyChanged}"
                                                     materialDesign:HintAssist.Hint="New Extension (without dot)"/>
+                                        </DataTemplate>
+
+                                        <!-- Extract Archive Template -->
+                                        <DataTemplate DataType="{x:Type domain:ExtractArchiveAction}">
+                                            <StackPanel>
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox x:Name="ExtractDestinationTextBox"
+                                                            Grid.Column="0"
+                                                            Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
+                                                            materialDesign:HintAssist.Hint="Destination Path (empty = same folder)"
+                                                            Margin="0,0,4,0"/>
+                                                    <Button Grid.Column="1"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Insert Variable"
+                                                           Click="InsertVariable_Click"
+                                                           Tag="ExtractDestinationTextBox"
+                                                           Margin="0,0,4,0">
+                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                    </Button>
+                                                    <Button Grid.Column="2"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Browse for folder"
+                                                           Click="BrowseDestinationFolder_Click"
+                                                           Tag="{Binding}">
+                                                        <materialDesign:PackIcon Kind="FolderOpen" Width="20" Height="20"/>
+                                                    </Button>
+                                                </Grid>
+                                                <CheckBox Content="Overwrite existing files"
+                                                         IsChecked="{Binding OverwriteExisting}"
+                                                         Margin="0,0,0,8"/>
+                                                <CheckBox Content="Delete archive after extraction"
+                                                         IsChecked="{Binding DeleteAfterExtraction}"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+
+                                        <!-- Run Command Template -->
+                                        <DataTemplate DataType="{x:Type domain:RunCommandAction}">
+                                            <StackPanel>
+                                                <Grid Margin="0,0,0,8">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBox x:Name="RunCommandTextBox"
+                                                            Grid.Column="0"
+                                                            Text="{Binding Command, UpdateSourceTrigger=PropertyChanged}"
+                                                            materialDesign:HintAssist.Hint="Command (can use variables like {fullpath})"
+                                                            Margin="0,0,4,0"/>
+                                                    <Button Grid.Column="1"
+                                                           Style="{StaticResource MaterialDesignIconButton}"
+                                                           ToolTip="Insert Variable"
+                                                           Click="InsertVariable_Click"
+                                                           Tag="RunCommandTextBox">
+                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                    </Button>
+                                                </Grid>
+                                                <TextBox Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}"
+                                                        materialDesign:HintAssist.Hint="Working Directory (optional)"
+                                                        Margin="0,0,0,8"/>
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <CheckBox Grid.Column="0"
+                                                             Content="Wait for completion"
+                                                             IsChecked="{Binding WaitForCompletion}"
+                                                             Margin="0,0,8,0"/>
+                                                    <TextBox Grid.Column="1"
+                                                            Text="{Binding TimeoutSeconds, UpdateSourceTrigger=PropertyChanged}"
+                                                            materialDesign:HintAssist.Hint="Timeout (seconds)"/>
+                                                </Grid>
+                                                <TextBlock Text="⚠️ Be careful with command execution - test thoroughly first!"
+                                                          Foreground="Orange"
+                                                          FontSize="11"
+                                                          Margin="0,8,0,0"/>
+                                            </StackPanel>
                                         </DataTemplate>
                                     </ContentControl.Resources>
                                 </ContentControl>

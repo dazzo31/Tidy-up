@@ -165,6 +165,10 @@
               "target": "Package",
               "version": "[7.0.0, )"
             },
+            "SharpCompress": {
+              "target": "Package",
+              "version": "[0.41.0, )"
+            },
             "System.Reactive": {
               "target": "Package",
               "version": "[6.1.0, )"

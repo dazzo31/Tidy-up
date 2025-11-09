@@ -163,3 +163,5 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Hel
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Help\variables-reference.md
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Markdig.dll
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Markdig.Wpf.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\SharpCompress.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\ZstdSharp.dll

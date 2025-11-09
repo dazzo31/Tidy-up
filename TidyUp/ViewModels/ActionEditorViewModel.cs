@@ -99,6 +99,40 @@ public partial class ActionEditorViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Adds a new extract archive action.
+    /// </summary>
+    [RelayCommand]
+    private void AddExtractArchiveAction()
+    {
+        var action = new ExtractArchiveAction
+        {
+            Order = Actions.Count,
+            DestinationPath = "",
+            OverwriteExisting = false,
+            DeleteAfterExtraction = false
+        };
+        Actions.Add(action);
+        SelectedAction = action;
+    }
+
+    /// <summary>
+    /// Adds a new run command action.
+    /// </summary>
+    [RelayCommand]
+    private void AddRunCommandAction()
+    {
+        var action = new RunCommandAction
+        {
+            Order = Actions.Count,
+            Command = "",
+            WaitForCompletion = true,
+            TimeoutSeconds = 30
+        };
+        Actions.Add(action);
+        SelectedAction = action;
+    }
+
+    /// <summary>
     /// Removes the selected action.
     /// </summary>
     [RelayCommand]

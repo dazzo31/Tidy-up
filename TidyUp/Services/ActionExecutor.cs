@@ -1,5 +1,8 @@
+using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualBasic.FileIO;
+using SharpCompress.Archives;
+using SharpCompress.Common;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 
@@ -54,7 +57,8 @@ public class ActionExecutor : IActionExecutor
             RenameFileAction rename => await ExecuteRenameAsync(rename, fileInfo, counter),
             ChangeExtensionAction changeExt => await ExecuteChangeExtensionAsync(changeExt, fileInfo),
             DeleteFileAction delete => await ExecuteDeleteAsync(delete, fileInfo),
-            // ExtractArchiveAction and RunCommandAction would be implemented here
+            ExtractArchiveAction extract => await ExecuteExtractArchiveAsync(extract, fileInfo, counter),
+            RunCommandAction runCmd => await ExecuteRunCommandAsync(runCmd, fileInfo, counter),
             _ => new ActionResult { Success = false, ErrorMessage = "Unknown action type", Type = ActionResultType.Error }
         };
     }
@@ -319,6 +323,131 @@ public class ActionExecutor : IActionExecutor
         }
     }
 
+    private async Task<ActionResult> ExecuteExtractArchiveAsync(ExtractArchiveAction action, FileInfo fileInfo, int? counter)
+    {
+        try
+        {
+            var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+            
+            // If no destination specified, extract to same folder
+            if (string.IsNullOrWhiteSpace(destPath))
+            {
+                destPath = fileInfo.DirectoryName ?? string.Empty;
+            }
+
+            // Ensure destination directory exists
+            Directory.CreateDirectory(destPath);
+
+            await Task.Run(() =>
+            {
+                using var archive = ArchiveFactory.Open(fileInfo.FullName);
+                var options = new ExtractionOptions
+                {
+                    ExtractFullPath = true,
+                    Overwrite = action.OverwriteExisting
+                };
+
+                foreach (var entry in archive.Entries.Where(e => !e.IsDirectory))
+                {
+                    entry.WriteToDirectory(destPath, options);
+                }
+            });
+
+            // Delete archive if requested
+            if (action.DeleteAfterExtraction)
+            {
+                await Task.Run(() => File.Delete(fileInfo.FullName));
+            }
+
+            return new ActionResult
+            {
+                Success = true,
+                ResultPath = destPath,
+                Type = ActionResultType.Success
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ActionResult
+            {
+                Success = false,
+                ErrorMessage = $"Failed to extract archive: {ex.Message}",
+                Type = ActionResultType.Error
+            };
+        }
+    }
+
+    private async Task<ActionResult> ExecuteRunCommandAsync(RunCommandAction action, FileInfo fileInfo, int? counter)
+    {
+        try
+        {
+            var command = _variableEngine.Resolve(action.Command, fileInfo, counter);
+            var workingDir = string.IsNullOrWhiteSpace(action.WorkingDirectory) 
+                ? fileInfo.DirectoryName 
+                : _variableEngine.Resolve(action.WorkingDirectory, fileInfo, counter);
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c {command}",
+                WorkingDirectory = workingDir,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+            process.Start();
+
+            if (action.WaitForCompletion)
+            {
+                var completed = await Task.Run(() => 
+                    process.WaitForExit(action.TimeoutSeconds * 1000));
+
+                if (!completed)
+                {
+                    process.Kill();
+                    return new ActionResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Command timed out after {action.TimeoutSeconds} seconds",
+                        Type = ActionResultType.Error
+                    };
+                }
+
+                var output = await process.StandardOutput.ReadToEndAsync();
+                var error = await process.StandardError.ReadToEndAsync();
+
+                if (process.ExitCode != 0)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Command failed with exit code {process.ExitCode}: {error}",
+                        Type = ActionResultType.Error
+                    };
+                }
+            }
+
+            return new ActionResult
+            {
+                Success = true,
+                ResultPath = fileInfo.FullName,
+                Type = ActionResultType.Success
+            };
+        }
+        catch (Exception ex)
+        {
+            return new ActionResult
+            {
+                Success = false,
+                ErrorMessage = $"Failed to execute command: {ex.Message}",
+                Type = ActionResultType.Error
+            };
+        }
+    }
+
     private async Task<string?> ResolveConflictAsync(string destinationPath, ConflictResolution strategy)
     {
         if (!File.Exists(destinationPath))
@@ -435,6 +564,8 @@ public class ActionExecutor : IActionExecutor
                 RenameFileAction rename => PreviewRename(rename, currentPath, currentName, counter, fileInfo),
                 ChangeExtensionAction changeExt => PreviewChangeExtension(changeExt, currentPath, currentName),
                 DeleteFileAction delete => PreviewDelete(delete, currentPath),
+                ExtractArchiveAction extract => PreviewExtractArchive(extract, currentPath, counter, fileInfo),
+                RunCommandAction runCmd => PreviewRunCommand(runCmd, currentPath, counter, fileInfo),
                 _ => new ActionPreview { ActionType = "Unknown", Description = "Unknown action type" }
             };
 
@@ -531,6 +662,35 @@ public class ActionExecutor : IActionExecutor
             ActionType = "Delete",
             Description = action.UseRecycleBin ? "Send to Recycle Bin" : "Permanently delete",
             ResultPath = null,
+            HasConflict = false
+        };
+    }
+
+    private ActionPreview PreviewExtractArchive(ExtractArchiveAction action, string currentPath, int? counter, FileInfo fileInfo)
+    {
+        var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+        if (string.IsNullOrWhiteSpace(destPath))
+        {
+            destPath = Path.GetDirectoryName(currentPath) ?? string.Empty;
+        }
+
+        return new ActionPreview
+        {
+            ActionType = "Extract Archive",
+            Description = $"Extract to: {destPath}",
+            ResultPath = destPath,
+            HasConflict = false
+        };
+    }
+
+    private ActionPreview PreviewRunCommand(RunCommandAction action, string currentPath, int? counter, FileInfo fileInfo)
+    {
+        var command = _variableEngine.Resolve(action.Command, fileInfo, counter);
+        return new ActionPreview
+        {
+            ActionType = "Run Command",
+            Description = $"Execute: {command}",
+            ResultPath = currentPath,
             HasConflict = false
         };
     }
