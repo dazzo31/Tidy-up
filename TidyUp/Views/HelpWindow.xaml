@@ -1,0 +1,152 @@
+<Window x:Class="TidyUp.Views.HelpWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:md="clr-namespace:Markdig.Wpf;assembly=Markdig.Wpf"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="TidyUp Help" 
+        Height="700" Width="900"
+        WindowStartupLocation="CenterScreen"
+        Style="{StaticResource MaterialDesignWindow}">
+    
+    <Window.Resources>
+        <Style TargetType="md:MarkdownViewer">
+            <Setter Property="Margin" Value="16"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+    </Window.Resources>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" 
+                                  Mode="PrimaryMid" 
+                                  Padding="16"
+                                  materialDesign:ElevationAssist.Elevation="Dp4">
+            <DockPanel>
+                <materialDesign:PackIcon Kind="HelpCircle" 
+                                        Width="32" 
+                                        Height="32" 
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,12,0"/>
+                <StackPanel>
+                    <TextBlock Text="TidyUp Help &amp; Documentation" 
+                              FontSize="20" 
+                              FontWeight="Bold"/>
+                    <TextBlock Text="Learn how to organize your files automatically" 
+                              Opacity="0.8"
+                              FontSize="12"/>
+                </StackPanel>
+            </DockPanel>
+        </materialDesign:ColorZone>
+        
+        <!-- Tab Control -->
+        <TabControl Grid.Row="1" 
+                    Margin="8"
+                    Style="{StaticResource MaterialDesignTabControl}">
+            
+            <!-- Getting Started Tab -->
+            <TabItem Header="Getting Started">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="RocketLaunch" 
+                                                    VerticalAlignment="Center" 
+                                                    Margin="0,0,8,0"/>
+                            <TextBlock Text="Getting Started" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                             HorizontalScrollBarVisibility="Disabled">
+                    <md:MarkdownViewer x:Name="GettingStartedViewer" 
+                                      Markdown="{Binding GettingStartedContent}"/>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Variables Tab -->
+            <TabItem Header="Variables">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Variable" 
+                                                    VerticalAlignment="Center" 
+                                                    Margin="0,0,8,0"/>
+                            <TextBlock Text="Variables" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                             HorizontalScrollBarVisibility="Disabled">
+                    <md:MarkdownViewer x:Name="VariablesViewer" 
+                                      Markdown="{Binding VariablesContent}"/>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- Examples Tab -->
+            <TabItem Header="Examples">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="LightbulbOn" 
+                                                    VerticalAlignment="Center" 
+                                                    Margin="0,0,8,0"/>
+                            <TextBlock Text="Examples" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                             HorizontalScrollBarVisibility="Disabled">
+                    <md:MarkdownViewer x:Name="ExamplesViewer" 
+                                      Markdown="{Binding ExamplesContent}"/>
+                </ScrollViewer>
+            </TabItem>
+            
+            <!-- FAQ Tab -->
+            <TabItem Header="FAQ">
+                <TabItem.HeaderTemplate>
+                    <DataTemplate>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="HelpCircleOutline" 
+                                                    VerticalAlignment="Center" 
+                                                    Margin="0,0,8,0"/>
+                            <TextBlock Text="FAQ" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </TabItem.HeaderTemplate>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                             HorizontalScrollBarVisibility="Disabled">
+                    <md:MarkdownViewer x:Name="FaqViewer" 
+                                      Markdown="{Binding FaqContent}"/>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+        
+        <!-- Footer -->
+        <Border Grid.Row="2" 
+                Background="{DynamicResource MaterialDesignPaper}"
+                BorderBrush="{DynamicResource MaterialDesignDivider}"
+                BorderThickness="0,1,0,0"
+                Padding="16,12">
+            <DockPanel>
+                <Button Content="Close" 
+                        Click="CloseButton_Click"
+                        Style="{StaticResource MaterialDesignFlatButton}"
+                        DockPanel.Dock="Right"/>
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Information" 
+                                            VerticalAlignment="Center" 
+                                            Margin="0,0,8,0"
+                                            Opacity="0.7"/>
+                    <TextBlock Text="Press F1 anywhere in the app to open this help window" 
+                              VerticalAlignment="Center"
+                              Opacity="0.7"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+    </Grid>
+</Window>

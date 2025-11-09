@@ -88,3 +88,11 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\Fir
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\FirstRunWindow.g.cs
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpView.baml
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpView.g.cs
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Help\examples.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Help\faq.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Help\getting-started.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Help\variables-reference.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Markdig.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\bin\Debug\net9.0-windows\Markdig.Wpf.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpWindow.baml
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp\obj\Debug\net9.0-windows\Views\HelpWindow.g.cs

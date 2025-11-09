@@ -49,6 +49,25 @@
           }
         }
       },
+      "Markdig/0.22.0": {
+        "runtime": {
+          "lib/netcoreapp3.1/Markdig.dll": {
+            "assemblyVersion": "0.22.0.0",
+            "fileVersion": "0.22.0.0"
+          }
+        }
+      },
+      "Markdig.Wpf/0.5.0.1": {
+        "dependencies": {
+          "Markdig": "0.22.0"
+        },
+        "runtime": {
+          "lib/net5.0-windows7.0/Markdig.Wpf.dll": {
+            "assemblyVersion": "0.5.0.1",
+            "fileVersion": "0.5.0.1"
+          }
+        }
+      },
       "MaterialDesignColors/5.3.0": {
         "runtime": {
           "lib/net8.0-windows7.0/MaterialDesignColors.dll": {
@@ -814,6 +833,7 @@
       "TidyUp/1.0.0": {
         "dependencies": {
           "CommunityToolkit.Mvvm": "8.4.0",
+          "Markdig.Wpf": "0.5.0.1",
           "MaterialDesignThemes": "5.3.0",
           "Microsoft.EntityFrameworkCore.Sqlite": "9.0.10",
           "Microsoft.Extensions.DependencyInjection": "9.0.10",
@@ -863,6 +883,20 @@
       "sha512": "sha512-m0kwcqBwvVel03FuMa7Ozo/oTaxYbjeNlcOhQFkyQpwX/8wks6RNl/Jnn58DCZVs6c2oG1RsCZw7HfKSaxLm3w==",
       "path": "fluentassertions/8.8.0",
       "hashPath": "fluentassertions.8.8.0.nupkg.sha512"
+    },
+    "Markdig/0.22.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-/GbIsc1Dc/fOPqJM2sWIlWymgRAVfJhet+MY1Ze46HpDMyl+9TTfs4AdYbXx5QZo7eRh+Ew7A/nyGSVNCuYd9g==",
+      "path": "markdig/0.22.0",
+      "hashPath": "markdig.0.22.0.nupkg.sha512"
+    },
+    "Markdig.Wpf/0.5.0.1": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-lQRxu90ZqCATHTvd25yR/MxXABYA+Xcp7tmKW5jReTIgegB+AcU0+cd1GqdpM5k2KRVaD8BkBYQFdDw0lquT4w==",
+      "path": "markdig.wpf/0.5.0.1",
+      "hashPath": "markdig.wpf.0.5.0.1.nupkg.sha512"
     },
     "MaterialDesignColors/5.3.0": {
       "type": "package",

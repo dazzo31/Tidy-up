@@ -417,12 +417,13 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Navigates to Help view.
+    /// Opens the Help window.
     /// </summary>
     [RelayCommand]
     private void ViewHelp()
     {
-        CurrentView = NavigationView.Help;
+        var helpWindow = new Views.HelpWindow();
+        helpWindow.ShowDialog();
         StatusMessage = "Help";
     }
 

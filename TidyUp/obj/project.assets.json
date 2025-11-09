@@ -18,6 +18,34 @@
           "buildTransitive/CommunityToolkit.Mvvm.targets": {}
         }
       },
+      "Markdig/0.22.0": {
+        "type": "package",
+        "compile": {
+          "lib/netcoreapp3.1/Markdig.dll": {
+            "related": ".xml"
+          }
+        },
+        "runtime": {
+          "lib/netcoreapp3.1/Markdig.dll": {
+            "related": ".xml"
+          }
+        }
+      },
+      "Markdig.Wpf/0.5.0.1": {
+        "type": "package",
+        "dependencies": {
+          "Markdig": "0.22.0"
+        },
+        "compile": {
+          "lib/net5.0-windows7.0/Markdig.Wpf.dll": {}
+        },
+        "runtime": {
+          "lib/net5.0-windows7.0/Markdig.Wpf.dll": {}
+        },
+        "frameworkReferences": [
+          "Microsoft.WindowsDesktop.App.WPF"
+        ]
+      },
       "MaterialDesignColors/5.3.0": {
         "type": "package",
         "compile": {
@@ -732,6 +760,41 @@
         "lib/netstandard2.1/CommunityToolkit.Mvvm.dll",
         "lib/netstandard2.1/CommunityToolkit.Mvvm.pdb",
         "lib/netstandard2.1/CommunityToolkit.Mvvm.xml"
+      ]
+    },
+    "Markdig/0.22.0": {
+      "sha512": "/GbIsc1Dc/fOPqJM2sWIlWymgRAVfJhet+MY1Ze46HpDMyl+9TTfs4AdYbXx5QZo7eRh+Ew7A/nyGSVNCuYd9g==",
+      "type": "package",
+      "path": "markdig/0.22.0",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net452/Markdig.dll",
+        "lib/net452/Markdig.xml",
+        "lib/netcoreapp2.1/Markdig.dll",
+        "lib/netcoreapp2.1/Markdig.xml",
+        "lib/netcoreapp3.1/Markdig.dll",
+        "lib/netcoreapp3.1/Markdig.xml",
+        "lib/netstandard2.0/Markdig.dll",
+        "lib/netstandard2.0/Markdig.xml",
+        "lib/netstandard2.1/Markdig.dll",
+        "lib/netstandard2.1/Markdig.xml",
+        "markdig.0.22.0.nupkg.sha512",
+        "markdig.nuspec"
+      ]
+    },
+    "Markdig.Wpf/0.5.0.1": {
+      "sha512": "lQRxu90ZqCATHTvd25yR/MxXABYA+Xcp7tmKW5jReTIgegB+AcU0+cd1GqdpM5k2KRVaD8BkBYQFdDw0lquT4w==",
+      "type": "package",
+      "path": "markdig.wpf/0.5.0.1",
+      "files": [
+        ".nupkg.metadata",
+        ".signature.p7s",
+        "lib/net452/Markdig.Wpf.dll",
+        "lib/net5.0-windows7.0/Markdig.Wpf.dll",
+        "lib/netcoreapp3.1/Markdig.Wpf.dll",
+        "markdig.wpf.0.5.0.1.nupkg.sha512",
+        "markdig.wpf.nuspec"
       ]
     },
     "MaterialDesignColors/5.3.0": {
@@ -1594,6 +1657,7 @@
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
       "CommunityToolkit.Mvvm >= 8.4.0",
+      "Markdig.Wpf >= 0.5.0.1",
       "MaterialDesignThemes >= 5.3.0",
       "Microsoft.EntityFrameworkCore.Sqlite >= 9.0.10",
       "Microsoft.Extensions.DependencyInjection >= 9.0.10",
@@ -1650,6 +1714,10 @@
           "CommunityToolkit.Mvvm": {
             "target": "Package",
             "version": "[8.4.0, )"
+          },
+          "Markdig.Wpf": {
+            "target": "Package",
+            "version": "[0.5.0.1, )"
           },
           "MaterialDesignThemes": {
             "target": "Package",

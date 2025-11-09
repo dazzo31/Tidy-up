@@ -157,3 +157,9 @@ C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\obj\Debug\net9.0-windows\ref
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\obj\Debug\net9.0-windows\TidyUp.Tests.pdb
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\obj\Debug\net9.0-windows\TidyUp.Tests.genruntimeconfig.cache
 C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\obj\Debug\net9.0-windows\ref\TidyUp.Tests.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Help\examples.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Help\faq.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Help\getting-started.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Help\variables-reference.md
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Markdig.dll
+C:\Users\dazzo\OneDrive\GitHub\Tidy-up\TidyUp.Tests\bin\Debug\net9.0-windows\Markdig.Wpf.dll
