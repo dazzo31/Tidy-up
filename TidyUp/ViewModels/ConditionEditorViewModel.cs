@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -33,20 +35,12 @@ public partial class ConditionEditorViewModel : ObservableObject
 
     private List<MonitoredFolder> _monitoredFolders = new();
     private CancellationTokenSource? _previewCts;
+    private readonly HashSet<Condition> _wiredConditions = new();
 
     public ConditionEditorViewModel()
     {
         // Initialize with empty root group
         RootCondition = new ConditionGroup { Operator = LogicOperator.And };
-
-        // Watch for condition changes to auto-refresh preview
-        PropertyChanged += (s, e) =>
-        {
-            if (e.PropertyName == nameof(RootCondition))
-            {
-                _ = RefreshPreviewAsync();
-            }
-        };
     }
 
     /// <summary>
@@ -303,5 +297,128 @@ public partial class ConditionEditorViewModel : ObservableObject
         {
             IsLoadingPreview = false;
         }
+    }
+
+    /// <summary>
+    /// Wire up PropertyChanged events for a condition and its children.
+    /// </summary>
+    private void WireCondition(Condition condition)
+    {
+        if (condition == null || _wiredConditions.Contains(condition))
+            return;
+
+        _wiredConditions.Add(condition);
+        condition.PropertyChanged += Condition_PropertyChanged;
+
+        if (condition is ConditionGroup group)
+        {
+            WireConditionGroup(group);
+        }
+    }
+
+    /// <summary>
+    /// Unwire PropertyChanged events for a condition and its children.
+    /// </summary>
+    private void UnwireCondition(Condition condition)
+    {
+        if (condition == null || !_wiredConditions.Contains(condition))
+            return;
+
+        _wiredConditions.Remove(condition);
+        condition.PropertyChanged -= Condition_PropertyChanged;
+
+        if (condition is ConditionGroup group)
+        {
+            UnwireConditionGroup(group);
+        }
+    }
+
+    /// <summary>
+    /// Wire up CollectionChanged events for a condition group.
+    /// </summary>
+    private void WireConditionGroup(ConditionGroup group)
+    {
+        if (group?.Conditions == null)
+            return;
+
+        group.Conditions.CollectionChanged += Conditions_CollectionChanged;
+
+        foreach (var condition in group.Conditions)
+        {
+            WireCondition(condition);
+        }
+    }
+
+    /// <summary>
+    /// Unwire CollectionChanged events for a condition group.
+    /// </summary>
+    private void UnwireConditionGroup(ConditionGroup group)
+    {
+        if (group?.Conditions == null)
+            return;
+
+        group.Conditions.CollectionChanged -= Conditions_CollectionChanged;
+
+        foreach (var condition in group.Conditions)
+        {
+            UnwireCondition(condition);
+        }
+    }
+
+    /// <summary>
+    /// Event handler for condition property changes - triggers preview refresh.
+    /// </summary>
+    private void Condition_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        _ = RefreshPreviewAsync();
+    }
+
+    /// <summary>
+    /// Event handler for condition collection changes - wires/unwires and triggers refresh.
+    /// </summary>
+    private void Conditions_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        // Unwire old items
+        if (e.OldItems != null)
+        {
+            foreach (Condition condition in e.OldItems)
+            {
+                UnwireCondition(condition);
+            }
+        }
+
+        // Wire new items
+        if (e.NewItems != null)
+        {
+            foreach (Condition condition in e.NewItems)
+            {
+                WireCondition(condition);
+            }
+        }
+
+        _ = RefreshPreviewAsync();
+    }
+
+    /// <summary>
+    /// MVVM Toolkit partial method - called before RootCondition changes.
+    /// </summary>
+    partial void OnRootConditionChanging(ConditionGroup? value)
+    {
+        if (value != null)
+        {
+            UnwireConditionGroup(value);
+        }
+    }
+
+    /// <summary>
+    /// MVVM Toolkit partial method - called after RootCondition changes.
+    /// </summary>
+    partial void OnRootConditionChanged(ConditionGroup? value)
+    {
+        if (value != null)
+        {
+            WireConditionGroup(value);
+        }
+        _ = RefreshPreviewAsync();
     }
 }

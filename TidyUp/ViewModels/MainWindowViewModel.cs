@@ -1,4 +1,6 @@
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -47,11 +49,24 @@ public partial class MainWindowViewModel : ObservableObject
         get => _selectedRule;
         set
         {
+            var oldRule = _selectedRule;
+            
             if (SetProperty(ref _selectedRule, value))
             {
-                // Update condition and action editors when rule changes
+                // Unsubscribe from old rule
+                if (oldRule != null)
+                {
+                    oldRule.PropertyChanged -= SelectedRule_PropertyChanged;
+                    oldRule.MonitoredFolders.CollectionChanged -= MonitoredFolders_CollectionChanged;
+                }
+                
+                // Subscribe to new rule
                 if (value != null)
                 {
+                    value.PropertyChanged += SelectedRule_PropertyChanged;
+                    value.MonitoredFolders.CollectionChanged += MonitoredFolders_CollectionChanged;
+                    
+                    // Update condition and action editors when rule changes
                     ConditionEditor.RootCondition = value.Conditions ?? new Models.Domain.ConditionGroup { Operator = Models.Enums.LogicOperator.And };
                     ActionEditor.Actions.Clear();
                     foreach (var action in value.Actions.OrderBy(a => a.Order))
@@ -62,6 +77,13 @@ public partial class MainWindowViewModel : ObservableObject
                     // Update preview with monitored folders
                     ConditionEditor.SetMonitoredFolders(value.MonitoredFolders.ToList());
                 }
+                
+                // Notify all commands that depend on SelectedRule
+                SaveRuleCommand.NotifyCanExecuteChanged();
+                DeleteRuleCommand.NotifyCanExecuteChanged();
+                ToggleRuleCommand.NotifyCanExecuteChanged();
+                TestRuleCommand.NotifyCanExecuteChanged();
+                ExportRuleCommand.NotifyCanExecuteChanged();
             }
         }
     }
@@ -486,6 +508,29 @@ public partial class MainWindowViewModel : ObservableObject
     private void NavigateToRuleEditor()
     {
         CurrentView = NavigationView.RuleEditor;
-        StatusMessage = SelectedRule != null ? $"Editing rule: {SelectedRule.Name}" : "Ready";
+        StatusMessage = "Rule Editor";
+    }
+
+    /// <summary>
+    /// Event handler for SelectedRule property changes.
+    /// </summary>
+    private void SelectedRule_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(Rule.Name))
+        {
+            SaveRuleCommand.NotifyCanExecuteChanged();
+        }
+        else if (e.PropertyName == nameof(Rule.Conditions))
+        {
+            TestRuleCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    /// <summary>
+    /// Event handler for MonitoredFolders collection changes.
+    /// </summary>
+    private void MonitoredFolders_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+    {
+        TestRuleCommand.NotifyCanExecuteChanged();
     }
 }
