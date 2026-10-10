@@ -81,6 +81,7 @@ public static class ServiceConfiguration
         services.AddSingleton<IMultiRuleConflictAnalyzer, MultiRuleConflictAnalyzer>();
         services.AddTransient<IRuleRevisionManager, RuleRevisionManager>();
         services.AddSingleton<IRuleSerializationService, RuleSerializationService>();
+        services.AddSingleton<IExplainableDecisionEngine, ExplainableDecisionEngine>();
 
         // ViewModels  transient so each request gets a fresh instance
         services.AddTransient<MainWindowViewModel>();
@@ -101,6 +102,7 @@ public static class ServiceConfiguration
         services.AddTransient<MainWindow>();
         services.AddTransient<Views.DashboardView>();
         services.AddTransient<Views.FoldersView>();
+        services.AddTransient<Views.PreviewView>();
         services.AddTransient<Views.RuleEditor.RuleWizardView>();
         services.AddTransient<Views.PreviewWindow>();
         services.AddTransient<Views.Dialogs.SafeguardConfirmationDialog>();

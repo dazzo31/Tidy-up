@@ -1300,10 +1300,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-09: Integrated Preview & Review Workspace (STATUS: NOT STARTED)
+### TASK-UI-09: Integrated Preview & Review Workspace (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-09
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Promote the Preview dialog into a first-class, navigable Preview & Review workspace within the primary application shell.
 
@@ -1332,10 +1332,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-10: File-Level Explainability Inspector & Two-Step Apply Workflow (STATUS: NOT STARTED)
+### TASK-UI-10: File-Level Explainability Inspector & Two-Step Apply Workflow (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-10
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Add an expandable "Why Did This File Match?" inspection drawer and a guarded two-step Apply workflow with pre-flight re-check.
 

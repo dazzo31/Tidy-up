@@ -825,9 +825,9 @@
             </views:FoldersView>
 
             <!-- Preview & Review Workspace -->
-            <Border Background="{DynamicResource MaterialDesignPaper}" Padding="32">
-                <Border.Style>
-                    <Style TargetType="Border">
+            <views:PreviewView DataContext="{Binding PreviewViewModel}">
+                <views:PreviewView.Style>
+                    <Style TargetType="views:PreviewView">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="PreviewReview">
@@ -835,14 +835,8 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </Border.Style>
-                <controls:EmptyStateControl
-                    IconKind="EyeCheckOutline"
-                    Title="Preview &amp; Review Workspace"
-                    Description="Simulate and verify rule operations safely before applying changes to disk."
-                    ActionText="Run Rule Preview (Ctrl+T)"
-                    ActionCommand="{Binding TestRuleCommand}"/>
-            </Border>
+                </views:PreviewView.Style>
+            </views:PreviewView>
 
             <!-- Help View -->
             <views:HelpView>

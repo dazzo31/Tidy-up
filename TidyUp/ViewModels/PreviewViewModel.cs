@@ -140,7 +140,25 @@ public partial class PreviewViewModel : ObservableObject
     private readonly IActionExecutor _actionExecutor;
     private readonly IExecutionDiscrepancyAnalyzer? _discrepancyAnalyzer;
     private readonly IBatchProcessingCoordinator _batchCoordinator;
+    private readonly IExplainableDecisionEngine? _explainableEngine;
     private CancellationTokenSource? _batchCancellationTokenSource;
+
+    [ObservableProperty]
+    private Rule? _currentRule;
+
+    [ObservableProperty]
+    private EvaluationBreakdown? _selectedFileExplanation;
+
+    [ObservableProperty]
+    private bool _isExplainDrawerOpen;
+
+    [ObservableProperty]
+    private bool _showDeletionsOnly;
+
+    public int MoveCount => AllItems.Count(i => i.ActionType == ActionType.Move);
+    public int CopyCount => AllItems.Count(i => i.ActionType == ActionType.Copy);
+    public int RenameCount => AllItems.Count(i => i.ActionType == ActionType.Rename);
+    public int DeleteCount => AllItems.Count(i => i.ActionType == ActionType.Delete);
 
     /// <summary>
     /// Delegate for requesting user confirmation before applying changes.
@@ -170,6 +188,25 @@ public partial class PreviewViewModel : ObservableObject
 
     [ObservableProperty]
     private PlannedActionItemViewModel? _selectedItem;
+
+    partial void OnSelectedItemChanged(PlannedActionItemViewModel? value)
+    {
+        if (value != null && _explainableEngine != null && CurrentRule != null)
+        {
+            SelectedFileExplanation = _explainableEngine.ExplainMatch(CurrentRule, value.SourcePath);
+            IsExplainDrawerOpen = true;
+        }
+        else
+        {
+            SelectedFileExplanation = null;
+        }
+    }
+
+    [RelayCommand]
+    public void ToggleExplainDrawer()
+    {
+        IsExplainDrawerOpen = !IsExplainDrawerOpen;
+    }
 
     [ObservableProperty]
     private ExecutionPlan? _executionPlan;
@@ -254,16 +291,20 @@ public partial class PreviewViewModel : ObservableObject
         AllItems.Any(i => i.IsApproved) &&
         !AllItems.Any(i => i.IsApproved && i.HasConflict);
 
+    public bool EnablePreFlightValidation { get; set; }
+
     public PreviewViewModel(
         IExecutionPlanGenerator planGenerator,
         IActionExecutor actionExecutor,
         IExecutionDiscrepancyAnalyzer? discrepancyAnalyzer = null,
-        IBatchProcessingCoordinator? batchCoordinator = null)
+        IBatchProcessingCoordinator? batchCoordinator = null,
+        IExplainableDecisionEngine? explainableEngine = null)
     {
         _planGenerator = planGenerator ?? throw new ArgumentNullException(nameof(planGenerator));
         _actionExecutor = actionExecutor ?? throw new ArgumentNullException(nameof(actionExecutor));
         _discrepancyAnalyzer = discrepancyAnalyzer;
         _batchCoordinator = batchCoordinator ?? new BatchProcessingCoordinator(_actionExecutor);
+        _explainableEngine = explainableEngine;
 
         ConfirmApplyHandler = DefaultConfirmApply;
         SafeguardDialogHandler = DefaultSafeguardDialog;
@@ -344,6 +385,11 @@ public partial class PreviewViewModel : ObservableObject
         ApplyFilter();
         UpdateApprovedCount();
 
+        OnPropertyChanged(nameof(MoveCount));
+        OnPropertyChanged(nameof(CopyCount));
+        OnPropertyChanged(nameof(RenameCount));
+        OnPropertyChanged(nameof(DeleteCount));
+
         StatusMessage = ConflictCount > 0
             ? $"Plan generated: {AllItems.Count} planned action(s), {ConflictCount} conflict(s) detected."
             : $"Plan generated: {AllItems.Count} planned action(s). Ready to apply.";
@@ -364,6 +410,7 @@ public partial class PreviewViewModel : ObservableObject
             return;
         }
 
+        CurrentRule = rule;
         IsLoading = true;
         StatusMessage = $"Simulating rule '{rule.Name}' across monitored folders...";
 
@@ -398,7 +445,19 @@ public partial class PreviewViewModel : ObservableObject
             return;
         }
 
-        // Evaluate destructive-action safeguards (permanent deletion, overwrite, >50 files)
+        if (EnablePreFlightValidation)
+        {
+            // Step 1: Pre-flight re-check against filesystem mutations
+            var (preFlightSuccess, preFlightIssues) = PerformPreFlightCheck(approvedItems);
+            if (!preFlightSuccess)
+            {
+                StatusMessage = $"Pre-flight validation failed: {preFlightIssues.Count} file(s) changed on disk. Please refresh preview.";
+                ApplyFilter();
+                return;
+            }
+        }
+
+        // Step 2: Evaluate destructive-action safeguards (permanent deletion, overwrite, >50 files)
         var safeguardVm = new SafeguardConfirmationViewModel();
         bool requiresSafeguard = safeguardVm.EvaluateRisks(approvedItems);
         if (requiresSafeguard)
@@ -539,11 +598,48 @@ public partial class PreviewViewModel : ObservableObject
         ApplyChangesCommand.NotifyCanExecuteChanged();
     }
 
+    [RelayCommand]
+    public void ApproveAll() => SetAllApproved(true);
+
+    [RelayCommand]
+    public void RejectAll() => SetAllApproved(false);
+
     partial void OnSelectedRuleFilterChanged(string value) => ApplyFilter();
     partial void OnSelectedExtensionFilterChanged(string value) => ApplyFilter();
     partial void OnSelectedActionTypeFilterChanged(string value) => ApplyFilter();
     partial void OnShowConflictsOnlyChanged(bool value) => ApplyFilter();
+    partial void OnShowDeletionsOnlyChanged(bool value) => ApplyFilter();
     partial void OnSearchTextChanged(string value) => ApplyFilter();
+
+    public (bool Success, List<string> Issues) PerformPreFlightCheck(IEnumerable<PlannedActionItemViewModel> items)
+    {
+        var issues = new List<string>();
+        foreach (var item in items)
+        {
+            if (!File.Exists(item.SourcePath))
+            {
+                issues.Add($"File no longer exists: {item.SourcePath}");
+                item.PlannedAction.HasConflict = true;
+                item.PlannedAction.ConflictDescription = "File missing at pre-flight check";
+                continue;
+            }
+
+            try
+            {
+                var fi = new FileInfo(item.SourcePath);
+                if (Math.Abs((fi.LastWriteTime - item.SourceModifiedDate).TotalSeconds) > 2)
+                {
+                    issues.Add($"File modified since preview: {item.SourcePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                issues.Add($"Cannot access file: {item.SourcePath} ({ex.Message})");
+            }
+        }
+
+        return (issues.Count == 0, issues);
+    }
 
     public void ApplyFilter()
     {
@@ -552,6 +648,11 @@ public partial class PreviewViewModel : ObservableObject
         if (ShowConflictsOnly)
         {
             query = query.Where(i => i.HasConflict);
+        }
+
+        if (ShowDeletionsOnly)
+        {
+            query = query.Where(i => i.ActionType == ActionType.Delete);
         }
 
         if (!string.IsNullOrEmpty(SelectedRuleFilter) && SelectedRuleFilter != "All Rules")

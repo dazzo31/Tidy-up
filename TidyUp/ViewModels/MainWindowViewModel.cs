@@ -11,7 +11,9 @@ using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services;
+using TidyUp.Services.Diagnostics;
 using TidyUp.Services.Monitoring;
+using TidyUp.Services.Processing;
 using TidyUp.Services.Rules;
 using TidyUp.Services.Simulation;
 using TidyUp.Services.State;
@@ -42,6 +44,7 @@ public partial class MainWindowViewModel : ObservableObject
     public HistoryViewModel HistoryViewModel { get; }
     public RuleWizardViewModel WizardViewModel { get; }
     public FoldersViewModel FoldersViewModel { get; }
+    public PreviewViewModel PreviewViewModel { get; }
 
     [ObservableProperty]
     private ObservableCollection<Rule> _rules = new();
@@ -363,6 +366,17 @@ public partial class MainWindowViewModel : ObservableObject
                 SelectedRule = targetRule;
             }
         };
+
+        PreviewViewModel = (PreviewViewModel?)serviceProvider.GetService(typeof(PreviewViewModel))
+            ?? new PreviewViewModel(
+                executionPlanGen,
+                (IActionExecutor?)serviceProvider.GetService(typeof(IActionExecutor))
+                    ?? new ActionExecutor((IVariableEngine?)serviceProvider.GetService(typeof(IVariableEngine)) ?? new VariableEngine()),
+                (IExecutionDiscrepancyAnalyzer?)serviceProvider.GetService(typeof(IExecutionDiscrepancyAnalyzer)),
+                (IBatchProcessingCoordinator?)serviceProvider.GetService(typeof(IBatchProcessingCoordinator)),
+                (IExplainableDecisionEngine?)serviceProvider.GetService(typeof(IExplainableDecisionEngine)) ?? new ExplainableDecisionEngine());
+
+        PreviewViewModel.EnablePreFlightValidation = true;
 
         DashboardViewModel.RequestNavigate += view =>
         {
@@ -765,9 +779,8 @@ public partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            var previewWindow = (Views.PreviewWindow)_serviceProvider.GetService(typeof(Views.PreviewWindow))!;
-            await previewWindow.ShowPreviewAsync(SelectedRule);
-
+            CurrentView = NavigationView.PreviewReview;
+            await PreviewViewModel.SimulateRuleAsync(SelectedRule);
             StateManager.NotifyRuleSimulated();
         }
         catch
@@ -1032,6 +1045,10 @@ public partial class MainWindowViewModel : ObservableObject
         if (value == NavigationView.Folders)
         {
             _ = FoldersViewModel.LoadFoldersAsync();
+        }
+        else if (value == NavigationView.PreviewReview && PreviewViewModel.ExecutionPlan == null && SelectedRule != null)
+        {
+            _ = PreviewViewModel.SimulateRuleAsync(SelectedRule);
         }
     }
 
