@@ -103,11 +103,17 @@
                          Style="{StaticResource MaterialDesignCheckBox}"
                          Margin="0,0,0,16"/>
 
-                <TextBlock Text="⚠️ These features are not yet implemented"
-                          Opacity="0.6"
-                          FontSize="11"
-                          FontStyle="Italic"
-                          Margin="24,0,0,0"/>
+                <!-- Database Maintenance -->
+                <TextBlock Text="Database Backup &amp; Disaster Recovery" 
+                          FontSize="16" 
+                          FontWeight="SemiBold" 
+                          Margin="0,16,0,8"/>
+
+                <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Content="Backup Database Now"
+                        Command="{Binding BackupDatabaseCommand}"
+                        HorizontalAlignment="Left"
+                        Margin="0,0,0,16"/>
             </StackPanel>
         </ScrollViewer>
 

@@ -8,6 +8,7 @@ public class ActionResult
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }
     public string? ResultPath { get; set; }
+    public string? TargetPath { get; set; }
     public ActionResultType Type { get; set; } = ActionResultType.Success;
 }
 

@@ -6,7 +6,12 @@ namespace TidyUp.Models.Enums;
 public enum NavigationView
 {
     /// <summary>
-    /// Rule editor view (default).
+    /// Operational dashboard overview (default).
+    /// </summary>
+    Dashboard,
+
+    /// <summary>
+    /// Rule editor view.
     /// </summary>
     RuleEditor,
     
@@ -23,5 +28,10 @@ public enum NavigationView
     /// <summary>
     /// Help and About view.
     /// </summary>
-    Help
+    Help,
+
+    /// <summary>
+    /// History and rollback journal view.
+    /// </summary>
+    History
 }

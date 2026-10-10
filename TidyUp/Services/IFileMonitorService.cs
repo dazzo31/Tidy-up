@@ -32,6 +32,26 @@ public interface IFileMonitorService
     /// Manually scans all monitored folders for existing files.
     /// </summary>
     Task ScanAllFoldersAsync();
+
+    /// <summary>
+    /// Indicates whether monitoring is currently paused.
+    /// </summary>
+    bool IsPaused { get; }
+
+    /// <summary>
+    /// Number of file detection events currently buffered while paused.
+    /// </summary>
+    int PausedBufferedEventCount { get; }
+
+    /// <summary>
+    /// Pauses file monitoring. Watcher events will be safely buffered in memory instead of dispatched.
+    /// </summary>
+    void Pause();
+
+    /// <summary>
+    /// Resumes file monitoring and safely flushes all buffered events.
+    /// </summary>
+    Task ResumeAsync();
 }
 
 /// <summary>

@@ -5,7 +5,18 @@ using TidyUp.Data;
 using TidyUp.Data.Repositories;
 using TidyUp.Models;
 using TidyUp.Services;
+using TidyUp.Services.Diagnostics;
+using TidyUp.Services.FileSystem;
+using TidyUp.Services.Monitoring;
+using TidyUp.Services.Processing;
+using TidyUp.Services.Rollback;
+using TidyUp.Services.Rules;
+using TidyUp.Services.Simulation;
+using TidyUp.Services.Validation;
+using TidyUp.Services.Watcher;
+using TidyUp.Services.State;
 using TidyUp.ViewModels;
+using TidyUp.ViewModels.RuleEditor;
 
 namespace TidyUp;
 
@@ -18,7 +29,19 @@ public static class ServiceConfiguration
     {
         var services = new ServiceCollection();
 
-        // Database
+        // Database � use a factory so each scope gets a fresh context
+        services.AddDbContextFactory<TidyUpDbContext>(options =>
+        {
+            var appDataPath = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "TidyUp");
+            Directory.CreateDirectory(appDataPath);
+
+            var dbPath = Path.Combine(appDataPath, "tidyup.db");
+            options.UseSqlite($"Data Source={dbPath}");
+        });
+
+        // Also register DbContext directly for simple transient use
         services.AddDbContext<TidyUpDbContext>(options =>
         {
             var appDataPath = Path.Combine(
@@ -30,36 +53,63 @@ public static class ServiceConfiguration
             options.UseSqlite($"Data Source={dbPath}");
         });
 
-        // Repositories
+        // Repositories � scoped so they share a DbContext within a logical operation
         services.AddTransient<IRuleRepository, RuleRepository>();
         services.AddTransient<IActionLogRepository, ActionLogRepository>();
         services.AddSingleton<SettingsRepository>();
 
-        // Services
+        // Services � stateless services can be singletons
+        services.AddSingleton<ISafeFileSystem, WindowsShellFileOperations>();
+        services.AddSingleton<IFileLockDetector, FileLockDetector>();
+        services.AddSingleton<IRetryQueueManager, RetryQueueManager>();
         services.AddSingleton<IVariableEngine, VariableEngine>();
         services.AddSingleton<IRuleEngine, RuleEngine>();
         services.AddSingleton<IActionExecutor, ActionExecutor>();
+        services.AddSingleton<IWatcherHealthMonitor, WatcherHealthMonitor>();
         services.AddSingleton<IFileMonitorService, FileMonitorService>();
+        services.AddSingleton<IWatcherReconciler>(sp => (FileMonitorService)sp.GetRequiredService<IFileMonitorService>());
         services.AddSingleton<IImportExportService, ImportExportService>();
+        services.AddSingleton<IExecutionPlanGenerator, ExecutionPlanGenerator>();
+        services.AddSingleton<IRollbackEngine, RollbackEngine>();
+        services.AddSingleton<IRuleValidator, RuleValidator>();
+        services.AddSingleton<IRuleSummaryGenerator, RuleSummaryGenerator>();
+        services.AddSingleton<IApplicationStateManager, ApplicationStateManager>();
+        services.AddSingleton<IExecutionDiscrepancyAnalyzer, ExecutionDiscrepancyAnalyzer>();
+        services.AddSingleton<IBatchProcessingCoordinator, BatchProcessingCoordinator>();
+        services.AddSingleton<ITrayIconService, TrayIconService>();
+        services.AddSingleton<IToastNotificationService, ToastNotificationService>();
+        services.AddSingleton<IMultiRuleConflictAnalyzer, MultiRuleConflictAnalyzer>();
+        services.AddTransient<IRuleRevisionManager, RuleRevisionManager>();
+        services.AddSingleton<IRuleSerializationService, RuleSerializationService>();
 
-        // ViewModels
+        // ViewModels  transient so each request gets a fresh instance
         services.AddTransient<MainWindowViewModel>();
+        services.AddTransient<DashboardViewModel>();
+        services.AddTransient<RuleWizardViewModel>();
         services.AddTransient<LogViewerViewModel>();
         services.AddTransient<LogsViewModel>();
-        services.AddTransient<SettingsViewModel>(sp =>
-        {
-            var settingsRepo = sp.GetRequiredService<SettingsRepository>();
-            // AppSettings will be loaded in App.xaml.cs startup
-            var settings = App.AppSettings ?? AppSettings.CreateDefault();
-            return new SettingsViewModel(settingsRepo, settings);
-        });
+        services.AddTransient<SettingsViewModel>();
         services.AddTransient<RulePreviewViewModel>();
+        services.AddTransient<PreviewViewModel>();
+        services.AddTransient<ViewModels.Dialogs.SafeguardConfirmationViewModel>();
+        services.AddTransient<HistoryViewModel>();
+        services.AddTransient<RuleEvaluationInspectorViewModel>();
+        services.AddTransient<ExecutionSummaryViewModel>();
+        services.AddTransient<RuleConflictsViewModel>();
+        services.AddTransient<RuleRevisionDiffViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<Views.DashboardView>();
+        services.AddTransient<Views.RuleEditor.RuleWizardView>();
         services.AddTransient<Views.LogViewerWindow>();
         services.AddTransient<Views.SettingsWindow>();
         services.AddTransient<Views.RulePreviewWindow>();
+        services.AddTransient<Views.PreviewWindow>();
+        services.AddTransient<Views.Dialogs.SafeguardConfirmationDialog>();
+        services.AddTransient<Views.Dialogs.RuleDiagnosticsDialog>();
+        services.AddTransient<Views.ExecutionSummaryWindow>();
+        services.AddTransient<Views.HistoryView>();
 
         return services.BuildServiceProvider();
     }

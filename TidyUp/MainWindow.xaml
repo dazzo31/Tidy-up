@@ -8,37 +8,26 @@
         xmlns:views="clr-namespace:TidyUp.Views"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="TidyUp - File Organization Manager" 
+        Title="{Binding WindowTitle}" 
         Height="720" Width="1280"
         MinHeight="600" MinWidth="900"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{materialDesign:MaterialDesignFont}"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
-        WindowStartupLocation="Manual"
-        WindowStyle="None"
-        ResizeMode="CanResizeWithGrip">
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        Icon="pack://application:,,,/Resources/tidyup.ico">
     
     <!-- Keyboard Shortcuts -->
     <Window.InputBindings>
-        <!-- Ctrl+N: New Rule -->
+        <KeyBinding Key="D" Modifiers="Control" Command="{Binding NavigateToDashboardCommand}"/>
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding CreateNewRuleCommand}"/>
-        
-        <!-- Ctrl+S: Save Rule -->
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveRuleCommand}"/>
-        
-        <!-- Delete: Delete Rule -->
         <KeyBinding Key="Delete" Command="{Binding DeleteRuleCommand}"/>
-        
-        <!-- Space: Toggle Enable/Disable -->
         <KeyBinding Key="Space" Command="{Binding ToggleRuleCommand}"/>
-        
-        <!-- F5: Refresh Rules -->
         <KeyBinding Key="F5" Command="{Binding LoadRulesCommand}"/>
-        
-        <!-- Ctrl+T: Test Rule -->
         <KeyBinding Key="T" Modifiers="Control" Command="{Binding TestRuleCommand}"/>
-        
-        <!-- F1: Help -->
         <KeyBinding Key="F1" Command="{Binding ViewHelpCommand}"/>
     </Window.InputBindings>
     
@@ -49,133 +38,148 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Top Toolbar -->
-        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="8,12" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
-            <DockPanel>
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                    <materialDesign:PackIcon Kind="FolderCog" Width="24" Height="24" 
-                                            VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="TidyUp" FontSize="18" FontWeight="Bold" 
-                              VerticalAlignment="Center"/>
-                </StackPanel>
-                
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Minimize"
-                            Click="MinimizeButton_Click"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="WindowMinimize" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Maximize/Restore"
-                            Click="MaximizeRestoreButton_Click"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="WindowMaximize" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Close"
-                            Click="CloseButton_Click"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
-                    </Button>
-                    <Separator Style="{StaticResource MaterialDesignSeparator}" 
-                              Margin="4,0"
-                              Width="2"
-                              Background="{DynamicResource MaterialDesignDivider}"/>
-                </StackPanel>
-                
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="New Rule (Ctrl+N)"
-                            Command="{Binding CreateNewRuleCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Plus" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Import Rules"
-                            Command="{Binding ImportRulesCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Import" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Export Selected Rule"
-                            Command="{Binding ExportRuleCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Export" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Export All Rules"
-                            Command="{Binding ExportAllRulesCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="ExportVariant" Width="20" Height="20"/>
-                    </Button>
-                    <Separator Style="{StaticResource MaterialDesignSeparator}" 
-                              Margin="4,0"
-                              Width="2"
-                              Background="{DynamicResource MaterialDesignDivider}"/>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Test Rule (Ctrl+T)"
-                            Command="{Binding TestRuleCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="TestTube" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Refresh Rules (F5)"
-                            Command="{Binding LoadRulesCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="View Logs"
-                            Command="{Binding ViewLogsCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="History" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Help (F1)"
-                            Command="{Binding ViewHelpCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="HelpCircle" Width="20" Height="20"/>
-                    </Button>
-                    <Button Style="{StaticResource MaterialDesignToolButton}"
-                            ToolTip="Settings"
-                            Command="{Binding OpenSettingsCommand}"
-                            Margin="2">
-                        <materialDesign:PackIcon Kind="Settings" Width="20" Height="20"/>
-                    </Button>
-                </StackPanel>
-            </DockPanel>
-        </materialDesign:ColorZone>
+        <!-- Application Toolbar (separate from window chrome) -->
+        <ToolBarTray Grid.Row="0" IsLocked="True">
+            <ToolBar Band="0" BandIndex="0" Header="View">
+                <Button ToolTip="Dashboard (Ctrl+D)"
+                        Command="{Binding NavigateToDashboardCommand}"
+                        AutomationProperties.Name="Dashboard">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="ViewDashboard" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Dashboard" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Rules Editor"
+                        Command="{Binding NavigateToRuleEditorCommand}"
+                        AutomationProperties.Name="Rules">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="FilterList" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Rules" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </ToolBar>
+            <ToolBar Band="0" BandIndex="1" Header="File">
+                <Button ToolTip="New Rule (Ctrl+N)"
+                        Command="{Binding CreateNewRuleCommand}"
+                        AutomationProperties.Name="New Rule">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="New" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Separator/>
+                <Button ToolTip="Import Rules"
+                        Command="{Binding ImportRulesCommand}"
+                        AutomationProperties.Name="Import Rules">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Import" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Import" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Export Selected Rule"
+                        Command="{Binding ExportRuleCommand}"
+                        AutomationProperties.Name="Export Rule">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Export" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Export" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Export All Rules"
+                        Command="{Binding ExportAllRulesCommand}"
+                        AutomationProperties.Name="Export All Rules">
+                    <materialDesign:PackIcon Kind="ExportVariant" Width="18" Height="18"/>
+                </Button>
+            </ToolBar>
+            <ToolBar Band="0" BandIndex="2" Header="Actions">
+                <Button ToolTip="Test Rule (Ctrl+T)"
+                        Command="{Binding TestRuleCommand}"
+                        AutomationProperties.Name="Test Rule">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="TestTube" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Test" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Refresh Rules (F5)"
+                        Command="{Binding LoadRulesCommand}"
+                        AutomationProperties.Name="Refresh">
+                    <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"/>
+                </Button>
+                <Separator/>
+                <Button ToolTip="View Logs"
+                        Command="{Binding ViewLogsCommand}"
+                        AutomationProperties.Name="View Logs">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="History" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="Logs" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Operation History &amp; Rollback"
+                        Command="{Binding ViewHistoryCommand}"
+                        AutomationProperties.Name="View History">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="BackupRestore" Width="18" Height="18" VerticalAlignment="Center"/>
+                        <TextBlock Text="History" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+                <Button ToolTip="Help (F1)"
+                        Command="{Binding ViewHelpCommand}"
+                        AutomationProperties.Name="Help">
+                    <materialDesign:PackIcon Kind="HelpCircle" Width="18" Height="18"/>
+                </Button>
+                <Button ToolTip="Settings"
+                        Command="{Binding OpenSettingsCommand}"
+                        AutomationProperties.Name="Settings">
+                    <materialDesign:PackIcon Kind="Cog" Width="18" Height="18"/>
+                </Button>
+            </ToolBar>
+        </ToolBarTray>
 
         <!-- Main Content Area -->
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="280" MinWidth="220"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*" MinWidth="400"/>
-            </Grid.ColumnDefinitions>
+            <!-- Rule Editor view (full split layout) -->
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Visibility" Value="Visible"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Dashboard">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="280" MinWidth="220"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*" MinWidth="400"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Left Panel: Rule List -->
-            <materialDesign:Card Grid.Column="0" Margin="4,4,2,4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-
+                <!-- Left Panel: Rule List -->
+                <DockPanel Grid.Column="0" Margin="4,4,2,4">
                     <!-- Rule List Header -->
-                    <Border Grid.Row="0" Background="{DynamicResource MaterialDesignDivider}" 
+                    <Border DockPanel.Dock="Top" 
+                            Background="{DynamicResource MaterialDesignToolBarBackground}" 
                             Padding="12,8">
                         <TextBlock Text="Rules" FontSize="14" FontWeight="SemiBold"/>
                     </Border>
                     
                     <!-- Search Box -->
-                    <TextBox Grid.Row="1"
+                    <TextBox DockPanel.Dock="Top"
                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                             materialDesign:HintAssist.Hint="Search rules..."
                             materialDesign:TextFieldAssist.HasClearButton="True"
-                            Margin="8,8,8,4">
+                            Margin="8,8,8,4"
+                            AutomationProperties.Name="Search rules">
                         <TextBox.Style>
                             <Style TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
                                 <Setter Property="materialDesign:HintAssist.Foreground" Value="{DynamicResource MaterialDesignBody}"/>
@@ -183,163 +187,113 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <!-- Rules ListBox -->
-                    <ListBox Grid.Row="2" 
-                             ItemsSource="{Binding FilteredRules}"
-                             SelectedItem="{Binding SelectedRule}"
-                             Style="{StaticResource MaterialDesignListBox}"
-                             AllowDrop="True"
-                             PreviewMouseLeftButtonDown="RuleListBox_PreviewMouseLeftButtonDown"
-                             PreviewMouseMove="RuleListBox_PreviewMouseMove"
-                             Drop="RuleListBox_Drop"
-                             DragOver="RuleListBox_DragOver"
-                             Margin="0">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Grid Margin="4">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="Auto"/>
-                                    </Grid.ColumnDefinitions>
+                    <!-- Rules List Area with Empty State -->
+                    <Grid>
+                        <!-- Empty State for Rules -->
+                        <controls:EmptyStateControl
+                            IconKind="FilterOff"
+                            Title="No Rules Configured"
+                            Description="No organization rules found. Create a rule to automate sorting and organizing files."
+                            ActionText="Create Rule (Ctrl+N)"
+                            ActionCommand="{Binding CreateNewRuleCommand}"
+                            Visibility="{Binding FilteredRules.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=Zero}"
+                            Margin="12,24,12,12"/>
 
-                                    <!-- Enabled Status Icon -->
-                                    <materialDesign:PackIcon Grid.Column="0"
-                                                            Width="16" Height="16"
-                                                            VerticalAlignment="Center"
-                                                            Margin="0,0,6,0">
-                                        <materialDesign:PackIcon.Style>
-                                            <Style TargetType="materialDesign:PackIcon">
-                                                <Setter Property="Kind" Value="Check"/>
-                                                <Setter Property="Foreground" Value="Green"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
-                                                        <Setter Property="Kind" Value="Close"/>
-                                                        <Setter Property="Foreground" Value="Red"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </materialDesign:PackIcon.Style>
-                                    </materialDesign:PackIcon>
+                        <!-- Rules ListBox -->
+                        <ListBox ItemsSource="{Binding FilteredRules}"
+                                 SelectedItem="{Binding SelectedRule}"
+                                 Style="{StaticResource MaterialDesignListBox}"
+                                 AllowDrop="True"
+                                 VirtualizingPanel.IsVirtualizing="True"
+                                 VirtualizingPanel.VirtualizationMode="Recycling"
+                                 PreviewMouseLeftButtonDown="RuleListBox_PreviewMouseLeftButtonDown"
+                                 PreviewMouseMove="RuleListBox_PreviewMouseMove"
+                                 Drop="RuleListBox_Drop"
+                                 DragOver="RuleListBox_DragOver"
+                                 AutomationProperties.Name="Rule list"
+                                 Visibility="{Binding FilteredRules.Count, Converter={StaticResource CountToVisibilityConverter}}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
 
-                                    <!-- Rule Name and Details -->
-                                    <StackPanel Grid.Column="1">
-                                        <TextBlock Text="{Binding Name}" 
-                                                  FontWeight="SemiBold"
-                                                  FontSize="13"
-                                                  TextTrimming="CharacterEllipsis"/>
-                                        <TextBlock Text="{Binding Description}" 
-                                                  Opacity="0.7"
-                                                  FontSize="10"
-                                                  TextTrimming="CharacterEllipsis"/>
-                                    </StackPanel>
+                                        <materialDesign:PackIcon Grid.Column="0"
+                                                                Width="16" Height="16"
+                                                                VerticalAlignment="Center"
+                                                                Margin="0,0,6,0">
+                                            <materialDesign:PackIcon.Style>
+                                                <Style TargetType="materialDesign:PackIcon">
+                                                    <Setter Property="Kind" Value="CheckCircle"/>
+                                                    <Setter Property="Foreground" Value="Green"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                            <Setter Property="Kind" Value="CloseCircle"/>
+                                                            <Setter Property="Foreground" Value="Gray"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </materialDesign:PackIcon.Style>
+                                        </materialDesign:PackIcon>
 
-                                    <!-- Rule Order Badge -->
-                                    <Border Grid.Column="2"
-                                           Background="{DynamicResource PrimaryHueLightBrush}"
-                                           CornerRadius="8"
-                                           Padding="6,2"
-                                           VerticalAlignment="Center">
-                                        <TextBlock Text="{Binding ExecutionOrder}" 
-                                                  FontSize="10"
-                                                  FontWeight="Bold"/>
-                                    </Border>
-                                </Grid>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </Grid>
-            </materialDesign:Card>
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="{Binding Name}" 
+                                                      FontWeight="SemiBold"
+                                                      FontSize="13"
+                                                      TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Description}" 
+                                                      Opacity="0.6"
+                                                      FontSize="11"
+                                                      TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
 
-            <!-- GridSplitter -->
-            <GridSplitter Grid.Column="1" Width="4" 
-                         HorizontalAlignment="Stretch" 
-                         Background="{DynamicResource MaterialDesignDivider}"/>
+                                        <Border Grid.Column="2"
+                                               Background="{DynamicResource MaterialDesignToolBarBackground}"
+                                               CornerRadius="8"
+                                               Padding="6,2"
+                                               VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding ExecutionOrder}" 
+                                                      FontSize="10"
+                                                      FontWeight="Bold"/>
+                                        </Border>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </DockPanel>
 
-            <!-- Right Panel: Rule Details -->
-            <materialDesign:Card Grid.Column="2" Margin="2,4,4,4">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                <!-- GridSplitter -->
+                <GridSplitter Grid.Column="1" Width="4" 
+                             HorizontalAlignment="Stretch" 
+                             Background="{DynamicResource MaterialDesignDivider}"/>
 
-                    <!-- Navigation Header -->
-                    <Border Grid.Row="0" Background="{DynamicResource MaterialDesignDivider}" 
+                <!-- Right Panel: Rule Details -->
+                <DockPanel Grid.Column="2" Margin="2,4,4,4">
+                    <!-- Header -->
+                    <Border DockPanel.Dock="Top" 
+                            Background="{DynamicResource MaterialDesignToolBarBackground}" 
                             Padding="12,8">
                         <DockPanel>
-                            <!-- Back Button (visible when not in RuleEditor) -->
-                            <Button DockPanel.Dock="Left"
-                                   ToolTip="Back to Rules"
-                                   Command="{Binding NavigateToRuleEditorCommand}"
-                                   Margin="0,0,8,0">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignIconButton}">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <materialDesign:PackIcon Kind="ArrowLeft" Width="18" Height="18"/>
-                            </Button>
+                            <TextBlock DockPanel.Dock="Left" Text="Rule Details" 
+                                      FontSize="14" FontWeight="SemiBold"
+                                      VerticalAlignment="Center"/>
                             
-                            <!-- Dynamic Title -->
-                            <TextBlock DockPanel.Dock="Left" FontSize="14" FontWeight="SemiBold">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Rule Details"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                                <Setter Property="Text" Value="Settings"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                                <Setter Property="Text" Value="Logs"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                                <Setter Property="Text" Value="Help"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                            
-                            <!-- Rule Actions (only visible in RuleEditor view) -->
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                <StackPanel.Style>
-                                    <Style TargetType="StackPanel">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </StackPanel.Style>
                                 <Button Style="{StaticResource MaterialDesignIconButton}"
                                        ToolTip="Toggle Enable/Disable (Space)"
                                        Command="{Binding ToggleRuleCommand}"
+                                       AutomationProperties.Name="Toggle rule"
                                        Margin="2,0">
                                     <materialDesign:PackIcon Kind="Power" Width="18" Height="18"/>
                                 </Button>
                                 <Button Style="{StaticResource MaterialDesignIconButton}"
                                        ToolTip="Delete Rule (Delete)"
                                        Command="{Binding DeleteRuleCommand}"
+                                       AutomationProperties.Name="Delete rule"
                                        Margin="2,0">
                                     <materialDesign:PackIcon Kind="Delete" Width="18" Height="18"/>
                                 </Button>
@@ -347,29 +301,22 @@
                         </DockPanel>
                     </Border>
 
-                    <!-- Content Switcher -->
-                    <Grid Grid.Row="1">
-                        <!-- Rule Editor View -->
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <ScrollViewer.Style>
-                                <Style TargetType="ScrollViewer">
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </ScrollViewer.Style>
-                            <Grid Margin="12">
-                                <!-- Show message when no rule is selected -->
-                                <TextBlock Text="Select a rule from the list to view and edit details."
+                    <!-- Save Button -->
+                    <Border DockPanel.Dock="Bottom" 
+                           BorderBrush="{DynamicResource MaterialDesignDivider}" 
+                           BorderThickness="0,1,0,0" Padding="12,8">
+                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                               Content="_Save Rule"
+                               Command="{Binding SaveRuleCommand}"
+                               AutomationProperties.Name="Save rule"
+                               HorizontalAlignment="Right"/>
+                    </Border>
+
+                    <!-- Rule Editor Content -->
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <Grid Margin="12">
+                            <!-- No rule selected message -->
+                            <TextBlock Text="Select a rule from the list, or press Ctrl+N to create a new one."
                                       Opacity="0.6"
                                       FontSize="14"
                                       HorizontalAlignment="Center"
@@ -387,7 +334,7 @@
                                 </TextBlock.Style>
                             </TextBlock>
 
-                            <!-- Rule Editor (shown when rule is selected) -->
+                            <!-- Rule Editor -->
                             <StackPanel DataContext="{Binding SelectedRule}">
                                 <StackPanel.Style>
                                     <Style TargetType="StackPanel">
@@ -404,6 +351,7 @@
                                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                         Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
                                         FontSize="13"
+                                        AutomationProperties.Name="Rule name"
                                         Margin="0,0,0,8"/>
 
                                 <TextBox materialDesign:HintAssist.Hint="Description (Optional)"
@@ -414,9 +362,10 @@
                                         TextWrapping="Wrap"
                                         MinLines="1"
                                         MaxLines="2"
+                                        AutomationProperties.Name="Rule description"
                                         Margin="0,0,0,8"/>
 
-                                <CheckBox Content="Enabled"
+                                <CheckBox Content="_Enabled"
                                          IsChecked="{Binding IsEnabled}"
                                          Style="{StaticResource MaterialDesignCheckBox}"
                                          Margin="0,0,0,8"/>
@@ -426,7 +375,7 @@
                                          Style="{StaticResource MaterialDesignCheckBox}"
                                          Margin="0,0,0,12"/>
 
-                                <!-- Tabs for Folders, Conditions, Actions -->
+                                <!-- Tabs -->
                                 <TabControl Style="{StaticResource MaterialDesignTabControl}" Margin="0,8,0,0">
                                     <TabItem Header="Folders">
                                         <Grid Margin="8">
@@ -436,14 +385,21 @@
                                                 <RowDefinition Height="Auto"/>
                                             </Grid.RowDefinitions>
 
-                                            <!-- Header -->
-                                            <TextBlock Grid.Row="0" Text="📁 Monitored Folders"
+                                            <TextBlock Grid.Row="0" Text="Monitored Folders"
                                                       FontSize="13"
                                                       FontWeight="SemiBold"
                                                       Margin="0,0,0,8"/>
 
-                                            <!-- Folder List -->
-                                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                                            <Grid Grid.Row="1">
+                                                <controls:EmptyStateControl
+                                                    IconKind="FolderPlus"
+                                                    Title="No Monitored Folders"
+                                                    Description="This rule doesn't monitor any folders yet. Click Add Folder below to start watching directories."
+                                                    Visibility="{Binding MonitoredFolders.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=Zero}"
+                                                    Margin="0,16"/>
+
+                                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                              Visibility="{Binding MonitoredFolders.Count, Converter={StaticResource CountToVisibilityConverter}}">
                                                 <ItemsControl ItemsSource="{Binding MonitoredFolders}">
                                                     <ItemsControl.ItemTemplate>
                                                         <DataTemplate>
@@ -455,7 +411,6 @@
                                                                         <RowDefinition Height="Auto"/>
                                                                     </Grid.RowDefinitions>
 
-                                                                    <!-- Path Row -->
                                                                     <Grid Grid.Row="0">
                                                                         <Grid.ColumnDefinitions>
                                                                             <ColumnDefinition Width="Auto"/>
@@ -474,6 +429,7 @@
                                                                                 Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                                                                 materialDesign:HintAssist.Hint="Folder Path"
                                                                                 Text="{Binding Path, UpdateSourceTrigger=PropertyChanged}"
+                                                                                AutomationProperties.Name="Folder path"
                                                                                 Margin="0,0,8,0"/>
 
                                                                         <Button Grid.Column="2"
@@ -481,6 +437,7 @@
                                                                                ToolTip="Browse"
                                                                                Click="BrowseFolderButton_Click"
                                                                                Tag="{Binding}"
+                                                                               AutomationProperties.Name="Browse for folder"
                                                                                Margin="0,0,4,0">
                                                                             <materialDesign:PackIcon Kind="FolderOpen" Width="18" Height="18"/>
                                                                         </Button>
@@ -490,12 +447,12 @@
                                                                                ToolTip="Remove Folder"
                                                                                Click="RemoveFolderButton_Click"
                                                                                Tag="{Binding}"
+                                                                               AutomationProperties.Name="Remove folder"
                                                                                Foreground="Red">
                                                                             <materialDesign:PackIcon Kind="Close" Width="18" Height="18"/>
                                                                         </Button>
                                                                     </Grid>
 
-                                                                    <!-- Options Row -->
                                                                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="22,4,0,0">
                                                                         <CheckBox Content="Include Subfolders"
                                                                                  IsChecked="{Binding IncludeSubfolders}"
@@ -504,12 +461,12 @@
                                                                                  Margin="0,0,16,0"/>
                                                                     </StackPanel>
 
-                                                                    <!-- Exclusion Patterns -->
                                                                     <TextBox Grid.Row="2"
                                                                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
                                                                             materialDesign:HintAssist.Hint="Exclusion Patterns (comma-separated, e.g., node_modules, .git)"
                                                                             Text="{Binding ExclusionPatternsText, UpdateSourceTrigger=PropertyChanged}"
                                                                             FontSize="12"
+                                                                            AutomationProperties.Name="Exclusion patterns"
                                                                             Margin="22,4,0,0"/>
                                                                 </Grid>
                                                             </materialDesign:Card>
@@ -518,19 +475,20 @@
                                                 </ItemsControl>
                                             </ScrollViewer>
 
-                                            <!-- Add Button -->
+                                            </Grid>
+
                                             <Button Grid.Row="2"
                                                    Style="{StaticResource MaterialDesignOutlinedButton}"
                                                    Click="AddFolderButton_Click"
+                                                   AutomationProperties.Name="Add folder"
                                                    Margin="0,8,0,0"
                                                    HorizontalAlignment="Left">
                                                 <StackPanel Orientation="Horizontal">
                                                     <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                                    <TextBlock Text="Add Folder" VerticalAlignment="Center" FontSize="12"/>
+                                                    <TextBlock Text="_Add Folder" VerticalAlignment="Center" FontSize="12"/>
                                                 </StackPanel>
                                             </Button>
 
-                                            <!-- Empty State -->
                                             <TextBlock Grid.Row="1"
                                                       Text="No folders added yet. Click 'Add Folder' to start monitoring."
                                                       Opacity="0.6"
@@ -562,94 +520,105 @@
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
+                </DockPanel>
+            </Grid>
 
-                        <!-- Settings View -->
-                        <views:SettingsView DataContext="{Binding DataContext.SettingsViewModel, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <views:SettingsView.Style>
-                                <Style TargetType="views:SettingsView">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Settings">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </views:SettingsView.Style>
-                        </views:SettingsView>
-
-                        <!-- Logs View -->
-                        <views:LogsView DataContext="{Binding DataContext.LogsViewModel, RelativeSource={RelativeSource AncestorType=Window}}">
-                            <views:LogsView.Style>
-                                <Style TargetType="views:LogsView">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Logs">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </views:LogsView.Style>
-                        </views:LogsView>
-
-                        <!-- Help View -->
-                        <views:HelpView>
-                            <views:HelpView.Style>
-                                <Style TargetType="views:HelpView">
-                                    <Setter Property="Visibility" Value="Collapsed"/>
-                                    <Style.Triggers>
-                                        <DataTrigger Binding="{Binding DataContext.CurrentView, RelativeSource={RelativeSource AncestorType=Window}}" Value="Help">
-                                            <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </views:HelpView.Style>
-                        </views:HelpView>
-                    </Grid>
-
-                    <!-- Save Button (only for Rule Editor) -->
-                    <Border Grid.Row="2" BorderBrush="{DynamicResource MaterialDesignDivider}" 
-                           BorderThickness="0,1,0,0" Padding="12,8">
-                        <Border.Style>
-                            <Style TargetType="Border">
+            <!-- Dashboard View (Operational Overview) -->
+            <views:DashboardView DataContext="{Binding DashboardViewModel}">
+                <views:DashboardView.Style>
+                    <Style TargetType="views:DashboardView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Dashboard">
                                 <Setter Property="Visibility" Value="Visible"/>
-                            <Style.Triggers>
-                                    <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                    <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </Border.Style>
-                        <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                               Content="Save Rule"
-                               Command="{Binding SaveRuleCommand}"
-                               HorizontalAlignment="Right"/>
-                    </Border>
-                </Grid>
-            </materialDesign:Card>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:DashboardView.Style>
+            </views:DashboardView>
+
+            <!-- Settings View (replaces entire content area) -->
+            <views:SettingsView DataContext="{Binding SettingsViewModel}">
+                <views:SettingsView.Style>
+                    <Style TargetType="views:SettingsView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:SettingsView.Style>
+            </views:SettingsView>
+
+            <!-- Logs View -->
+            <views:LogsView DataContext="{Binding LogsViewModel}">
+                <views:LogsView.Style>
+                    <Style TargetType="views:LogsView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:LogsView.Style>
+            </views:LogsView>
+
+            <!-- History View -->
+            <views:HistoryView DataContext="{Binding HistoryViewModel}">
+                <views:HistoryView.Style>
+                    <Style TargetType="views:HistoryView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="History">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:HistoryView.Style>
+            </views:HistoryView>
+
+            <!-- Help View -->
+            <views:HelpView>
+                <views:HelpView.Style>
+                    <Style TargetType="views:HelpView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </views:HelpView.Style>
+            </views:HelpView>
         </Grid>
 
         <!-- Status Bar -->
-        <materialDesign:ColorZone Grid.Row="2" Mode="PrimaryLight" Padding="6,4">
-            <DockPanel>
-                <materialDesign:PackIcon Kind="Information" 
-                                        VerticalAlignment="Center" 
-                                        Width="14" Height="14"
-                                        Margin="6,0"
-                                        DockPanel.Dock="Left"/>
-                <TextBlock Text="{Binding StatusMessage}" 
-                          VerticalAlignment="Center"
-                          FontSize="12"
-                          DockPanel.Dock="Left"/>
+        <StatusBar Grid.Row="2">
+            <StatusBarItem>
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Information" 
+                                            VerticalAlignment="Center" 
+                                            Width="14" Height="14"
+                                            Margin="0,0,6,0"/>
+                    <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center"/>
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
+                <Border Background="{Binding StateBadgeBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="{Binding StateBadgeIcon}" Width="14" Height="14"
+                                                 Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding StateBadgeText}" FontSize="10" FontWeight="Bold"
+                                   Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
                 <ProgressBar IsIndeterminate="True" 
                             Width="100" 
-                            Height="4"
-                            HorizontalAlignment="Right">
+                            Height="4">
                     <ProgressBar.Style>
                         <Style TargetType="ProgressBar" BasedOn="{StaticResource {x:Type ProgressBar}}">
                             <Setter Property="Visibility" Value="Collapsed"/>
@@ -661,7 +630,7 @@
                         </Style>
                     </ProgressBar.Style>
                 </ProgressBar>
-            </DockPanel>
-        </materialDesign:ColorZone>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

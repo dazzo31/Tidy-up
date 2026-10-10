@@ -3,6 +3,7 @@ using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Models;
+using TidyUp.Services;
 using TidyUp.ViewModels;
 
 namespace TidyUp;
@@ -14,6 +15,8 @@ public partial class App : Application
 {
     private IServiceProvider? _serviceProvider;
     private TaskbarIcon? _trayIcon;
+    private ITrayIconService? _trayIconService;
+    private IToastNotificationService? _toastService;
     private MainWindow? _mainWindow;
     public static AppSettings? AppSettings { get; private set; }
 
@@ -49,12 +52,18 @@ public partial class App : Application
             AppSettings = AppSettings.CreateDefault();
         }
 
-        // Initialize tray icon
+        // Initialize tray icon and notification service
+        _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
+        _toastService = _serviceProvider.GetRequiredService<IToastNotificationService>();
+
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
         if (_trayIcon != null)
         {
-            // Create a simple icon from system resources
-            _trayIcon.Icon = SystemIcons.Application;
+            _trayIconService.Initialize(_trayIcon);
+            if (_toastService is ToastNotificationService concreteToast)
+            {
+                concreteToast.SetTrayIconService(_trayIconService);
+            }
         }
 
         // Show main window
@@ -115,17 +124,28 @@ public partial class App : Application
         }
     }
 
-    private void PauseMonitoring_Click(object sender, RoutedEventArgs e)
+    private async void PauseMonitoring_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Implement pause monitoring logic
-        // This would need to be wired to the MonitoringService
-        _trayIcon?.ShowBalloonTip("TidyUp", "Monitoring paused", BalloonIcon.Info);
+        if (_trayIconService != null)
+        {
+            await _trayIconService.PauseMonitoringAsync();
+        }
+        else
+        {
+            _trayIcon?.ShowBalloonTip("TidyUp", "Monitoring paused", BalloonIcon.Info);
+        }
     }
 
-    private void ResumeMonitoring_Click(object sender, RoutedEventArgs e)
+    private async void ResumeMonitoring_Click(object sender, RoutedEventArgs e)
     {
-        // TODO: Implement resume monitoring logic
-        _trayIcon?.ShowBalloonTip("TidyUp", "Monitoring resumed", BalloonIcon.Info);
+        if (_trayIconService != null)
+        {
+            await _trayIconService.ResumeMonitoringAsync();
+        }
+        else
+        {
+            _trayIcon?.ShowBalloonTip("TidyUp", "Monitoring resumed", BalloonIcon.Info);
+        }
     }
 
     private void ViewLogs_Click(object sender, RoutedEventArgs e)

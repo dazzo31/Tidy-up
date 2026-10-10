@@ -1,0 +1,255 @@
+<Window x:Class="TidyUp.Views.RuleEditor.RuleWizardView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:stages="clr-namespace:TidyUp.Views.RuleEditor.Stages"
+        xmlns:viewmodels="clr-namespace:TidyUp.ViewModels.RuleEditor"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance Type=viewmodels:RuleWizardViewModel}"
+        Title="Guided Rule Creation Wizard" 
+        Height="780" Width="1080"
+        MinHeight="650" MinWidth="880"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{materialDesign:MaterialDesignFont}"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="AutoFix" Width="28" Height="28" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="Rule Creation Wizard" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="{Binding StageTitle}" FontSize="12" Opacity="0.8"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <Button Grid.Column="1" Command="{Binding CancelCommand}" Style="{StaticResource MaterialDesignIconButton}" Foreground="White">
+                    <materialDesign:PackIcon Kind="Close"/>
+                </Button>
+            </Grid>
+        </materialDesign:ColorZone>
+
+        <!-- Stepper Progress Bar -->
+        <Border Grid.Row="1" Background="{DynamicResource MaterialDesignToolBarBackground}" Padding="20,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Step 1 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,6,0">
+                        <TextBlock Text="1" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Folders" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <materialDesign:PackIcon Grid.Column="1" Kind="ChevronRight" VerticalAlignment="Center" Opacity="0.4"/>
+
+                <!-- Step 2 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="LightGray"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Conditions">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Actions">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Review">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="2" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Conditions" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <materialDesign:PackIcon Grid.Column="3" Kind="ChevronRight" VerticalAlignment="Center" Opacity="0.4"/>
+
+                <!-- Step 3 -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="LightGray"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Actions">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Review">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="3" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Actions" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <materialDesign:PackIcon Grid.Column="5" Kind="ChevronRight" VerticalAlignment="Center" Opacity="0.4"/>
+
+                <!-- Step 4 -->
+                <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="LightGray"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding CurrentStage}" Value="Review">
+                                        <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <TextBlock Text="4" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Review &amp; Dry Run" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Current Stage Host -->
+        <Grid Grid.Row="2">
+            <!-- Stage 1 View -->
+            <stages:Stage1FoldersView>
+                <stages:Stage1FoldersView.Style>
+                    <Style TargetType="stages:Stage1FoldersView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStage}" Value="Folders">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </stages:Stage1FoldersView.Style>
+            </stages:Stage1FoldersView>
+
+            <!-- Stage 2 View -->
+            <stages:Stage2ConditionsView>
+                <stages:Stage2ConditionsView.Style>
+                    <Style TargetType="stages:Stage2ConditionsView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStage}" Value="Conditions">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </stages:Stage2ConditionsView.Style>
+            </stages:Stage2ConditionsView>
+
+            <!-- Stage 3 View -->
+            <stages:Stage3ActionsView>
+                <stages:Stage3ActionsView.Style>
+                    <Style TargetType="stages:Stage3ActionsView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStage}" Value="Actions">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </stages:Stage3ActionsView.Style>
+            </stages:Stage3ActionsView>
+
+            <!-- Stage 4 View -->
+            <stages:Stage4ReviewView>
+                <stages:Stage4ReviewView.Style>
+                    <Style TargetType="stages:Stage4ReviewView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentStage}" Value="Review">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </stages:Stage4ReviewView.Style>
+            </stages:Stage4ReviewView>
+        </Grid>
+
+        <!-- Bottom Navigation Bar -->
+        <Border Grid.Row="3" Background="{DynamicResource MaterialDesignToolBarBackground}" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Command="{Binding CancelCommand}"
+                        IsCancel="True"
+                        Style="{StaticResource MaterialDesignOutlinedButton}">
+                    <TextBlock Text="_Cancel"/>
+                </Button>
+
+                <!-- Error Message -->
+                <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="SemiBold"
+                           VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis"/>
+
+                <!-- Previous Button -->
+                <Button Grid.Column="2" Command="{Binding PreviousStageCommand}"
+                        IsEnabled="{Binding CanGoPrevious}"
+                        Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="ArrowLeft" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="_Back" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Next Button -->
+                <Button Grid.Column="3" Command="{Binding NextStageCommand}"
+                        Visibility="{Binding IsReviewStage, Converter={StaticResource InverseBooleanConverter}}"
+                        Style="{StaticResource MaterialDesignRaisedButton}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="_Next" VerticalAlignment="Center"/>
+                        <materialDesign:PackIcon Kind="ArrowRight" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Create Rule Button (Final Stage) -->
+                <Button Grid.Column="4" Command="{Binding SaveRuleCommand}"
+                        Visibility="{Binding IsReviewStage, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="#2E7D32">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="CheckBold" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="_Create Rule (Disabled)" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
+

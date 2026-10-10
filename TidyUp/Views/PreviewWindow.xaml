@@ -1,0 +1,314 @@
+<Window x:Class="TidyUp.Views.PreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:controls="clr-namespace:TidyUp.Controls"
+        mc:Ignorable="d"
+        Title="Impact Preview - Side-by-Side Execution Plan"
+        Height="780" Width="1240"
+        MinHeight="600" MinWidth="950"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{materialDesign:MaterialDesignFont}"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        WindowStartupLocation="CenterScreen">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- 0: Header -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Summary Statistics Cards -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2: Filter Controls Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3: Main Side-by-Side DataGrid -->
+            <RowDefinition Height="*"/>
+            <!-- 4: Execution Progress & Action Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 0: Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16,12">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" Grid.Column="0">
+                    <materialDesign:PackIcon Kind="Compare" Width="28" Height="28" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <StackPanel>
+                        <TextBlock Text="Side-by-Side Impact Preview" FontSize="20" FontWeight="Bold"/>
+                        <TextBlock Text="Inspect and approve planned file transformations before modifying disks" FontSize="12" Opacity="0.85"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="ShieldCheck" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                    <TextBlock Text="Read-Only Dry-Run Mode" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </materialDesign:ColorZone>
+
+        <!-- 1: Summary Statistics Cards -->
+        <Grid Grid.Row="1" Margin="16,12,16,6">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Scanned Files -->
+            <materialDesign:Card Grid.Column="0" Padding="12" Margin="0,0,8,0">
+                <StackPanel>
+                    <TextBlock Text="SCANNED FILES" FontSize="10" FontWeight="Bold" Opacity="0.6"/>
+                    <TextBlock Text="{Binding TotalScannedFiles}" FontSize="22" FontWeight="Bold"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Matched Files -->
+            <materialDesign:Card Grid.Column="1" Padding="12" Margin="0,0,8,0" Background="#E8F5E9">
+                <StackPanel>
+                    <TextBlock Text="MATCHED FOR ACTION" FontSize="10" FontWeight="Bold" Foreground="#2E7D32"/>
+                    <TextBlock Text="{Binding TotalMatchedFiles}" FontSize="22" FontWeight="Bold" Foreground="#2E7D32"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Approved for Execution -->
+            <materialDesign:Card Grid.Column="2" Padding="12" Margin="0,0,8,0" Background="#E3F2FD">
+                <StackPanel>
+                    <TextBlock Text="APPROVED ACTIONS" FontSize="10" FontWeight="Bold" Foreground="#1565C0"/>
+                    <TextBlock Text="{Binding ApprovedCount}" FontSize="22" FontWeight="Bold" Foreground="#1565C0"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Conflicts Card -->
+            <materialDesign:Card Grid.Column="3" Padding="12" Background="#FFF3E0">
+                <StackPanel>
+                    <TextBlock Text="CONFLICTS DETECTED" FontSize="10" FontWeight="Bold" Foreground="#E65100"/>
+                    <TextBlock Text="{Binding ConflictCount}" FontSize="22" FontWeight="Bold" Foreground="#E65100"/>
+                </StackPanel>
+            </materialDesign:Card>
+        </Grid>
+
+        <!-- 2: Filter Toolbar -->
+        <materialDesign:Card Grid.Row="2" Margin="16,6,16,6" Padding="12,8">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Search Box -->
+                <TextBox Width="200" Margin="0,0,16,0"
+                         materialDesign:HintAssist.Hint="Search paths..."
+                         materialDesign:HintAssist.IsFloating="False"
+                         materialDesign:TextFieldAssist.HasClearButton="True"
+                         Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                         VerticalAlignment="Center"/>
+
+                <!-- Rule Filter -->
+                <ComboBox Width="150" Margin="0,0,16,0"
+                          ItemsSource="{Binding RuleFilterOptions}"
+                          SelectedItem="{Binding SelectedRuleFilter}"
+                          materialDesign:HintAssist.Hint="Rule"
+                          VerticalAlignment="Center"/>
+
+                <!-- Action Type Filter -->
+                <ComboBox Width="130" Margin="0,0,16,0"
+                          ItemsSource="{Binding ActionTypeFilterOptions}"
+                          SelectedItem="{Binding SelectedActionTypeFilter}"
+                          materialDesign:HintAssist.Hint="Action Type"
+                          VerticalAlignment="Center"/>
+
+                <!-- Extension Filter -->
+                <ComboBox Width="130" Margin="0,0,16,0"
+                          ItemsSource="{Binding ExtensionFilterOptions}"
+                          SelectedItem="{Binding SelectedExtensionFilter}"
+                          materialDesign:HintAssist.Hint="Extension"
+                          VerticalAlignment="Center"/>
+
+                <!-- Conflicts Only Filter -->
+                <CheckBox Content="Show Conflicts Only"
+                          IsChecked="{Binding ShowConflictsOnly}"
+                          Margin="0,0,16,0"
+                          VerticalAlignment="Center"/>
+
+                <!-- Quick Selection Controls -->
+                <Button Content="Approve All"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Click="ApproveAll_Click"
+                        Margin="0,0,6,0" Height="28" Padding="10,0"/>
+
+                <Button Content="Deselect All"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Click="DeselectAll_Click"
+                        Margin="0,0,6,0" Height="28" Padding="10,0"/>
+            </WrapPanel>
+        </materialDesign:Card>
+
+        <!-- 3: Main Side-by-Side DataGrid -->
+        <Grid Grid.Row="3" Margin="16,6,16,6">
+            <controls:EmptyStateControl
+                IconKind="FileQuestion"
+                Title="No Matching Files Found"
+                Description="The rule conditions did not match any files in the monitored folders, or all files were excluded by active filters."
+                Visibility="{Binding FilteredItems.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=Zero}"/>
+
+            <DataGrid Visibility="{Binding FilteredItems.Count, Converter={StaticResource CountToVisibilityConverter}}"
+                      ItemsSource="{Binding FilteredItems}"
+                  SelectedItem="{Binding SelectedItem}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  IsReadOnly="False"
+                  GridLinesVisibility="Horizontal"
+                  HeadersVisibility="Column"
+                  SelectionMode="Single"
+                  BorderThickness="1"
+                  BorderBrush="{DynamicResource MaterialDesignDivider}">
+
+            <DataGrid.Columns>
+                <!-- Selection Checkbox -->
+                <DataGridCheckBoxColumn Header="Apply"
+                                        Binding="{Binding IsApproved, UpdateSourceTrigger=PropertyChanged}"
+                                        Width="55"/>
+
+                <!-- Status Badge -->
+                <DataGridTemplateColumn Header="Status" Width="90" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding StatusBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding StatusBadgeText}"
+                                           Foreground="{Binding StatusBadgeForeground}"
+                                           FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Action Type Badge -->
+                <DataGridTemplateColumn Header="Action" Width="95" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Background="{Binding ActionBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                                <TextBlock Text="{Binding ActionBadgeText}"
+                                           Foreground="{Binding ActionBadgeForeground}"
+                                           FontSize="10" FontWeight="Bold"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Original Path -->
+                <DataGridTextColumn Header="Original Path"
+                                    Binding="{Binding SourcePath}"
+                                    Width="*" MinWidth="220"
+                                    IsReadOnly="True"/>
+
+                <!-- Destination / Target Path -->
+                <DataGridTextColumn Header="Proposed Target Path"
+                                    Binding="{Binding TargetPath, TargetNullValue='(none / deleted)'}"
+                                    Width="*" MinWidth="220"
+                                    IsReadOnly="True"/>
+
+                <!-- Rule Matched -->
+                <DataGridTextColumn Header="Rule"
+                                    Binding="{Binding RuleName}"
+                                    Width="120"
+                                    IsReadOnly="True"/>
+
+                <!-- Conflict Details / Status Message -->
+                <DataGridTemplateColumn Header="Conflict / Details" Width="180" IsReadOnly="True">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <materialDesign:PackIcon Kind="Alert" Foreground="#E65100" Width="14" Height="14"
+                                                         VerticalAlignment="Center" Margin="0,0,4,0"
+                                                         Visibility="{Binding HasConflict, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <TextBlock Text="{Binding ConflictDescription, TargetNullValue='No conflicts'}"
+                                           FontSize="11" TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding HasConflict}" Value="True">
+                                                    <Setter Property="Foreground" Value="#E65100"/>
+                                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+            </DataGrid.Columns>
+        </DataGrid>
+        </Grid>
+
+        <!-- 4: Bottom Action Bar & Progress -->
+        <materialDesign:Card Grid.Row="4" Margin="16,6,16,12" Padding="16,10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Progress Bar when Executing -->
+                <ProgressBar Grid.Row="0" Margin="0,0,0,8"
+                             Value="{Binding ExecutionProgress}"
+                             Maximum="100" Height="4"
+                             Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Controls Dock -->
+                <DockPanel Grid.Row="1" LastChildFill="False">
+                    <!-- Status Message -->
+                    <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
+                        <materialDesign:PackIcon Kind="InformationOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.7"/>
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="12" VerticalAlignment="Center" FontWeight="Medium"/>
+                    </StackPanel>
+
+                    <!-- Stop / Cancel Button when executing -->
+                    <Button DockPanel.Dock="Right"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#C62828" BorderBrush="#C62828"
+                            Command="{Binding CancelExecutionCommand}"
+                            Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Height="36" Padding="18,0" Margin="0,0,12,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Stop" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="_Stop" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Apply Changes Button -->
+                    <Button DockPanel.Dock="Right"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Background="#2E7D32" BorderBrush="#2E7D32"
+                            Command="{Binding ApplyChangesCommand}"
+                            Height="36" Padding="18,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="CheckBold" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="_Apply Changes" FontWeight="Bold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Close Button -->
+                    <Button DockPanel.Dock="Right"
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Content="_Close"
+                            IsCancel="True"
+                            Click="CloseButton_Click"
+                            Margin="0,0,12,0" Height="36"/>
+
+                    <!-- Warning if conflicts prevent applying -->
+                    <Border DockPanel.Dock="Right" Margin="0,0,16,0" Padding="8,4" CornerRadius="4" Background="#FFF3E0"
+                            Visibility="{Binding ConflictCount, Converter={StaticResource StringToVisibilityConverter}}">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="#E65100" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="Conflicts must be deselected to apply" FontSize="11" Foreground="#E65100" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </DockPanel>
+            </Grid>
+        </materialDesign:Card>
+    </Grid>
+</Window>

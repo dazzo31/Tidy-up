@@ -15,6 +15,9 @@ namespace TidyUp.Models.Domain;
 [JsonDerivedType(typeof(FileExtensionCondition), "fileExtension")]
 [JsonDerivedType(typeof(FileSizeCondition), "fileSize")]
 [JsonDerivedType(typeof(FileDateCondition), "fileDate")]
+[JsonDerivedType(typeof(FileContentCondition), "fileContent")]
+[JsonDerivedType(typeof(ImageMetadataCondition), "imageMetadata")]
+[JsonDerivedType(typeof(MediaMetadataCondition), "mediaMetadata")]
 public abstract partial class Condition : ObservableObject
 {
     /// <summary>
@@ -207,3 +210,122 @@ public partial class FileDateCondition : Condition
         };
     }
 }
+
+/// <summary>
+/// Condition that checks text/content inside a file using safe streaming.
+/// </summary>
+public partial class FileContentCondition : Condition
+{
+    [ObservableProperty]
+    private string _searchText = string.Empty;
+
+    [ObservableProperty]
+    private bool _isRegex;
+
+    [ObservableProperty]
+    private bool _caseSensitive;
+
+    [ObservableProperty]
+    private int _maxScanBytes = 1_048_576; // 1 MB default limit to prevent excessive memory/IO
+
+    public override bool Evaluate(FileInfo fileInfo)
+    {
+        var evaluator = new TidyUp.Services.Conditions.ContentConditionEvaluator();
+        return evaluator.Evaluate(fileInfo.FullName, SearchText, IsRegex, CaseSensitive, MaxScanBytes);
+    }
+}
+
+/// <summary>
+/// Condition that checks image EXIF metadata and dimensions without full decode.
+/// </summary>
+public partial class ImageMetadataCondition : Condition
+{
+    [ObservableProperty]
+    private DateTime? _dateTakenBefore;
+
+    [ObservableProperty]
+    private DateTime? _dateTakenAfter;
+
+    [ObservableProperty]
+    private int? _minWidth;
+
+    [ObservableProperty]
+    private int? _minHeight;
+
+    [ObservableProperty]
+    private string? _cameraModel;
+
+    public override bool Evaluate(FileInfo fileInfo)
+    {
+        var extractor = new TidyUp.Services.Conditions.MetadataExtractor();
+        var meta = extractor.ExtractImageMetadata(fileInfo.FullName);
+
+        if (MinWidth.HasValue && (meta.Width == null || meta.Width < MinWidth.Value))
+            return false;
+
+        if (MinHeight.HasValue && (meta.Height == null || meta.Height < MinHeight.Value))
+            return false;
+
+        if (DateTakenBefore.HasValue && (meta.DateTaken == null || meta.DateTaken >= DateTakenBefore.Value))
+            return false;
+
+        if (DateTakenAfter.HasValue && (meta.DateTaken == null || meta.DateTaken <= DateTakenAfter.Value))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(CameraModel))
+        {
+            if (string.IsNullOrWhiteSpace(meta.CameraModel) ||
+                !meta.CameraModel.Contains(CameraModel, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
+    }
+}
+
+/// <summary>
+/// Condition that checks audio/video metadata (duration, artist, album).
+/// </summary>
+public partial class MediaMetadataCondition : Condition
+{
+    [ObservableProperty]
+    private TimeSpan? _minDuration;
+
+    [ObservableProperty]
+    private TimeSpan? _maxDuration;
+
+    [ObservableProperty]
+    private string? _artist;
+
+    [ObservableProperty]
+    private string? _album;
+
+    public override bool Evaluate(FileInfo fileInfo)
+    {
+        var extractor = new TidyUp.Services.Conditions.MetadataExtractor();
+        var meta = extractor.ExtractMediaMetadata(fileInfo.FullName);
+
+        if (MinDuration.HasValue && (meta.Duration == null || meta.Duration < MinDuration.Value))
+            return false;
+
+        if (MaxDuration.HasValue && (meta.Duration == null || meta.Duration > MaxDuration.Value))
+            return false;
+
+        if (!string.IsNullOrWhiteSpace(Artist))
+        {
+            if (string.IsNullOrWhiteSpace(meta.Artist) ||
+                !meta.Artist.Contains(Artist, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Album))
+        {
+            if (string.IsNullOrWhiteSpace(meta.Album) ||
+                !meta.Album.Contains(Album, StringComparison.OrdinalIgnoreCase))
+                return false;
+        }
+
+        return true;
+    }
+}
+

@@ -48,12 +48,31 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty]
     private bool _showErrorNotifications = true;
 
+    [ObservableProperty]
+    private bool _quietMode;
+
     // UI Settings
     [ObservableProperty]
     private bool _showFirstRunWizard = true;
 
     [ObservableProperty]
     private string _theme = "Dark";
+
+    // Window Geometry Persistence (TASK-GUI-08)
+    [ObservableProperty]
+    private double? _windowWidth;
+
+    [ObservableProperty]
+    private double? _windowHeight;
+
+    [ObservableProperty]
+    private double? _windowTop;
+
+    [ObservableProperty]
+    private double? _windowLeft;
+
+    [ObservableProperty]
+    private string _windowState = "Normal";
 
     /// <summary>
     /// Creates a new instance with default values

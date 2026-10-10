@@ -14,13 +14,14 @@ public interface IActionExecutor
     /// <param name="actions">List of actions to execute in order.</param>
     /// <param name="fileInfo">The file to operate on.</param>
     /// <param name="counter">Optional counter for variable resolution.</param>
+    /// <param name="batchId">Optional batch identifier for durable journal grouping.</param>
     /// <returns>List of action results.</returns>
-    Task<List<ActionResult>> ExecuteActionsAsync(List<FileAction> actions, FileInfo fileInfo, int? counter = null);
+    Task<List<ActionResult>> ExecuteActionsAsync(List<FileAction> actions, FileInfo fileInfo, int? counter = null, Guid? batchId = null);
 
     /// <summary>
     /// Executes a single action on a file.
     /// </summary>
-    Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter = null);
+    Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter = null, Guid? batchId = null);
 
     /// <summary>
     /// Previews what actions would do without executing them (dry run).

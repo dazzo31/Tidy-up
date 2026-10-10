@@ -938,3 +938,58 @@ Three-tab interface:
   - Community feedback and bug reports
   - Documentation refinement
 - **Release**: After successful beta with no critical bugs
+
+## Developer Appendix: Using Ollama API from VS Code
+
+This appendix shows two simple ways to use the local Ollama API in VS Code.
+
+### 1) Install and run Ollama locally
+- Download/install: https://ollama.com/download
+- Pull a model and verify the service:
+```powershell
+ollama pull llama3.1
+curl http://localhost:11434/api/tags
+```
+
+### 2) Option A — Continue extension (chat + code)
+- In VS Code, install: “Continue - Code Assistant” (id: Continue.continue).
+- Command Palette → “Continue: Open Config”, then add a model entry:
+```json
+{
+  "models": [
+    {
+      "title": "Llama 3.1 (Ollama)",
+      "provider": "ollama",
+      "model": "llama3.1",
+      "completionOptions": { "temperature": 0.2 }
+    }
+  ]
+}
+```
+- Use the Continue side panel (chat, inline edits, autocomplete).
+
+### 3) Option B — REST Client inside VS Code (direct API calls)
+- Install the “REST Client” extension.
+- Create a file (e.g., requests.http) and add:
+```http
+POST http://localhost:11434/api/chat
+Content-Type: application/json
+
+{
+  "model": "llama3.1",
+  "messages": [
+    { "role": "user", "content": "Write a C# method to compute SHA-256 of a file." }
+  ],
+  "stream": false
+}
+```
+- Click “Send Request” above the request to execute.
+
+### Notes
+- Ollama also exposes an OpenAI-compatible API at http://localhost:11434/v1 for extensions that let you set a custom OpenAI Base URL; use any non-empty API key if required by the extension.
+- Models must be pulled before use: `ollama pull <model>`.
+
+### Troubleshooting
+- Ensure http://localhost:11434 responds (service running).
+- Allow port 11434 through firewall if blocked.
+- If using WSL/VMs, ensure host-to-guest networking allows localhost access.

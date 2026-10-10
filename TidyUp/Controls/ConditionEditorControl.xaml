@@ -6,6 +6,7 @@
              xmlns:local="clr-namespace:TidyUp.Models.Domain"
              xmlns:enums="clr-namespace:TidyUp.Models.Enums"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:automation="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
@@ -20,16 +21,18 @@
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8">
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="Add Condition"
+                    Content="_Add Condition"
                     Command="{Binding AddConditionCommand}"
+                    automation:AutomationProperties.Name="Add condition"
                     Margin="0,0,8,0">
                 <Button.CommandParameter>
                     <Binding Path="RootCondition"/>
                 </Button.CommandParameter>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="Add Group"
+                    Content="Add _Group"
                     Command="{Binding AddGroupCommand}"
+                    automation:AutomationProperties.Name="Add condition group"
                     Margin="0,0,8,0">
                 <Button.CommandParameter>
                     <Binding Path="RootCondition"/>
@@ -60,6 +63,7 @@
                         <ComboBox Grid.Column="1"
                                  SelectedValuePath="Tag"
                                  SelectedValue="{Binding RootCondition.Operator}"
+                                 AutomationProperties.Name="Match logic"
                                  HorizontalAlignment="Left"
                                  MinWidth="150">
                             <ComboBoxItem Content="All of the following (AND)" Tag="And"/>
@@ -91,15 +95,18 @@
                                     <ComboBox Grid.Column="1" 
                                              SelectedItem="{Binding Operator}"
                                              ItemsSource="{Binding Source={x:Type enums:StringOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                             AutomationProperties.Name="File name operator"
                                              Margin="0,0,8,0"/>
                                     <TextBox Grid.Column="2" 
                                             Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                             materialDesign:HintAssist.Hint="Value"
+                                            AutomationProperties.Name="File name value"
                                             Margin="0,0,8,0"/>
                                     <Button Grid.Column="3"
                                            Style="{StaticResource MaterialDesignIconButton}"
                                            Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                            CommandParameter="{Binding}"
+                                           AutomationProperties.Name="Remove condition"
                                            ToolTip="Remove">
                                         <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
                                     </Button>
@@ -126,15 +133,18 @@
                                     <ComboBox Grid.Column="1" 
                                              SelectedItem="{Binding Operator}"
                                              ItemsSource="{Binding Source={x:Type enums:StringOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                             AutomationProperties.Name="Extension operator"
                                              Margin="0,0,8,0"/>
                                     <TextBox Grid.Column="2" 
                                             Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                             materialDesign:HintAssist.Hint="e.g., pdf, jpg, docx"
+                                            AutomationProperties.Name="Extension value"
                                             Margin="0,0,8,0"/>
                                     <Button Grid.Column="3"
                                            Style="{StaticResource MaterialDesignIconButton}"
                                            Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                            CommandParameter="{Binding}"
+                                           AutomationProperties.Name="Remove condition"
                                            ToolTip="Remove">
                                         <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
                                     </Button>
@@ -160,16 +170,19 @@
                                     <TextBlock Grid.Column="0" Text="File Size" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                     <ComboBox Grid.Column="1" 
                                              SelectedItem="{Binding Operator}"
-                                             ItemsSource="{Binding Source={x:Type local:FileSizeCondition+SizeOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                             ItemsSource="{Binding Source={x:Type local:FileSizeCondition}, Path=SizeOperator, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                             AutomationProperties.Name="Size operator"
                                              Margin="0,0,8,0"/>
                                     <TextBox Grid.Column="2" 
                                             Text="{Binding Value, UpdateSourceTrigger=PropertyChanged}"
                                             materialDesign:HintAssist.Hint="Size in bytes (e.g., 1024000 = 1MB)"
+                                            AutomationProperties.Name="Size value"
                                             Margin="0,0,8,0"/>
                                     <Button Grid.Column="3"
                                            Style="{StaticResource MaterialDesignIconButton}"
                                            Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                            CommandParameter="{Binding}"
+                                           AutomationProperties.Name="Remove condition"
                                            ToolTip="Remove">
                                         <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
                                     </Button>
@@ -200,16 +213,19 @@
                                         <TextBlock Grid.Column="0" Text="File Date" VerticalAlignment="Center" FontWeight="SemiBold"/>
                                         <ComboBox Grid.Column="1" 
                                                  SelectedItem="{Binding Type}"
-                                                 ItemsSource="{Binding Source={x:Type local:FileDateCondition+DateType}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                                 ItemsSource="{Binding Source={x:Type local:FileDateCondition}, Path=DateType, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                                 AutomationProperties.Name="Date type"
                                                  Margin="0,0,8,0"/>
                                         <ComboBox Grid.Column="2" 
                                                  SelectedItem="{Binding Operator}"
-                                                 ItemsSource="{Binding Source={x:Type local:FileDateCondition+DateOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                                 ItemsSource="{Binding Source={x:Type local:FileDateCondition}, Path=DateOperator, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                                 AutomationProperties.Name="Date operator"
                                                  Margin="0,0,8,0"/>
                                         <Button Grid.Column="3"
                                                Style="{StaticResource MaterialDesignIconButton}"
                                                Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                CommandParameter="{Binding}"
+                                               AutomationProperties.Name="Remove condition"
                                                ToolTip="Remove">
                                             <materialDesign:PackIcon Kind="Close" Width="20" Height="20"/>
                                         </Button>
@@ -217,9 +233,11 @@
                                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="120,8,0,0">
                                         <DatePicker SelectedDate="{Binding Value}"
                                                    materialDesign:HintAssist.Hint="Date"
+                                                   AutomationProperties.Name="Date value"
                                                    MinWidth="150"/>
                                         <TextBox Text="{Binding DaysOld, UpdateSourceTrigger=PropertyChanged}"
                                                 materialDesign:HintAssist.Hint="Days (for OlderThanDays)"
+                                                AutomationProperties.Name="Days old"
                                                 MinWidth="150"
                                                 Margin="8,0,0,0"/>
                                     </StackPanel>
@@ -249,11 +267,13 @@
         </ScrollViewer>
 
         <!-- Info -->
-        <TextBlock Grid.Row="2" 
-                  Text="💡 Conditions determine which files match this rule"
-                  Opacity="0.7"
-                  FontSize="11"
-                  Margin="16,8"/>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="16,8">
+            <materialDesign:PackIcon Kind="LightbulbOnOutline" Width="14" Height="14" 
+                                    VerticalAlignment="Center" Margin="0,0,4,0" Opacity="0.7"/>
+            <TextBlock Text="Conditions determine which files match this rule"
+                      Opacity="0.7"
+                      FontSize="11"/>
+        </StackPanel>
 
         <!-- GridSplitter -->
         <GridSplitter Grid.Row="3" 
@@ -273,7 +293,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Preview Header -->
                 <Border Grid.Row="0" 
                        Background="{DynamicResource MaterialDesignDivider}" 
                        Padding="12,8">
@@ -296,6 +315,7 @@
                         <Button DockPanel.Dock="Right"
                                Style="{StaticResource MaterialDesignRaisedButton}"
                                Command="{Binding RefreshPreviewCommand}"
+                               AutomationProperties.Name="Refresh preview"
                                Height="28"
                                Padding="12,0">
                             <StackPanel Orientation="Horizontal">
@@ -311,7 +331,6 @@
                     </DockPanel>
                 </Border>
 
-                <!-- Preview DataGrid -->
                 <DataGrid Grid.Row="1"
                          ItemsSource="{Binding PreviewFiles}"
                          AutoGenerateColumns="False"
@@ -332,7 +351,7 @@
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="✓" Width="40">
+                        <DataGridTemplateColumn Header="Match" Width="50">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <materialDesign:PackIcon Width="18" Height="18" 
@@ -371,8 +390,8 @@
                                            Width="80"/>
 
                         <DataGridTextColumn Header="Modified" 
-                                           Binding="{Binding ModifiedDate, StringFormat='{}{0:MM/dd/yyyy}'}"
-                                           Width="100"/>
+                   Binding="{Binding ModifiedDate, StringFormat={}{0:MM/dd/yyyy}}"
+                   Width="100"/>
                     </DataGrid.Columns>
                 </DataGrid>
 

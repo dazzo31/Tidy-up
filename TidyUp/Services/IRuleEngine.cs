@@ -1,5 +1,6 @@
 using System.IO;
 using TidyUp.Models.Domain;
+using TidyUp.Services.Diagnostics;
 
 namespace TidyUp.Services;
 
@@ -24,4 +25,20 @@ public interface IRuleEngine
     /// <param name="stopOnFirstMatch">If true, stop after first matching rule.</param>
     /// <returns>List of matching rules.</returns>
     List<Rule> GetMatchingRules(List<Rule> rules, FileInfo fileInfo, bool stopOnFirstMatch = false);
+
+    /// <summary>
+    /// Provides detailed condition-by-condition match diagnostics explaining why a file was matched or rejected by a rule.
+    /// </summary>
+    /// <param name="rule">The rule to evaluate.</param>
+    /// <param name="fileInfo">The file to check.</param>
+    /// <returns>Comprehensive diagnostics explaining the evaluation outcome.</returns>
+    FileEvaluationDiagnostics ExplainEvaluation(Rule rule, FileInfo fileInfo);
+
+    /// <summary>
+    /// Provides detailed condition-by-condition match diagnostics explaining why a file was matched or rejected by a rule.
+    /// </summary>
+    /// <param name="rule">The rule to evaluate.</param>
+    /// <param name="filePath">Absolute path of file to check.</param>
+    /// <returns>Comprehensive diagnostics explaining the evaluation outcome.</returns>
+    FileEvaluationDiagnostics ExplainEvaluation(Rule rule, string filePath);
 }

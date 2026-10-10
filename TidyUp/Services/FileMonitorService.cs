@@ -1,23 +1,95 @@
 using System.Collections.Concurrent;
 using System.IO;
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using TidyUp.Models.Domain;
+using TidyUp.Services.FileSystem;
+using TidyUp.Services.Monitoring;
+using TidyUp.Services.Processing;
+using TidyUp.Services.Watcher;
 
 namespace TidyUp.Services;
 
 /// <summary>
-/// Implementation of file monitoring service with debouncing and network drive support.
+/// Implementation of file monitoring service with debouncing, 64KB hardened watchers, and overflow reconciliation.
 /// </summary>
-public class FileMonitorService : IFileMonitorService, IDisposable
+public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisposable
 {
-    private readonly ConcurrentDictionary<string, FileSystemWatcher> _watchers = new();
-    private readonly ConcurrentDictionary<string, DateTime> _fileChangeTimestamps = new();
+    private readonly ConcurrentDictionary<string, HardenedFileSystemWatcher> _watchers = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, DateTime> _fileChangeTimestamps = new(StringComparer.OrdinalIgnoreCase);
+    private readonly ConcurrentDictionary<string, bool> _reconnectingFolders = new(StringComparer.OrdinalIgnoreCase);
+    private readonly CompositeDisposable _subscriptions = new();
     private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(500);
+    private readonly IFileLockDetector _fileLockDetector;
+    private readonly IRetryQueueManager? _retryQueueManager;
+    private readonly IWatcherHealthMonitor? _watcherHealthMonitor;
+    private readonly ConcurrentQueue<(string FilePath, string SourceFolder)> _pausedEventQueue = new();
+    private volatile bool _isPaused;
     private List<Rule> _rules = new();
     private CancellationTokenSource? _cancellationTokenSource;
     private bool _isRunning;
+    private bool _disposed;
 
     public event EventHandler<FileDetectedEventArgs>? FileDetected;
+    public event EventHandler<string>? ReconciliationTriggered;
+
+    public bool IsPaused => _isPaused;
+    public int PausedBufferedEventCount => _pausedEventQueue.Count;
+
+    public FileMonitorService(
+        IFileLockDetector? fileLockDetector = null,
+        IRetryQueueManager? retryQueueManager = null,
+        IWatcherHealthMonitor? watcherHealthMonitor = null)
+    {
+        _fileLockDetector = fileLockDetector ?? new FileLockDetector();
+        _retryQueueManager = retryQueueManager;
+        _watcherHealthMonitor = watcherHealthMonitor;
+
+        if (_retryQueueManager is not null)
+        {
+            _retryQueueManager.FileReady += OnRetryFileReady;
+        }
+
+        if (_watcherHealthMonitor is not null)
+        {
+            _watcherHealthMonitor.FolderHealthChanged += OnFolderHealthChanged;
+        }
+    }
+
+    public void Pause()
+    {
+        _isPaused = true;
+    }
+
+    public async Task ResumeAsync()
+    {
+        _isPaused = false;
+        var processedInBatch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        while (_pausedEventQueue.TryDequeue(out var item))
+        {
+            if (_cancellationTokenSource?.IsCancellationRequested == true)
+                break;
+
+            if (!processedInBatch.Add(item.FilePath))
+                continue;
+
+            _fileChangeTimestamps.TryRemove(item.FilePath, out _);
+
+            await OnFileDetectedAsync(item.FilePath, item.SourceFolder);
+        }
+    }
+
+    private void OnRetryFileReady(object? sender, FileDetectedEventArgs e)
+    {
+        if (_isPaused)
+        {
+            _pausedEventQueue.Enqueue((e.FileInfo.FullName, e.SourceFolder));
+            return;
+        }
+
+        FileDetected?.Invoke(this, e);
+    }
 
     public async Task StartAsync(List<Rule> rules, CancellationToken cancellationToken = default)
     {
@@ -27,6 +99,9 @@ public class FileMonitorService : IFileMonitorService, IDisposable
         _rules = rules.Where(r => r.IsEnabled).ToList();
         _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _isRunning = true;
+
+        _retryQueueManager?.Start();
+        _watcherHealthMonitor?.Start();
 
         // Set up watchers for all monitored folders
         var monitoredFolders = _rules
@@ -43,22 +118,30 @@ public class FileMonitorService : IFileMonitorService, IDisposable
         await ScanAllFoldersAsync();
     }
 
-    public async Task StopAsync()
+    public Task StopAsync()
     {
         _isRunning = false;
+        _isPaused = false;
+        _pausedEventQueue.Clear();
         _cancellationTokenSource?.Cancel();
+
+        _retryQueueManager?.Stop();
+        _watcherHealthMonitor?.Stop();
+
+        // Dispose all Rx subscriptions
+        _subscriptions.Clear();
 
         // Dispose all watchers
         foreach (var watcher in _watchers.Values)
         {
-            watcher.EnableRaisingEvents = false;
+            watcher.Stop();
             watcher.Dispose();
         }
 
         _watchers.Clear();
         _fileChangeTimestamps.Clear();
 
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     public async Task UpdateRulesAsync(List<Rule> rules)
@@ -72,9 +155,9 @@ public class FileMonitorService : IFileMonitorService, IDisposable
 
         _rules = rules.Where(r => r.IsEnabled).ToList();
 
-        if (wasRunning)
+        if (wasRunning && _cancellationTokenSource is not null)
         {
-            await StartAsync(_rules, _cancellationTokenSource?.Token ?? CancellationToken.None);
+            await StartAsync(_rules, _cancellationTokenSource.Token);
         }
     }
 
@@ -94,60 +177,90 @@ public class FileMonitorService : IFileMonitorService, IDisposable
         }
     }
 
-    private async Task SetupFolderMonitoringAsync(MonitoredFolder folder)
+    private Task SetupFolderMonitoringAsync(MonitoredFolder folder)
     {
         if (!Directory.Exists(folder.Path))
-            return;
+        {
+            _watcherHealthMonitor?.RegisterFolder(folder.Path);
+            return Task.CompletedTask;
+        }
 
         // Check if it's a network drive
         if (IsNetworkPath(folder.Path))
         {
             // For network drives, use polling instead of FileSystemWatcher
             // TODO: Implement periodic polling
-            return;
+            _watcherHealthMonitor?.RegisterFolder(folder.Path);
+            return Task.CompletedTask;
         }
 
-        var watcher = new FileSystemWatcher(folder.Path)
+        var watcher = new HardenedFileSystemWatcher(folder.Path, new HardenedWatcherOptions
         {
             IncludeSubdirectories = folder.IncludeSubfolders,
-            NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.CreationTime,
-            EnableRaisingEvents = true
+            DebounceDelay = _debounceDelay
+        });
+
+        watcher.FileDetected += async (s, path) =>
+        {
+            if (ShouldProcessFile(path, folder.ExclusionPatterns.ToList()))
+            {
+                await OnFileDetectedAsync(path, folder.Path);
+            }
         };
 
-        // Set up event handlers with debouncing
-        Observable.FromEventPattern<FileSystemEventHandler, FileSystemEventArgs>(
-                h => watcher.Created += h,
-                h => watcher.Created -= h)
-            .Merge(Observable.FromEventPattern<FileSystemEventHandler, FileSystemEventArgs>(
-                h => watcher.Changed += h,
-                h => watcher.Changed -= h))
-            .Select(e => e.EventArgs.FullPath)
-            .GroupBy(path => path)
-            .SelectMany(g => g.Throttle(_debounceDelay))
-            .Subscribe(async path =>
-            {
-                if (ShouldProcessFile(path, folder.ExclusionPatterns.ToList()))
-                {
-                    await OnFileDetectedAsync(path, folder.Path);
-                }
-            });
+        watcher.BufferOverflow += (s, e) =>
+        {
+            _watcherHealthMonitor?.RecordDegradation(folder.Path, e.GetException()?.Message ?? "Internal buffer overflow");
+        };
 
-        Observable.FromEventPattern<RenamedEventHandler, RenamedEventArgs>(
-                h => watcher.Renamed += h,
-                h => watcher.Renamed -= h)
-            .Select(e => e.EventArgs.FullPath)
-            .Throttle(_debounceDelay)
-            .Subscribe(async path =>
-            {
-                if (ShouldProcessFile(path, folder.ExclusionPatterns.ToList()))
-                {
-                    await OnFileDetectedAsync(path, folder.Path);
-                }
-            });
+        watcher.ReconciliationRequested += async (s, path) =>
+        {
+            await ReconcileFolderAsync(path, folder.IncludeSubfolders, folder.ExclusionPatterns.ToList());
+        };
 
+        watcher.Start();
         _watchers[folder.Path] = watcher;
 
-        await Task.CompletedTask;
+        _watcherHealthMonitor?.RegisterFolder(folder.Path);
+
+        return Task.CompletedTask;
+    }
+
+    public async Task ReconcileFolderAsync(
+        string folderPath,
+        bool includeSubfolders,
+        IReadOnlyList<string> exclusionPatterns,
+        CancellationToken cancellationToken = default)
+    {
+        ReconciliationTriggered?.Invoke(this, folderPath);
+        await ScanFolderAsync(folderPath, includeSubfolders, exclusionPatterns.ToList());
+        _watcherHealthMonitor?.ClearDegradation(folderPath);
+    }
+
+    private async void OnFolderHealthChanged(object? sender, FolderHealthReport e)
+    {
+        if (e.Status == WatcherHealthStatus.Healthy && !_watchers.ContainsKey(e.Path) && _isRunning)
+        {
+            if (!_reconnectingFolders.TryAdd(e.Path, true))
+                return;
+
+            try
+            {
+                var folder = _rules
+                    .SelectMany(r => r.MonitoredFolders)
+                    .FirstOrDefault(f => string.Equals(f.Path, e.Path, StringComparison.OrdinalIgnoreCase));
+
+                if (folder != null)
+                {
+                    await SetupFolderMonitoringAsync(folder);
+                    await ScanFolderAsync(folder.Path, folder.IncludeSubfolders, folder.ExclusionPatterns.ToList());
+                }
+            }
+            finally
+            {
+                _reconnectingFolders.TryRemove(e.Path, out _);
+            }
+        }
     }
 
     private async Task ScanFolderAsync(string folderPath, bool includeSubfolders, List<string> exclusionPatterns)
@@ -159,6 +272,9 @@ public class FileMonitorService : IFileMonitorService, IDisposable
 
             foreach (var filePath in files)
             {
+                if (_cancellationTokenSource?.IsCancellationRequested == true)
+                    return;
+
                 if (ShouldProcessFile(filePath, exclusionPatterns))
                 {
                     await OnFileDetectedAsync(filePath, folderPath);
@@ -167,11 +283,11 @@ public class FileMonitorService : IFileMonitorService, IDisposable
         }
         catch (UnauthorizedAccessException)
         {
-            // Log and continue
+            // Log and continue � folder inaccessible
         }
-        catch (Exception)
+        catch (DirectoryNotFoundException) { }
         {
-            // Log and continue
+            // Folder was removed between check and scan
         }
     }
 
@@ -188,9 +304,8 @@ public class FileMonitorService : IFileMonitorService, IDisposable
                 return false;
         }
 
-        // Skip temporary files
-        var fileName = Path.GetFileName(filePath);
-        if (fileName.StartsWith("~") || fileName.StartsWith("."))
+        // Skip temporary or incomplete download files (.crdownload, .part, .tmp, ~$*, etc.)
+        if (_fileLockDetector.IsTemporaryOrIncompleteFile(filePath))
             return false;
 
         return true;
@@ -200,6 +315,18 @@ public class FileMonitorService : IFileMonitorService, IDisposable
     {
         try
         {
+            if (_isPaused)
+            {
+                _pausedEventQueue.Enqueue((filePath, sourceFolder));
+                return;
+            }
+
+            if (!File.Exists(filePath))
+                return;
+
+            if (_fileLockDetector.IsTemporaryOrIncompleteFile(filePath))
+                return;
+
             var fileInfo = new FileInfo(filePath);
             
             // Check if file is still changing (debounce check)
@@ -211,17 +338,15 @@ public class FileMonitorService : IFileMonitorService, IDisposable
 
             _fileChangeTimestamps[filePath] = DateTime.Now;
 
-            // Wait a bit to ensure file is not locked
+            // Wait a brief moment to ensure file is settled
             await Task.Delay(100);
 
-            // Try to open file to check if it's accessible
-            try
+            // Pre-flight check: is file available exclusively (FileShare.None)?
+            if (!_fileLockDetector.IsFileReady(filePath))
             {
-                using var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            }
-            catch (IOException)
-            {
-                // File is locked, skip for now
+                // File is held open by another process (in-progress write/download);
+                // enqueue to non-blocking retry queue rather than dropping or blocking.
+                _retryQueueManager?.Enqueue(filePath, sourceFolder);
                 return;
             }
 
@@ -267,7 +392,33 @@ public class FileMonitorService : IFileMonitorService, IDisposable
 
     public void Dispose()
     {
-        StopAsync().Wait();
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _isRunning = false;
+        _isPaused = false;
+        _pausedEventQueue.Clear();
+        _cancellationTokenSource?.Cancel();
+        _subscriptions.Dispose();
+
+        if (_retryQueueManager is not null)
+        {
+            _retryQueueManager.FileReady -= OnRetryFileReady;
+        }
+
+        if (_watcherHealthMonitor is not null)
+        {
+            _watcherHealthMonitor.FolderHealthChanged -= OnFolderHealthChanged;
+        }
+
+        foreach (var watcher in _watchers.Values)
+        {
+            watcher.Stop();
+            watcher.Dispose();
+        }
+
+        _watchers.Clear();
         _cancellationTokenSource?.Dispose();
         GC.SuppressFinalize(this);
     }

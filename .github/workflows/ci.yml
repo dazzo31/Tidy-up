@@ -1,0 +1,59 @@
+name: CI - Build & Test Gate
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 9 Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Cache NuGet Packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore Dependencies
+        run: dotnet restore TidyUp.sln
+
+      - name: Build Solution (Release)
+        run: dotnet build TidyUp.sln --configuration Release --no-restore
+
+      - name: Execute Automated Test Suite
+        run: >
+          dotnet test TidyUp.sln
+          --configuration Release
+          --no-build
+          --verbosity normal
+          --collect:"XPlat Code Coverage"
+          --results-directory ./TestResults
+
+      - name: Upload Test Results & Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-dotnet-9
+          path: ./TestResults
+          if-no-files-found: warn
+

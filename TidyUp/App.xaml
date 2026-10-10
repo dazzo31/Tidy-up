@@ -11,12 +11,16 @@
                 <!-- Material Design -->
                 <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="DeepOrange" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+                <ResourceDictionary Source="Styles/AccessibilityStyles.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Converters -->
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <converters:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
             <converters:EnumToItemsSourceConverter x:Key="EnumToItemsSourceConverter" />
             <converters:ActionTypeConverter x:Key="ActionTypeConverter" />
+            <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter" />
             
             <!-- System Tray Icon -->
             <tb:TaskbarIcon x:Key="TrayIcon"

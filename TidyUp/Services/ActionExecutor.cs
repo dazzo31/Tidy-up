@@ -3,54 +3,64 @@ using System.IO;
 using Microsoft.VisualBasic.FileIO;
 using SharpCompress.Archives;
 using SharpCompress.Common;
+using TidyUp.Data.Entities;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
+using TidyUp.Services.FileSystem;
+using TidyUp.Services.Rollback;
 
 namespace TidyUp.Services;
 
 /// <summary>
 /// Implementation of file action executor with retry logic and conflict resolution.
 /// </summary>
-public class ActionExecutor : IActionExecutor
+public class ActionExecutor(
+    IVariableEngine variableEngine,
+    ISafeFileSystem? safeFileSystem = null,
+    IFileLockDetector? fileLockDetector = null,
+    IRollbackEngine? rollbackEngine = null) : IActionExecutor
 {
-    private readonly IVariableEngine _variableEngine;
+    private readonly ISafeFileSystem _safeFileSystem = safeFileSystem ?? new WindowsShellFileOperations();
+    private readonly IFileLockDetector _fileLockDetector = fileLockDetector ?? new FileLockDetector();
+    private readonly IRollbackEngine? _rollbackEngine = rollbackEngine;
     private const int MaxRetries = 3;
-    private static readonly int[] RetryDelays = { 100, 500, 2000 }; // milliseconds
+    private static readonly int[] RetryDelays = [100, 500, 2000];
 
-    public ActionExecutor(IVariableEngine variableEngine)
+    public async Task<List<ActionResult>> ExecuteActionsAsync(
+        List<FileAction> actions,
+        FileInfo fileInfo,
+        int? counter = null,
+        Guid? batchId = null)
     {
-        _variableEngine = variableEngine;
-    }
-
-    public async Task<List<ActionResult>> ExecuteActionsAsync(List<FileAction> actions, FileInfo fileInfo, int? counter = null)
-    {
+        var effectiveBatchId = batchId ?? Guid.NewGuid();
         var results = new List<ActionResult>();
         var currentFile = fileInfo;
 
         foreach (var action in actions.OrderBy(a => a.Order))
-        {
-            var result = await ExecuteActionAsync(action, currentFile, counter);
+        {                       
+            var result = await ExecuteActionAsync(action, currentFile, counter, effectiveBatchId);
             results.Add(result);
 
             if (!result.Success)
-            {
-                // Stop on error
                 break;
-            }
 
-            // Update current file path if action changed it
             if (!string.IsNullOrEmpty(result.ResultPath) && File.Exists(result.ResultPath))
-            {
                 currentFile = new FileInfo(result.ResultPath);
-            }
         }
 
         return results;
     }
 
-    public async Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter = null)
+    public async Task<ActionResult> ExecuteActionAsync(
+        FileAction action,
+        FileInfo fileInfo,
+        int? counter = null,
+        Guid? batchId = null)
     {
-        return action switch
+        var originalPath = fileInfo.FullName;
+        var preActionHash = FileChecksumHelper.ComputeSha256(originalPath);
+
+        var result = action switch
         {
             MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, counter),
             CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, counter),
@@ -61,13 +71,73 @@ public class ActionExecutor : IActionExecutor
             RunCommandAction runCmd => await ExecuteRunCommandAsync(runCmd, fileInfo, counter),
             _ => new ActionResult { Success = false, ErrorMessage = "Unknown action type", Type = ActionResultType.Error }
         };
+
+        if (result.Success && _rollbackEngine is not null)
+        {
+            var postPath = result.TargetPath ?? (action is DeleteFileAction ? null : result.ResultPath ?? originalPath);
+            var postActionHash = !string.IsNullOrEmpty(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
+
+            await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+            {
+                BatchId = batchId ?? Guid.NewGuid(),
+                ActionType = action switch
+                {
+                    MoveFileAction => "Move",
+                    CopyFileAction => "Copy",
+                    RenameFileAction => "Rename",
+                    ChangeExtensionAction => "ChangeExtension",
+                    DeleteFileAction => "Delete",
+                    ExtractArchiveAction => "ExtractArchive",
+                    RunCommandAction => "RunCommand",
+                    _ => action.GetType().Name
+                },
+                OriginalPath = originalPath,
+                TargetPath = postPath,
+                PreActionHash = preActionHash,
+                PostActionHash = postActionHash,
+                Status = "Completed",
+                Details = action is DeleteFileAction del
+                    ? (del.UseRecycleBin ? "Sent to Recycle Bin" : "Permanently Deleted")
+                    : null
+            });
+        }
+
+        return result;
     }
 
     private async Task<ActionResult> ExecuteMoveAsync(MoveFileAction action, FileInfo fileInfo, int? counter)
     {
         try
         {
-            var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+            if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    Type = ActionResultType.Skipped,
+                    ErrorMessage = $"File '{fileInfo.FullName}' is an incomplete download or temporary file."
+                };
+            }
+
+            if (!_fileLockDetector.IsFileReady(fileInfo.FullName))
+            {
+                var isReady = await _fileLockDetector.WaitForFileReadyAsync(
+                    fileInfo.FullName,
+                    TimeSpan.FromMilliseconds(500),
+                    TimeSpan.FromMilliseconds(100));
+
+                if (!isReady)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"File '{fileInfo.FullName}' is locked by another process."
+                    };
+                }
+            }
+
+            var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
             var destFileName = fileInfo.Name;
             var fullDestPath = Path.Combine(destPath, destFileName);
 
@@ -76,7 +146,7 @@ public class ActionExecutor : IActionExecutor
 
             // Handle conflicts
             fullDestPath = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
-            if (fullDestPath == null)
+            if (fullDestPath is null)
             {
                 return new ActionResult
                 {
@@ -88,9 +158,7 @@ public class ActionExecutor : IActionExecutor
 
             // If overwriting, delete the destination file first since File.Move doesn't support overwrite
             if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(fullDestPath))
-            {
                 await Task.Run(() => File.Delete(fullDestPath));
-            }
 
             // Retry logic for locked files
             await RetryAsync(async () =>
@@ -100,25 +168,13 @@ public class ActionExecutor : IActionExecutor
 
             // Remove empty source folder if requested
             if (action.RemoveEmptyFolders)
-            {
                 await RemoveEmptyFoldersAsync(fileInfo.Directory);
-            }
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = fullDestPath,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = fullDestPath, TargetPath = fullDestPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
-            return new ActionResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message,
-                Type = ActionResultType.Error
-            };
+            return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
 
@@ -126,7 +182,35 @@ public class ActionExecutor : IActionExecutor
     {
         try
         {
-            var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+            if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    Type = ActionResultType.Skipped,
+                    ErrorMessage = $"File '{fileInfo.FullName}' is an incomplete download or temporary file."
+                };
+            }
+
+            if (!_fileLockDetector.IsFileReady(fileInfo.FullName))
+            {
+                var isReady = await _fileLockDetector.WaitForFileReadyAsync(
+                    fileInfo.FullName,
+                    TimeSpan.FromMilliseconds(500),
+                    TimeSpan.FromMilliseconds(100));
+
+                if (!isReady)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"File '{fileInfo.FullName}' is locked by another process."
+                    };
+                }
+            }
+
+            var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
             var destFileName = fileInfo.Name;
             var fullDestPath = Path.Combine(destPath, destFileName);
 
@@ -135,7 +219,7 @@ public class ActionExecutor : IActionExecutor
 
             // Handle conflicts
             fullDestPath = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
-            if (fullDestPath == null)
+            if (fullDestPath is null)
             {
                 return new ActionResult
                 {
@@ -154,21 +238,11 @@ public class ActionExecutor : IActionExecutor
             // Return the appropriate path for next action
             var resultPath = action.ApplyToSourceFile ? fileInfo.FullName : fullDestPath;
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = resultPath,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = resultPath, TargetPath = fullDestPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
-            return new ActionResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message,
-                Type = ActionResultType.Error
-            };
+            return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
 
@@ -176,19 +250,45 @@ public class ActionExecutor : IActionExecutor
     {
         try
         {
-            var newName = _variableEngine.Resolve(action.NamePattern, fileInfo, counter);
-            
+            if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    Type = ActionResultType.Skipped,
+                    ErrorMessage = $"File '{fileInfo.FullName}' is an incomplete download or temporary file."
+                };
+            }
+
+            if (!_fileLockDetector.IsFileReady(fileInfo.FullName))
+            {
+                var isReady = await _fileLockDetector.WaitForFileReadyAsync(
+                    fileInfo.FullName,
+                    TimeSpan.FromMilliseconds(500),
+                    TimeSpan.FromMilliseconds(100));
+
+                if (!isReady)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"File '{fileInfo.FullName}' is locked by another process."
+                    };
+                }
+            }
+
+            var newName = variableEngine.Resolve(action.NamePattern, fileInfo, counter);
+
             // Add extension if not included
             if (!Path.HasExtension(newName))
-            {
                 newName += fileInfo.Extension;
-            }
 
             var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, newName);
 
             // Handle conflicts
             newPath = await ResolveConflictAsync(newPath, action.ConflictResolution);
-            if (newPath == null)
+            if (newPath is null)
             {
                 return new ActionResult
                 {
@@ -200,9 +300,7 @@ public class ActionExecutor : IActionExecutor
 
             // If overwriting, delete the destination file first since File.Move doesn't support overwrite
             if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
-            {
                 await Task.Run(() => File.Delete(newPath));
-            }
 
             // Retry logic
             await RetryAsync(async () =>
@@ -210,21 +308,11 @@ public class ActionExecutor : IActionExecutor
                 await Task.Run(() => File.Move(fileInfo.FullName, newPath));
             });
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = newPath,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
-            return new ActionResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message,
-                Type = ActionResultType.Error
-            };
+            return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
 
@@ -232,13 +320,41 @@ public class ActionExecutor : IActionExecutor
     {
         try
         {
+            if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    Type = ActionResultType.Skipped,
+                    ErrorMessage = $"File '{fileInfo.FullName}' is an incomplete download or temporary file."
+                };
+            }
+
+            if (!_fileLockDetector.IsFileReady(fileInfo.FullName))
+            {
+                var isReady = await _fileLockDetector.WaitForFileReadyAsync(
+                    fileInfo.FullName,
+                    TimeSpan.FromMilliseconds(500),
+                    TimeSpan.FromMilliseconds(100));
+
+                if (!isReady)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"File '{fileInfo.FullName}' is locked by another process."
+                    };
+                }
+            }
+
             var newExtension = action.NewExtension.TrimStart('.');
             var nameWithoutExt = Path.GetFileNameWithoutExtension(fileInfo.Name);
             var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, $"{nameWithoutExt}.{newExtension}");
 
             // Handle conflicts
             newPath = await ResolveConflictAsync(newPath, action.ConflictResolution);
-            if (newPath == null)
+            if (newPath is null)
             {
                 return new ActionResult
                 {
@@ -250,9 +366,7 @@ public class ActionExecutor : IActionExecutor
 
             // If overwriting, delete the destination file first since File.Move doesn't support overwrite
             if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
-            {
                 await Task.Run(() => File.Delete(newPath));
-            }
 
             // Retry logic
             await RetryAsync(async () =>
@@ -260,21 +374,11 @@ public class ActionExecutor : IActionExecutor
                 await Task.Run(() => File.Move(fileInfo.FullName, newPath));
             });
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = newPath,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
-            return new ActionResult
-            {
-                Success = false,
-                ErrorMessage = ex.Message,
-                Type = ActionResultType.Error
-            };
+            return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
 
@@ -282,37 +386,39 @@ public class ActionExecutor : IActionExecutor
     {
         try
         {
+            if (!_fileLockDetector.IsFileReady(fileInfo.FullName))
+            {
+                var isReady = await _fileLockDetector.WaitForFileReadyAsync(
+                    fileInfo.FullName,
+                    TimeSpan.FromMilliseconds(500),
+                    TimeSpan.FromMilliseconds(100));
+
+                if (!isReady)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"File '{fileInfo.FullName}' is locked by another process."
+                    };
+                }
+            }
+
             await RetryAsync(async () =>
             {
-                await Task.Run(() =>
-                {
-                    if (action.UseRecycleBin)
-                    {
-                        // Use Visual Basic FileSystem for Recycle Bin support
-                        FileSystem.DeleteFile(fileInfo.FullName, 
-                            UIOption.OnlyErrorDialogs, 
-                            RecycleOption.SendToRecycleBin);
-                    }
-                    else
-                    {
-                        File.Delete(fileInfo.FullName);
-                    }
-                });
+                await _safeFileSystem.DeleteFileSafelyAsync(
+                    fileInfo.FullName,
+                    useRecycleBin: action.UseRecycleBin,
+                    allowPermanentFallback: !action.UseRecycleBin && !action.ConfirmBeforeDelete);
             });
 
             // Remove empty parent folders if requested
             if (action.RemoveEmptyFolders)
-            {
                 await RemoveEmptyFoldersAsync(fileInfo.Directory);
-            }
 
-            return new ActionResult
-            {
-                Success = true,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, Type = ActionResultType.Success };
         }
-        catch (Exception ex)
+        catch (RecycleBinUnavailableException ex)
         {
             return new ActionResult
             {
@@ -321,19 +427,21 @@ public class ActionExecutor : IActionExecutor
                 Type = ActionResultType.Error
             };
         }
+        catch (Exception ex)
+        {
+            return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
+        }
     }
 
     private async Task<ActionResult> ExecuteExtractArchiveAsync(ExtractArchiveAction action, FileInfo fileInfo, int? counter)
     {
         try
         {
-            var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
-            
+            var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+
             // If no destination specified, extract to same folder
             if (string.IsNullOrWhiteSpace(destPath))
-            {
                 destPath = fileInfo.DirectoryName ?? string.Empty;
-            }
 
             // Ensure destination directory exists
             Directory.CreateDirectory(destPath);
@@ -355,16 +463,9 @@ public class ActionExecutor : IActionExecutor
 
             // Delete archive if requested
             if (action.DeleteAfterExtraction)
-            {
                 await Task.Run(() => File.Delete(fileInfo.FullName));
-            }
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = destPath,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = destPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -381,10 +482,47 @@ public class ActionExecutor : IActionExecutor
     {
         try
         {
-            var command = _variableEngine.Resolve(action.Command, fileInfo, counter);
-            var workingDir = string.IsNullOrWhiteSpace(action.WorkingDirectory) 
-                ? fileInfo.DirectoryName 
-                : _variableEngine.Resolve(action.WorkingDirectory, fileInfo, counter);
+            var command = variableEngine.Resolve(action.Command, fileInfo, counter);
+            var workingDir = string.IsNullOrWhiteSpace(action.WorkingDirectory)
+                ? fileInfo.DirectoryName
+                : variableEngine.Resolve(action.WorkingDirectory, fileInfo, counter);
+
+            // Validate command to prevent injection
+            if (string.IsNullOrWhiteSpace(command))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    ErrorMessage = "Command cannot be empty",
+                    Type = ActionResultType.Error
+                };
+            }
+
+            // Block dangerous shell metacharacters that could chain commands
+            string[] dangerousPatterns = ["&&", "||", "|", ";", "`", "$(", "%COMSPEC%", "%SystemRoot%"];
+            foreach (var pattern in dangerousPatterns)
+            {
+                if (command.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Command contains disallowed characters: {pattern}",
+                        Type = ActionResultType.Error
+                    };
+                }
+            }
+
+            // Validate working directory path
+            if (!string.IsNullOrWhiteSpace(workingDir) && !Directory.Exists(workingDir))
+            {
+                return new ActionResult
+                {
+                    Success = false,
+                    ErrorMessage = $"Working directory does not exist: {workingDir}",
+                    Type = ActionResultType.Error
+                };
+            }
 
             var startInfo = new ProcessStartInfo
             {
@@ -402,12 +540,15 @@ public class ActionExecutor : IActionExecutor
 
             if (action.WaitForCompletion)
             {
-                var completed = await Task.Run(() => 
+                var outputTask = process.StandardOutput.ReadToEndAsync();
+                var errorTask = process.StandardError.ReadToEndAsync();
+
+                var completed = await Task.Run(() =>
                     process.WaitForExit(action.TimeoutSeconds * 1000));
 
                 if (!completed)
                 {
-                    process.Kill();
+                    process.Kill(entireProcessTree: true);
                     return new ActionResult
                     {
                         Success = false,
@@ -416,8 +557,8 @@ public class ActionExecutor : IActionExecutor
                     };
                 }
 
-                var output = await process.StandardOutput.ReadToEndAsync();
-                var error = await process.StandardError.ReadToEndAsync();
+                _ = await outputTask;
+                var error = await errorTask;
 
                 if (process.ExitCode != 0)
                 {
@@ -430,12 +571,7 @@ public class ActionExecutor : IActionExecutor
                 }
             }
 
-            return new ActionResult
-            {
-                Success = true,
-                ResultPath = fileInfo.FullName,
-                Type = ActionResultType.Success
-            };
+            return new ActionResult { Success = true, ResultPath = fileInfo.FullName, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -448,7 +584,7 @@ public class ActionExecutor : IActionExecutor
         }
     }
 
-    private async Task<string?> ResolveConflictAsync(string destinationPath, ConflictResolution strategy)
+    private static async Task<string?> ResolveConflictAsync(string destinationPath, ConflictResolution strategy)
     {
         if (!File.Exists(destinationPath))
             return destinationPath;
@@ -457,14 +593,14 @@ public class ActionExecutor : IActionExecutor
         {
             ConflictResolution.Skip => null,
             ConflictResolution.Overwrite => destinationPath,
-            ConflictResolution.RenameNew => await GenerateUniquePathAsync(destinationPath),
+            ConflictResolution.RenameNew => GenerateUniquePath(destinationPath),
             ConflictResolution.RenameOld => await RenameExistingFileAsync(destinationPath),
             ConflictResolution.Prompt => destinationPath, // TODO: Implement user prompt
             _ => null
         };
     }
 
-    private async Task<string> GenerateUniquePathAsync(string originalPath)
+    private static string GenerateUniquePath(string originalPath)
     {
         var directory = Path.GetDirectoryName(originalPath) ?? string.Empty;
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(originalPath);
@@ -480,10 +616,10 @@ public class ActionExecutor : IActionExecutor
         }
         while (File.Exists(newPath));
 
-        return await Task.FromResult(newPath);
+        return newPath;
     }
 
-    private async Task<string> RenameExistingFileAsync(string destinationPath)
+    private static async Task<string> RenameExistingFileAsync(string destinationPath)
     {
         var directory = Path.GetDirectoryName(destinationPath) ?? string.Empty;
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(destinationPath);
@@ -491,7 +627,7 @@ public class ActionExecutor : IActionExecutor
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
         var backupPath = Path.Combine(directory, $"{fileNameWithoutExt}_backup_{timestamp}{extension}");
-        
+
         await RetryAsync(async () =>
         {
             await Task.Run(() => File.Move(destinationPath, backupPath));
@@ -500,25 +636,87 @@ public class ActionExecutor : IActionExecutor
         return destinationPath;
     }
 
-    private async Task RemoveEmptyFoldersAsync(DirectoryInfo? directory)
+    private static readonly HashSet<string> ProtectedFolders = InitializeProtectedFolders();
+
+    private static HashSet<string> InitializeProtectedFolders()
     {
-        if (directory == null || !directory.Exists)
+        var paths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        void AddIfValid(string? path)
+        {
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                try
+                {
+                    paths.Add(Path.GetFullPath(path).TrimEnd('\\', '/'));
+                }
+                catch { }
+            }
+        }
+
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.Windows));
+        AddIfValid(Environment.GetFolderPath(Environment.SpecialFolder.System));
+
+        var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        if (!string.IsNullOrWhiteSpace(userProfile))
+        {
+            AddIfValid(Path.Combine(userProfile, "Downloads"));
+            AddIfValid(Path.Combine(userProfile, "Documents"));
+            AddIfValid(Path.Combine(userProfile, "Pictures"));
+            AddIfValid(Path.Combine(userProfile, "Music"));
+            AddIfValid(Path.Combine(userProfile, "Videos"));
+            AddIfValid(Path.Combine(userProfile, "Desktop"));
+        }
+
+        return paths;
+    }
+
+    private static async Task RemoveEmptyFoldersAsync(DirectoryInfo? directory, string? stopBoundaryPath = null)
+    {
+        if (directory is null || !directory.Exists)
             return;
 
         try
         {
-            // Don't delete if contains files or hidden/system files
-            if (directory.GetFiles().Length > 0)
+            var normalizedDir = directory.FullName.TrimEnd('\\', '/');
+
+            // Never delete root drive (e.g. C:\) or any protected system/user directory
+            if (directory.Parent is null || ProtectedFolders.Contains(normalizedDir))
                 return;
 
-            var subdirs = directory.GetDirectories();
-            if (subdirs.Length > 0)
+            // If a stop boundary path is specified, do not delete the boundary folder itself
+            if (!string.IsNullOrEmpty(stopBoundaryPath))
+            {
+                var normalizedBoundary = Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/');
+                if (string.Equals(normalizedDir, normalizedBoundary, StringComparison.OrdinalIgnoreCase))
+                    return;
+            }
+
+            // Don't delete if contains files or subdirectories
+            if (directory.GetFiles().Length > 0 || directory.GetDirectories().Length > 0)
                 return;
 
             await Task.Run(() => directory.Delete());
 
-            // Recursively remove parent if empty
-            await RemoveEmptyFoldersAsync(directory.Parent);
+            // Recurse to parent only if parent is not root or protected
+            if (directory.Parent is not null)
+            {
+                var parentNorm = directory.Parent.FullName.TrimEnd('\\', '/');
+                if (!ProtectedFolders.Contains(parentNorm))
+                {
+                    if (string.IsNullOrEmpty(stopBoundaryPath) ||
+                        !string.Equals(parentNorm, Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
+                    {
+                        await RemoveEmptyFoldersAsync(directory.Parent, stopBoundaryPath);
+                    }
+                }
+            }
         }
         catch
         {
@@ -526,7 +724,7 @@ public class ActionExecutor : IActionExecutor
         }
     }
 
-    private async Task RetryAsync(Func<Task> action)
+    private static async Task RetryAsync(Func<Task> action)
     {
         Exception? lastException = null;
 
@@ -544,8 +742,7 @@ public class ActionExecutor : IActionExecutor
             }
         }
 
-        // If all retries failed, throw the last exception
-        if (lastException != null)
+        if (lastException is not null)
             throw lastException;
     }
 
@@ -553,17 +750,16 @@ public class ActionExecutor : IActionExecutor
     {
         var previews = new List<ActionPreview>();
         var currentPath = fileInfo.FullName;
-        var currentName = fileInfo.Name;
 
         foreach (var action in actions.OrderBy(a => a.Order))
         {
             var preview = action switch
             {
-                MoveFileAction move => PreviewMove(move, currentPath, currentName, counter, fileInfo),
-                CopyFileAction copy => PreviewCopy(copy, currentPath, currentName, counter, fileInfo),
-                RenameFileAction rename => PreviewRename(rename, currentPath, currentName, counter, fileInfo),
-                ChangeExtensionAction changeExt => PreviewChangeExtension(changeExt, currentPath, currentName),
-                DeleteFileAction delete => PreviewDelete(delete, currentPath),
+                MoveFileAction move => PreviewMove(move, currentPath, counter, fileInfo),
+                CopyFileAction copy => PreviewCopy(copy, currentPath, counter, fileInfo),
+                RenameFileAction rename => PreviewRename(rename, currentPath, counter, fileInfo),
+                ChangeExtensionAction changeExt => PreviewChangeExtension(changeExt, currentPath),
+                DeleteFileAction delete => PreviewDelete(delete),
                 ExtractArchiveAction extract => PreviewExtractArchive(extract, currentPath, counter, fileInfo),
                 RunCommandAction runCmd => PreviewRunCommand(runCmd, currentPath, counter, fileInfo),
                 _ => new ActionPreview { ActionType = "Unknown", Description = "Unknown action type" }
@@ -573,18 +769,16 @@ public class ActionExecutor : IActionExecutor
 
             // Update current path for next action if this action would change it
             if (!string.IsNullOrEmpty(preview.ResultPath))
-            {
                 currentPath = preview.ResultPath;
-                currentName = Path.GetFileName(currentPath);
-            }
         }
 
         return await Task.FromResult(previews);
     }
 
-    private ActionPreview PreviewMove(MoveFileAction action, string currentPath, string currentName, int? counter, FileInfo fileInfo)
+    private ActionPreview PreviewMove(MoveFileAction action, string currentPath, int? counter, FileInfo fileInfo)
     {
-        var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+        var currentName = Path.GetFileName(currentPath);
+        var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
         var fullDestPath = Path.Combine(destPath, currentName);
         var hasConflict = File.Exists(fullDestPath);
 
@@ -598,9 +792,10 @@ public class ActionExecutor : IActionExecutor
         };
     }
 
-    private ActionPreview PreviewCopy(CopyFileAction action, string currentPath, string currentName, int? counter, FileInfo fileInfo)
+    private ActionPreview PreviewCopy(CopyFileAction action, string currentPath, int? counter, FileInfo fileInfo)
     {
-        var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+        var currentName = Path.GetFileName(currentPath);
+        var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
         var fullDestPath = Path.Combine(destPath, currentName);
         var hasConflict = File.Exists(fullDestPath);
 
@@ -614,13 +809,11 @@ public class ActionExecutor : IActionExecutor
         };
     }
 
-    private ActionPreview PreviewRename(RenameFileAction action, string currentPath, string currentName, int? counter, FileInfo fileInfo)
+    private ActionPreview PreviewRename(RenameFileAction action, string currentPath, int? counter, FileInfo fileInfo)
     {
-        var newName = _variableEngine.Resolve(action.NamePattern, fileInfo, counter);
+        var newName = variableEngine.Resolve(action.NamePattern, fileInfo, counter);
         if (!Path.HasExtension(newName))
-        {
             newName += fileInfo.Extension;
-        }
 
         var directory = Path.GetDirectoryName(currentPath) ?? string.Empty;
         var newPath = Path.Combine(directory, newName);
@@ -636,9 +829,10 @@ public class ActionExecutor : IActionExecutor
         };
     }
 
-    private ActionPreview PreviewChangeExtension(ChangeExtensionAction action, string currentPath, string currentName)
+    private static ActionPreview PreviewChangeExtension(ChangeExtensionAction action, string currentPath)
     {
-        var newExt = action.NewExtension.StartsWith(".") ? action.NewExtension : "." + action.NewExtension;
+        var currentName = Path.GetFileName(currentPath);
+        var newExt = action.NewExtension.StartsWith('.') ? action.NewExtension : "." + action.NewExtension;
         var nameWithoutExt = Path.GetFileNameWithoutExtension(currentName);
         var newName = nameWithoutExt + newExt;
         var directory = Path.GetDirectoryName(currentPath) ?? string.Empty;
@@ -655,7 +849,7 @@ public class ActionExecutor : IActionExecutor
         };
     }
 
-    private ActionPreview PreviewDelete(DeleteFileAction action, string currentPath)
+    private static ActionPreview PreviewDelete(DeleteFileAction action)
     {
         return new ActionPreview
         {
@@ -668,11 +862,9 @@ public class ActionExecutor : IActionExecutor
 
     private ActionPreview PreviewExtractArchive(ExtractArchiveAction action, string currentPath, int? counter, FileInfo fileInfo)
     {
-        var destPath = _variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+        var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
         if (string.IsNullOrWhiteSpace(destPath))
-        {
             destPath = Path.GetDirectoryName(currentPath) ?? string.Empty;
-        }
 
         return new ActionPreview
         {
@@ -685,7 +877,7 @@ public class ActionExecutor : IActionExecutor
 
     private ActionPreview PreviewRunCommand(RunCommandAction action, string currentPath, int? counter, FileInfo fileInfo)
     {
-        var command = _variableEngine.Resolve(action.Command, fileInfo, counter);
+        var command = variableEngine.Resolve(action.Command, fileInfo, counter);
         return new ActionPreview
         {
             ActionType = "Run Command",

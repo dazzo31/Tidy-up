@@ -62,6 +62,18 @@ public partial class Rule : ObservableObject
     private bool _stopProcessingAfterMatch;
 
     /// <summary>
+    /// Trigger mode for the rule (Continuous, Scheduled, ManualOnly).
+    /// </summary>
+    [ObservableProperty]
+    private RuleTriggerType _triggerType = RuleTriggerType.Continuous;
+
+    /// <summary>
+    /// Scheduled time of day when trigger mode is Scheduled.
+    /// </summary>
+    [ObservableProperty]
+    private TimeSpan? _scheduledTime;
+
+    /// <summary>
     /// When the rule was created.
     /// </summary>
     [ObservableProperty]

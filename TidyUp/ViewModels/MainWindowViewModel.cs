@@ -11,6 +11,8 @@ using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services;
+using TidyUp.Services.State;
+using TidyUp.ViewModels.RuleEditor;
 
 namespace TidyUp.ViewModels;
 
@@ -49,10 +51,20 @@ public partial class MainWindowViewModel : ObservableObject
         get => _selectedRule;
         set
         {
+            if (IsRuleDirty && _selectedRule != null && value != _selectedRule)
+            {
+                if (!ConfirmDiscardRuleEdits())
+                {
+                    OnPropertyChanged(nameof(SelectedRule));
+                    return;
+                }
+            }
+
             var oldRule = _selectedRule;
             
             if (SetProperty(ref _selectedRule, value))
             {
+                IsRuleDirty = false;
                 // Unsubscribe from old rule
                 if (oldRule != null)
                 {
@@ -95,27 +107,159 @@ public partial class MainWindowViewModel : ObservableObject
     private string _statusMessage = "Ready";
 
     [ObservableProperty]
+    private string _windowTitle = "TidyUp - File Organization Manager";
+
+    [ObservableProperty]
     private ConditionEditorViewModel _conditionEditor = new();
 
     [ObservableProperty]
     private ActionEditorViewModel _actionEditor = new();
 
     [ObservableProperty]
-    private NavigationView _currentView = NavigationView.RuleEditor;
+    private NavigationView _currentView = NavigationView.Dashboard;
 
+    [ObservableProperty]
+    private bool _isRuleDirty;
+
+    public Func<string, string, bool>? ConfirmDiscardRuleCallback { get; set; }
+
+    /// <summary>
+    /// Prompts user to confirm discarding unsaved rule modifications before navigation or rule switching.
+    /// </summary>
+    public bool ConfirmDiscardRuleEdits()
+    {
+        if (!IsRuleDirty || SelectedRule == null)
+            return true;
+
+        bool proceed = ConfirmDiscardRuleCallback != null
+            ? ConfirmDiscardRuleCallback($"You have unsaved changes to rule '{SelectedRule.Name}'. Discard unsaved changes?", "Discard Unsaved Changes")
+            : MessageBox.Show(
+                $"You have unsaved changes to rule '{SelectedRule.Name}'. Discard unsaved changes?",
+                "Discard Unsaved Changes",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+        if (proceed)
+        {
+            IsRuleDirty = false;
+        }
+
+        return proceed;
+    }
+
+    public DashboardViewModel DashboardViewModel { get; }
     public SettingsViewModel SettingsViewModel { get; }
     public LogsViewModel LogsViewModel { get; }
+    public HistoryViewModel HistoryViewModel { get; }
+    public IApplicationStateManager StateManager { get; }
 
-    public MainWindowViewModel(IRuleRepository ruleRepository, IImportExportService importExportService, IServiceProvider serviceProvider)
+    public MainWindowViewModel(
+        IRuleRepository ruleRepository,
+        IImportExportService importExportService,
+        IServiceProvider serviceProvider,
+        IApplicationStateManager? stateManager = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
         _serviceProvider = serviceProvider;
         
+        StateManager = stateManager
+            ?? (IApplicationStateManager?)serviceProvider.GetService(typeof(IApplicationStateManager))
+            ?? new ApplicationStateManager();
+
+        StateManager.StateChanged += OnStateChanged;
+        UpdateTitleAndStateProperties();
+
         // Get ViewModels from DI
+        DashboardViewModel = (DashboardViewModel)serviceProvider.GetService(typeof(DashboardViewModel))!;
         SettingsViewModel = (SettingsViewModel)serviceProvider.GetService(typeof(SettingsViewModel))!;
         LogsViewModel = (LogsViewModel)serviceProvider.GetService(typeof(LogsViewModel))!;
+        HistoryViewModel = (HistoryViewModel)serviceProvider.GetService(typeof(HistoryViewModel))!;
+
+        DashboardViewModel.RequestNavigate += view =>
+        {
+            if (!ConfirmDiscardRuleEdits()) return;
+            CurrentView = view;
+            StatusMessage = view.ToString();
+        };
     }
+
+    private void OnStateChanged(object? sender, StateChangedEventArgs e)
+    {
+        UpdateTitleAndStateProperties();
+        CreateNewRuleCommand.NotifyCanExecuteChanged();
+        SaveRuleCommand.NotifyCanExecuteChanged();
+        DeleteRuleCommand.NotifyCanExecuteChanged();
+        ToggleRuleCommand.NotifyCanExecuteChanged();
+        TestRuleCommand.NotifyCanExecuteChanged();
+    }
+
+    private void UpdateTitleAndStateProperties()
+    {
+        WindowTitle = StateManager.CurrentState switch
+        {
+            ApplicationLifecycleState.ConfiguringRule => "TidyUp - File Organization Manager [Configuring Rule (Unvalidated)]",
+            ApplicationLifecycleState.Simulating => "TidyUp - File Organization Manager [Simulating Rule...]",
+            ApplicationLifecycleState.PreviewReady => "TidyUp - File Organization Manager [Preview Ready]",
+            ApplicationLifecycleState.ExecutingBatch => "TidyUp - File Organization Manager [Executing Operations...]",
+            ApplicationLifecycleState.MonitoringRunning => "TidyUp - File Organization Manager [Monitoring Active]",
+            ApplicationLifecycleState.MonitoringPaused => "TidyUp - File Organization Manager [Monitoring Paused]",
+            _ => "TidyUp - File Organization Manager"
+        };
+
+        OnPropertyChanged(nameof(StateBadgeText));
+        OnPropertyChanged(nameof(StateBadgeBackground));
+        OnPropertyChanged(nameof(StateBadgeForeground));
+        OnPropertyChanged(nameof(StateBadgeIcon));
+    }
+
+    public string StateBadgeText => StateManager.CurrentState switch
+    {
+        ApplicationLifecycleState.Idle => "IDLE",
+        ApplicationLifecycleState.ConfiguringRule => "CONFIGURING",
+        ApplicationLifecycleState.Simulating => "SIMULATING",
+        ApplicationLifecycleState.PreviewReady => "PREVIEW READY",
+        ApplicationLifecycleState.ExecutingBatch => "EXECUTING",
+        ApplicationLifecycleState.MonitoringRunning => "MONITORING ACTIVE",
+        ApplicationLifecycleState.MonitoringPaused => "MONITORING PAUSED",
+        _ => StateManager.CurrentState.ToString().ToUpperInvariant()
+    };
+
+    public string StateBadgeBackground => StateManager.CurrentState switch
+    {
+        ApplicationLifecycleState.Idle => "#ECEFF1",
+        ApplicationLifecycleState.ConfiguringRule => "#FFF3E0",
+        ApplicationLifecycleState.Simulating => "#E3F2FD",
+        ApplicationLifecycleState.PreviewReady => "#E8F5E9",
+        ApplicationLifecycleState.ExecutingBatch => "#FFEBEE",
+        ApplicationLifecycleState.MonitoringRunning => "#E8F5E9",
+        ApplicationLifecycleState.MonitoringPaused => "#FFF8E1",
+        _ => "#EEEEEE"
+    };
+
+    public string StateBadgeForeground => StateManager.CurrentState switch
+    {
+        ApplicationLifecycleState.Idle => "#455A64",
+        ApplicationLifecycleState.ConfiguringRule => "#E65100",
+        ApplicationLifecycleState.Simulating => "#1565C0",
+        ApplicationLifecycleState.PreviewReady => "#2E7D32",
+        ApplicationLifecycleState.ExecutingBatch => "#C62828",
+        ApplicationLifecycleState.MonitoringRunning => "#1B5E20",
+        ApplicationLifecycleState.MonitoringPaused => "#F57F17",
+        _ => "#424242"
+    };
+
+    public string StateBadgeIcon => StateManager.CurrentState switch
+    {
+        ApplicationLifecycleState.Idle => "CircleOutline",
+        ApplicationLifecycleState.ConfiguringRule => "Pencil",
+        ApplicationLifecycleState.Simulating => "TestTube",
+        ApplicationLifecycleState.PreviewReady => "CheckCircleOutline",
+        ApplicationLifecycleState.ExecutingBatch => "CogSync",
+        ApplicationLifecycleState.MonitoringRunning => "RadioboxMarked",
+        ApplicationLifecycleState.MonitoringPaused => "PauseCircle",
+        _ => "Information"
+    };
 
     /// <summary>
     /// Loads all rules from the database.
@@ -135,6 +279,7 @@ public partial class MainWindowViewModel : ObservableObject
                 Rules.Add(rule);
             }
             FilterRules();
+            await DashboardViewModel.LoadDashboardDataAsync();
             StatusMessage = $"Loaded {rules.Count} rule(s)";
         }
         catch (Exception ex)
@@ -148,21 +293,30 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Creates a new rule.
+    /// Launches the guided 4-stage rule creation wizard.
     /// </summary>
-    [RelayCommand]
-    private void CreateNewRule()
+    [RelayCommand(CanExecute = nameof(CanCreateNewRule))]
+    private async Task CreateNewRuleAsync()
     {
-        var newRule = new Rule
+        var wizardVm = (RuleWizardViewModel)_serviceProvider.GetService(typeof(RuleWizardViewModel))!;
+        var wizardWindow = new Views.RuleEditor.RuleWizardView(wizardVm);
+
+        if (Application.Current?.MainWindow != null)
         {
-            Name = "New Rule",
-            ExecutionOrder = Rules.Count
-        };
-        Rules.Add(newRule);
-        FilterRules();
-        SelectedRule = newRule;
-        StatusMessage = "New rule created";
+            wizardWindow.Owner = Application.Current.MainWindow;
+        }
+
+        var result = wizardWindow.ShowDialog();
+        if (result == true && wizardVm.CreatedRule != null)
+        {
+            await LoadRulesAsync();
+            SelectedRule = Rules.FirstOrDefault(r => r.Id == wizardVm.CreatedRule.Id);
+            CurrentView = NavigationView.RuleEditor;
+            StatusMessage = $"Rule '{wizardVm.CreatedRule.Name}' created successfully (Disabled)";
+        }
     }
+
+    private bool CanCreateNewRule() => StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
     /// Saves the selected rule to the database.
@@ -204,10 +358,15 @@ public partial class MainWindowViewModel : ObservableObject
         finally
         {
             IsLoading = false;
+            IsRuleDirty = false;
+            StateManager.NotifyRuleSaved();
         }
     }
 
-    private bool CanSaveRule() => SelectedRule != null && !string.IsNullOrWhiteSpace(SelectedRule.Name);
+    private bool CanSaveRule() =>
+        SelectedRule != null &&
+        !string.IsNullOrWhiteSpace(SelectedRule.Name) &&
+        StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
     /// Filters rules based on search text.
@@ -282,7 +441,9 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    private bool CanDeleteRule() => SelectedRule != null;
+    private bool CanDeleteRule() =>
+        SelectedRule != null &&
+        StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
     /// Toggles the enabled state of the selected rule.
@@ -297,7 +458,9 @@ public partial class MainWindowViewModel : ObservableObject
         StatusMessage = SelectedRule.IsEnabled ? "Rule enabled" : "Rule disabled";
     }
 
-    private bool CanToggleRule() => SelectedRule != null;
+    private bool CanToggleRule() =>
+        SelectedRule != null &&
+        StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
     /// Tests the selected rule against a folder.
@@ -315,11 +478,36 @@ public partial class MainWindowViewModel : ObservableObject
             SelectedRule.Actions.Add(action);
         }
 
-        var previewWindow = (Views.RulePreviewWindow)_serviceProvider.GetService(typeof(Views.RulePreviewWindow))!;
-        await previewWindow.ShowPreviewAsync(SelectedRule);
+        StateManager.TransitionTo(ApplicationLifecycleState.Simulating, "Testing rule preview");
+
+        try
+        {
+            var previewWindow = _serviceProvider.GetService(typeof(Views.PreviewWindow)) as Views.PreviewWindow;
+            if (previewWindow != null)
+            {
+                await previewWindow.ShowPreviewAsync(SelectedRule);
+            }
+            else
+            {
+                var legacyPreviewWindow = (Views.RulePreviewWindow)_serviceProvider.GetService(typeof(Views.RulePreviewWindow))!;
+                await legacyPreviewWindow.ShowPreviewAsync(SelectedRule);
+            }
+
+            StateManager.NotifyRuleSimulated();
+        }
+        catch
+        {
+            StateManager.TryTransitionTo(ApplicationLifecycleState.Idle);
+            throw;
+        }
     }
 
-    private bool CanTestRule() => SelectedRule != null && SelectedRule.Conditions != null && SelectedRule.MonitoredFolders.Any();
+    private bool CanTestRule() =>
+        SelectedRule != null &&
+        SelectedRule.Conditions != null &&
+        SelectedRule.MonitoredFolders.Any() &&
+        StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch &&
+        StateManager.CurrentState != ApplicationLifecycleState.Simulating;
 
     /// <summary>
     /// Exports the selected rule to a JSON file.
@@ -476,8 +664,20 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void ViewLogs()
     {
+        if (!ConfirmDiscardRuleEdits()) return;
         CurrentView = NavigationView.Logs;
         StatusMessage = "Viewing logs";
+    }
+
+    /// <summary>
+    /// Navigates to the operation history and rollback journal.
+    /// </summary>
+    [RelayCommand]
+    private void ViewHistory()
+    {
+        if (!ConfirmDiscardRuleEdits()) return;
+        CurrentView = NavigationView.History;
+        StatusMessage = "History & Rollback Journal";
     }
 
     /// <summary>
@@ -486,6 +686,7 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void OpenSettings()
     {
+        if (!ConfirmDiscardRuleEdits()) return;
         CurrentView = NavigationView.Settings;
         StatusMessage = "Settings";
     }
@@ -499,6 +700,18 @@ public partial class MainWindowViewModel : ObservableObject
         var helpWindow = new Views.HelpWindow();
         helpWindow.ShowDialog();
         StatusMessage = "Help";
+    }
+
+    /// <summary>
+    /// Navigates to operational dashboard overview.
+    /// </summary>
+    [RelayCommand]
+    private async Task NavigateToDashboardAsync()
+    {
+        if (!ConfirmDiscardRuleEdits()) return;
+        CurrentView = NavigationView.Dashboard;
+        StatusMessage = "Dashboard";
+        await DashboardViewModel.LoadDashboardDataAsync();
     }
 
     /// <summary>
@@ -516,6 +729,8 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void SelectedRule_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        IsRuleDirty = true;
+        StateManager.NotifyRuleModified(SelectedRule?.Name);
         if (e.PropertyName == nameof(Rule.Name))
         {
             SaveRuleCommand.NotifyCanExecuteChanged();
@@ -531,6 +746,8 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void MonitoredFolders_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        IsRuleDirty = true;
+        StateManager.NotifyRuleModified(SelectedRule?.Name);
         TestRuleCommand.NotifyCanExecuteChanged();
     }
 }

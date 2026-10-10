@@ -15,16 +15,15 @@ namespace TidyUp.ViewModels;
 public partial class LogsViewModel : ObservableObject
 {
     private readonly IActionLogRepository _logRepository;
-    private List<ActionLogEntity> _allLogs = new();
 
     [ObservableProperty]
     private ObservableCollection<ActionLogEntity> _logs = new();
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableStatuses = new() { "All", "Success", "Warning", "Error" };
+    private ObservableCollection<string> _availableStatuses = ["All", "Success", "Warning", "Error"];
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableRules = new() { "All Rules" };
+    private ObservableCollection<string> _availableRules = ["All Rules"];
 
     [ObservableProperty]
     private string _selectedStatus = "All";
@@ -45,16 +44,16 @@ public partial class LogsViewModel : ObservableObject
     private string _statusMessage = "";
 
     [ObservableProperty]
-    private int _totalCount = 0;
+    private int _totalCount;
 
     [ObservableProperty]
-    private int _successCount = 0;
+    private int _successCount;
 
     [ObservableProperty]
-    private int _errorCount = 0;
+    private int _errorCount;
 
     [ObservableProperty]
-    private int _warningCount = 0;
+    private int _warningCount;
 
     public LogsViewModel(IActionLogRepository logRepository)
     {
@@ -67,28 +66,26 @@ public partial class LogsViewModel : ObservableObject
         try
         {
             StatusMessage = "Loading logs...";
-            
-            // Load all logs
-            _allLogs = await _logRepository.GetAllAsync();
-            
+
+            // Load statistics via efficient COUNT queries
+            var stats = await _logRepository.GetStatisticsAsync();
+            TotalCount = stats.Total;
+            SuccessCount = stats.Success;
+            ErrorCount = stats.Error;
+            WarningCount = stats.Warning;
+
             // Update available rules dropdown
             AvailableRules.Clear();
             AvailableRules.Add("All Rules");
-            var ruleNames = _allLogs.Select(l => l.RuleName).Distinct().OrderBy(n => n);
+            var ruleNames = await _logRepository.GetDistinctRuleNamesAsync();
             foreach (var ruleName in ruleNames)
             {
                 AvailableRules.Add(ruleName);
             }
-            
-            // Calculate statistics
-            TotalCount = _allLogs.Count;
-            SuccessCount = _allLogs.Count(l => l.Status == "Success");
-            ErrorCount = _allLogs.Count(l => l.Status == "Error");
-            WarningCount = _allLogs.Count(l => l.Status == "Warning");
-            
-            // Apply filters
-            ApplyFilters();
-            
+
+            // Load filtered results from database
+            await ApplyFiltersAsync();
+
             StatusMessage = $"Loaded {TotalCount} log entries";
         }
         catch (Exception ex)
@@ -98,55 +95,40 @@ public partial class LogsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void ApplyFilters()
+    private async Task ApplyFiltersAsync()
     {
-        var filtered = _allLogs.AsEnumerable();
-
-        // Filter by status
-        if (SelectedStatus != "All")
+        try
         {
-            filtered = filtered.Where(l => l.Status == SelectedStatus);
-        }
+            var filtered = await _logRepository.GetFilteredAsync(
+                status: SelectedStatus,
+                ruleName: SelectedRule,
+                startDate: StartDate,
+                endDate: EndDate,
+                searchText: string.IsNullOrWhiteSpace(SearchText) ? null : SearchText);
 
-        // Filter by rule
-        if (SelectedRule != "All Rules")
+            Logs.Clear();
+            foreach (var log in filtered)
+            {
+                Logs.Add(log);
+            }
+
+            StatusMessage = $"Showing {Logs.Count} of {TotalCount} log entries";
+        }
+        catch (Exception ex)
         {
-            filtered = filtered.Where(l => l.RuleName == SelectedRule);
+            StatusMessage = $"Error applying filters: {ex.Message}";
         }
-
-        // Filter by date range
-        filtered = filtered.Where(l => l.Timestamp >= StartDate && l.Timestamp <= EndDate);
-
-        // Filter by search text
-        if (!string.IsNullOrWhiteSpace(SearchText))
-        {
-            var search = SearchText.ToLower();
-            filtered = filtered.Where(l =>
-                l.RuleName.ToLower().Contains(search) ||
-                l.FilePath.ToLower().Contains(search) ||
-                l.ActionPerformed.ToLower().Contains(search) ||
-                (l.ErrorMessage != null && l.ErrorMessage.ToLower().Contains(search)));
-        }
-
-        // Update UI
-        Logs.Clear();
-        foreach (var log in filtered.OrderByDescending(l => l.Timestamp))
-        {
-            Logs.Add(log);
-        }
-
-        StatusMessage = $"Showing {Logs.Count} of {TotalCount} log entries";
     }
 
     [RelayCommand]
-    private void ClearFilters()
+    private async Task ClearFiltersAsync()
     {
         SelectedStatus = "All";
         SelectedRule = "All Rules";
         StartDate = DateTime.Today.AddDays(-7);
         EndDate = DateTime.Today.AddDays(1);
         SearchText = "";
-        ApplyFilters();
+        await ApplyFiltersAsync();
     }
 
     [RelayCommand]
@@ -194,12 +176,12 @@ public partial class LogsViewModel : ObservableObject
     {
         try
         {
-            var cutoffDate = DateTime.UtcNow.AddDays(-30); // Using hardcoded 30 days for now
+            var cutoffDate = DateTime.UtcNow.AddDays(-30);
             StatusMessage = "Deleting old logs...";
-            
+
             await _logRepository.DeleteOlderThanAsync(cutoffDate);
             await LoadLogsAsync();
-            
+
             StatusMessage = "Old logs deleted successfully";
         }
         catch (Exception ex)
@@ -213,12 +195,23 @@ public partial class LogsViewModel : ObservableObject
     {
         try
         {
-            // TODO: Add confirmation dialog
+            var result = System.Windows.MessageBox.Show(
+                "Are you sure you want to delete ALL log entries?\n\nThis action cannot be undone.",
+                "Clear All Logs",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (result != System.Windows.MessageBoxResult.Yes)
+            {
+                StatusMessage = "Clear cancelled";
+                return;
+            }
+
             StatusMessage = "Clearing all logs...";
-            
+
             await _logRepository.DeleteAllAsync();
             await LoadLogsAsync();
-            
+
             StatusMessage = "All logs cleared";
         }
         catch (Exception ex)
@@ -237,16 +230,16 @@ public partial class LogsViewModel : ObservableObject
 
     partial void OnSelectedStatusChanged(string value)
     {
-        ApplyFilters();
+        _ = ApplyFiltersAsync();
     }
 
     partial void OnSelectedRuleChanged(string value)
     {
-        ApplyFilters();
+        _ = ApplyFiltersAsync();
     }
 
     partial void OnSearchTextChanged(string value)
     {
-        ApplyFilters();
+        _ = ApplyFiltersAsync();
     }
 }

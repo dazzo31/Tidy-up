@@ -15,9 +15,10 @@ namespace TidyUp.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsRepository _settingsRepository;
+    private readonly TidyUp.Data.Recovery.IDatabaseBackupManager? _backupManager;
 
     [ObservableProperty]
-    private AppSettings _settings;
+    private AppSettings _settings = AppSettings.CreateDefault();
 
     [ObservableProperty]
     private string _statusMessage = "";
@@ -28,21 +29,38 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<string> _availableThemes;
 
-    public SettingsViewModel(SettingsRepository settingsRepository, AppSettings settings)
+    public SettingsViewModel(SettingsRepository settingsRepository, TidyUp.Data.Recovery.IDatabaseBackupManager? backupManager = null)
     {
         _settingsRepository = settingsRepository;
-        _settings = settings;
+        _backupManager = backupManager;
 
         // Initialize dropdowns
         _availableConflictStrategies = new ObservableCollection<ConflictResolution>(
             Enum.GetValues<ConflictResolution>()
         );
 
-        _availableThemes = new ObservableCollection<string>
-        {
+        _availableThemes =
+        [
             "Dark",
             "Light"
-        };
+        ];
+
+        // Load settings asynchronously; UI starts with defaults until loaded
+        _ = LoadSettingsAsync();
+    }
+
+    [RelayCommand]
+    private async Task LoadSettingsAsync()
+    {
+        try
+        {
+            Settings = await _settingsRepository.LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error loading settings: {ex.Message}";
+            Settings = AppSettings.CreateDefault();
+        }
     }
 
     [RelayCommand]
@@ -71,10 +89,10 @@ public partial class SettingsViewModel : ObservableObject
         {
             StatusMessage = "Resetting to defaults...";
             await _settingsRepository.ResetToDefaultsAsync();
-            
+
             // Reload settings
-            Settings = await _settingsRepository.LoadAsync();
-            
+            await LoadSettingsAsync();
+
             StatusMessage = "Settings reset to defaults";
 
             // Clear status after 3 seconds
@@ -84,6 +102,30 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Error resetting settings: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task BackupDatabaseAsync()
+    {
+        try
+        {
+            if (_backupManager != null)
+            {
+                StatusMessage = "Creating database backup...";
+                var path = await _backupManager.CreateBackupAsync(tag: "manual");
+                StatusMessage = path != null
+                    ? $"Database backup created: {System.IO.Path.GetFileName(path)}"
+                    : "No database found to back up.";
+            }
+            else
+            {
+                StatusMessage = "Backup manager not available.";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error backing up database: {ex.Message}";
         }
     }
 }
