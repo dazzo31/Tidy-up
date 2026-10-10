@@ -87,6 +87,8 @@ public partial class ConditionEditorViewModel : ObservableObject
         _ = RefreshPreviewAsync();
     }
 
+    public Func<string, string, bool>? ConfirmDeleteGroupCallback { get; set; }
+
     /// <summary>
     /// Removes the selected condition or group.
     /// </summary>
@@ -94,6 +96,19 @@ public partial class ConditionEditorViewModel : ObservableObject
     private void RemoveCondition(Condition? condition)
     {
         if (condition == null || RootCondition == null) return;
+
+        if (condition is ConditionGroup group && group.Conditions.Count > 0)
+        {
+            bool proceed = ConfirmDeleteGroupCallback != null
+                ? ConfirmDeleteGroupCallback($"Delete condition group containing {group.Conditions.Count} conditions?", "Confirm Delete Group")
+                : System.Windows.MessageBox.Show(
+                    $"Delete condition group containing {group.Conditions.Count} conditions?",
+                    "Confirm Delete Group",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question) == System.Windows.MessageBoxResult.Yes;
+
+            if (!proceed) return;
+        }
 
         RemoveConditionRecursive(RootCondition, condition);
         

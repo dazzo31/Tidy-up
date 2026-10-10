@@ -48,6 +48,9 @@ public partial class ConditionGroup : Condition
     /// </summary>
     public ObservableCollection<Condition> Conditions { get; set; } = new();
 
+    [JsonIgnore]
+    public string DisplaySummary => $"{Operator} ({Conditions.Count} conditions)";
+
     public override bool Evaluate(FileInfo fileInfo)
     {
         if (!Conditions.Any())
@@ -70,6 +73,57 @@ public partial class FileNameCondition : Condition
     [ObservableProperty]
     private string _value = string.Empty;
 
+    [JsonIgnore]
+    public bool IsRegexOperator => Operator == StringOperator.MatchesRegex;
+
+    [JsonIgnore]
+    public bool HasRegexError => IsRegexOperator && !string.IsNullOrWhiteSpace(Value) && !IsValidRegex(Value, out _);
+
+    [JsonIgnore]
+    public string RegexErrorMessage
+    {
+        get
+        {
+            if (!IsRegexOperator || string.IsNullOrWhiteSpace(Value)) return string.Empty;
+            if (!IsValidRegex(Value, out var error)) return error;
+            return string.Empty;
+        }
+    }
+
+    public static bool IsValidRegex(string pattern, out string errorMessage)
+    {
+        if (string.IsNullOrWhiteSpace(pattern))
+        {
+            errorMessage = string.Empty;
+            return true;
+        }
+
+        try
+        {
+            _ = new System.Text.RegularExpressions.Regex(pattern);
+            errorMessage = string.Empty;
+            return true;
+        }
+        catch (ArgumentException ex)
+        {
+            errorMessage = ex.Message;
+            return false;
+        }
+    }
+
+    partial void OnOperatorChanged(StringOperator value)
+    {
+        OnPropertyChanged(nameof(IsRegexOperator));
+        OnPropertyChanged(nameof(HasRegexError));
+        OnPropertyChanged(nameof(RegexErrorMessage));
+    }
+
+    partial void OnValueChanged(string value)
+    {
+        OnPropertyChanged(nameof(HasRegexError));
+        OnPropertyChanged(nameof(RegexErrorMessage));
+    }
+
     public override bool Evaluate(FileInfo fileInfo)
     {
         var fileName = Path.GetFileNameWithoutExtension(fileInfo.Name);
@@ -87,10 +141,22 @@ public partial class FileNameCondition : Condition
             StringOperator.DoesNotContain => !actual.Contains(expected, comparison),
             StringOperator.StartsWith => actual.StartsWith(expected, comparison),
             StringOperator.EndsWith => actual.EndsWith(expected, comparison),
-            StringOperator.MatchesRegex => System.Text.RegularExpressions.Regex.IsMatch(actual, expected),
+            StringOperator.MatchesRegex => SafeRegexMatch(actual, expected),
             StringOperator.IsEmpty => string.IsNullOrWhiteSpace(actual),
             _ => false
         };
+    }
+
+    private static bool SafeRegexMatch(string actual, string expected)
+    {
+        try
+        {
+            return System.Text.RegularExpressions.Regex.IsMatch(actual, expected);
+        }
+        catch
+        {
+            return false;
+        }
     }
 }
 
@@ -143,6 +209,92 @@ public partial class FileSizeCondition : Condition
     [ObservableProperty]
     private long? _maxValue; // For "Between" operator
 
+    [ObservableProperty]
+    [JsonIgnore]
+    private string _sizeUnit = "MB";
+
+    [ObservableProperty]
+    [JsonIgnore]
+    private double _displaySize;
+
+    public static IReadOnlyList<string> AvailableUnits { get; } = new[] { "Bytes", "KB", "MB", "GB" };
+
+    private bool _isSyncing;
+
+    public FileSizeCondition()
+    {
+        SyncDisplayFromBytes();
+    }
+
+    public void SyncDisplayFromBytes()
+    {
+        _isSyncing = true;
+        try
+        {
+            if (Value >= 1024L * 1024 * 1024 && Value % (1024L * 1024 * 1024) == 0)
+            {
+                SizeUnit = "GB";
+                DisplaySize = (double)Value / (1024L * 1024 * 1024);
+            }
+            else if (Value >= 1024L * 1024 && Value % (1024L * 1024) == 0)
+            {
+                SizeUnit = "MB";
+                DisplaySize = (double)Value / (1024L * 1024);
+            }
+            else if (Value >= 1024L && Value % 1024L == 0)
+            {
+                SizeUnit = "KB";
+                DisplaySize = (double)Value / 1024L;
+            }
+            else
+            {
+                SizeUnit = "Bytes";
+                DisplaySize = Value;
+            }
+        }
+        finally
+        {
+            _isSyncing = false;
+        }
+    }
+
+    public void UpdateBytesFromDisplay()
+    {
+        if (_isSyncing) return;
+        Value = SizeUnit switch
+        {
+            "GB" => (long)(DisplaySize * 1024L * 1024 * 1024),
+            "MB" => (long)(DisplaySize * 1024L * 1024),
+            "KB" => (long)(DisplaySize * 1024L),
+            _ => (long)DisplaySize
+        };
+    }
+
+    partial void OnSizeUnitChanged(string value)
+    {
+        UpdateBytesFromDisplay();
+    }
+
+    partial void OnDisplaySizeChanged(double value)
+    {
+        UpdateBytesFromDisplay();
+    }
+
+    partial void OnValueChanged(long value)
+    {
+        var calculated = SizeUnit switch
+        {
+            "GB" => (long)(DisplaySize * 1024L * 1024 * 1024),
+            "MB" => (long)(DisplaySize * 1024L * 1024),
+            "KB" => (long)(DisplaySize * 1024L),
+            _ => (long)DisplaySize
+        };
+        if (calculated != value)
+        {
+            SyncDisplayFromBytes();
+        }
+    }
+
     public override bool Evaluate(FileInfo fileInfo)
     {
         var size = fileInfo.Length;
@@ -192,6 +344,22 @@ public partial class FileDateCondition : Condition
     
     [ObservableProperty]
     private int? _daysOld; // For "OlderThanDays" operator
+
+    [JsonIgnore]
+    public bool IsBetween => Operator == DateOperator.Between;
+
+    [JsonIgnore]
+    public bool IsOlderThanDays => Operator == DateOperator.OlderThanDays;
+
+    [JsonIgnore]
+    public bool IsSpecificDate => Operator != DateOperator.OlderThanDays;
+
+    partial void OnOperatorChanged(DateOperator value)
+    {
+        OnPropertyChanged(nameof(IsBetween));
+        OnPropertyChanged(nameof(IsOlderThanDays));
+        OnPropertyChanged(nameof(IsSpecificDate));
+    }
 
     public override bool Evaluate(FileInfo fileInfo)
     {

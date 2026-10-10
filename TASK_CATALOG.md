@@ -1211,10 +1211,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-06: Condition Builder Nested Expression Visualization (STATUS: NOT STARTED)
+### TASK-UI-06: Condition Builder Nested Expression Visualization (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-06
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Improve visual hierarchy, inline validation, and regex assistance in Stage 2 of the Condition Builder.
 
