@@ -4,129 +4,308 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="800">
-    
-    <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
-        <StackPanel MaxWidth="700">
-            
-            <!-- General Settings -->
-            <materialDesign:Card Margin="0,0,0,12" Padding="16">
-                <StackPanel>
-                    <TextBlock Text="General" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="Default Conflict Resolution" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <ComboBox ItemsSource="{Binding AvailableConflictStrategies}"
-                              SelectedItem="{Binding Settings.DefaultConflictResolution}"
-                              Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="Theme" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <ComboBox ItemsSource="{Binding AvailableThemes}"
-                              SelectedItem="{Binding Settings.Theme}"
-                              Margin="0,0,0,0"/>
-                </StackPanel>
-            </materialDesign:Card>
-            
-            <!-- Monitoring Settings -->
-            <materialDesign:Card Margin="0,0,0,12" Padding="16">
-                <StackPanel>
-                    <TextBlock Text="Monitoring" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="File Change Debounce Delay (ms)" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <TextBox Text="{Binding Settings.DebounceDelayMs, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Milliseconds"
-                             Margin="0,0,0,4"/>
-                    <TextBlock Text="Prevents rapid duplicate events. Default: 500ms" 
-                               FontSize="11" Opacity="0.6" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="Network Folder Polling Interval (seconds)" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <TextBox Text="{Binding Settings.NetworkFolderPollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Seconds"
-                             Margin="0,0,0,4"/>
-                    <TextBlock Text="How often to check network folders for changes. Default: 30s" 
-                               FontSize="11" Opacity="0.6" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="File Lock Retry Count" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <TextBox Text="{Binding Settings.FileLockRetryCount, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Attempts"
-                             Margin="0,0,0,4"/>
-                    <TextBlock Text="Number of times to retry locked files. Default: 3" 
-                               FontSize="11" Opacity="0.6" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="File Lock Retry Delay (ms)" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <TextBox Text="{Binding Settings.FileLockRetryDelayMs, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Milliseconds"
-                             Margin="0,0,0,4"/>
-                    <TextBlock Text="Delay between retry attempts. Default: 1000ms" 
-                               FontSize="11" Opacity="0.6" Margin="0,0,0,0"/>
-                </StackPanel>
-            </materialDesign:Card>
-            
-            <!-- Logs Settings -->
-            <materialDesign:Card Margin="0,0,0,12" Padding="16">
-                <StackPanel>
-                    <TextBlock Text="Logs" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    
-                    <TextBlock Text="Log Retention Period (days)" Margin="0,0,0,4" FontSize="12" Opacity="0.7"/>
-                    <TextBox Text="{Binding Settings.LogRetentionDays, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Days"
-                             Margin="0,0,0,4"/>
-                    <TextBlock Text="Logs older than this will be deleted. Default: 30 days" 
-                               FontSize="11" Opacity="0.6" Margin="0,0,0,12"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.AutoCleanupLogs}"
-                              Content="Automatically cleanup old logs"
-                              Margin="0,0,0,0"/>
-                </StackPanel>
-            </materialDesign:Card>
-            
-            <!-- Notification Settings -->
-            <materialDesign:Card Margin="0,0,0,12" Padding="16">
-                <StackPanel>
-                    <TextBlock Text="Notifications" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.SystemTrayEnabled}"
-                              Content="Enable system tray icon"
-                              Margin="0,0,0,8"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.MinimizeToTray}"
-                              Content="Minimize to system tray instead of taskbar"
-                              Margin="0,0,0,8"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.ToastNotificationsEnabled}"
-                              Content="Enable toast notifications"
-                              Margin="0,0,0,8"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.ShowSuccessNotifications}"
-                              Content="Show notifications for successful operations"
-                              Margin="0,0,0,8"/>
-                    
-                    <CheckBox IsChecked="{Binding Settings.ShowErrorNotifications}"
-                              Content="Show notifications for errors"
-                              Margin="0,0,0,0"/>
-                </StackPanel>
-            </materialDesign:Card>
-            
-            <!-- Actions -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                <Button Content="Reset to Defaults"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"
-                        Command="{Binding ResetToDefaultsAsyncCommand}"
-                        Margin="0,0,8,0"/>
-                
-                <Button Content="Save Settings"
-                        Style="{StaticResource MaterialDesignRaisedButton}"
-                        Command="{Binding SaveSettingsAsyncCommand}"/>
+             d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel}"
+             d:DesignHeight="700" d:DesignWidth="1000">
+
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <!-- 0: Header & Action Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 1: Section Navigation Bar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 2: Section Content Area -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- 0: Header and Save / Status Bar -->
+        <Grid Grid.Row="0" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Application Settings" 
+                           Style="{StaticResource MaterialDesignHeadline5TextBlock}" 
+                           FontWeight="Bold"/>
+                <TextBlock Text="Configure operational behaviors, safety safeguards, engine throughput, retention, and maintenance."
+                           Style="{StaticResource MaterialDesignCaptionTextBlock}" 
+                           Opacity="0.7" Margin="0,2,0,0"/>
             </StackPanel>
-            
-            <!-- Status Message -->
-            <TextBlock Text="{Binding StatusMessage}"
-                       Foreground="{DynamicResource PrimaryHueMidBrush}"
-                       FontWeight="SemiBold"
-                       HorizontalAlignment="Right"
-                       Margin="0,8,0,0"
-                       Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
-            
-        </StackPanel>
-    </ScrollViewer>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                <TextBlock Text="{Binding StatusMessage}"
+                           Foreground="{DynamicResource PrimaryHueMidBrush}"
+                           FontWeight="SemiBold"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,0"
+                           Visibility="{Binding StatusMessage, Converter={StaticResource StringToVisibilityConverter}}"/>
+
+                <Button Content="Save Settings"
+                        Command="{Binding SaveSettingsCommand}"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Height="32" Padding="14,0"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- 1: 5-Section Navigation Segment Bar -->
+        <materialDesign:Card Grid.Row="1" Margin="0,0,0,12" Padding="6" UniformCornerRadius="6">
+            <WrapPanel Orientation="Horizontal">
+                <RadioButton Content="General"
+                             IsChecked="{Binding IsGeneralActive, Mode=OneWay}"
+                             Command="{Binding SelectCategoryCommand}"
+                             CommandParameter="{x:Static viewmodels:SettingsViewModel+SettingsCategory.General}"
+                             Style="{StaticResource MaterialDesignChoiceChipRadioButton}"
+                             Margin="4,2"/>
+
+                <RadioButton Content="Safety &amp; Safeguards"
+                             IsChecked="{Binding IsSafetyActive, Mode=OneWay}"
+                             Command="{Binding SelectCategoryCommand}"
+                             CommandParameter="{x:Static viewmodels:SettingsViewModel+SettingsCategory.Safety}"
+                             Style="{StaticResource MaterialDesignChoiceChipRadioButton}"
+                             Margin="4,2"/>
+
+                <RadioButton Content="Performance &amp; Engine"
+                             IsChecked="{Binding IsPerformanceActive, Mode=OneWay}"
+                             Command="{Binding SelectCategoryCommand}"
+                             CommandParameter="{x:Static viewmodels:SettingsViewModel+SettingsCategory.Performance}"
+                             Style="{StaticResource MaterialDesignChoiceChipRadioButton}"
+                             Margin="4,2"/>
+
+                <RadioButton Content="Storage &amp; Logs"
+                             IsChecked="{Binding IsStorageLogsActive, Mode=OneWay}"
+                             Command="{Binding SelectCategoryCommand}"
+                             CommandParameter="{x:Static viewmodels:SettingsViewModel+SettingsCategory.StorageAndLogs}"
+                             Style="{StaticResource MaterialDesignChoiceChipRadioButton}"
+                             Margin="4,2"/>
+
+                <RadioButton Content="Advanced &amp; Maintenance"
+                             IsChecked="{Binding IsAdvancedActive, Mode=OneWay}"
+                             Command="{Binding SelectCategoryCommand}"
+                             CommandParameter="{x:Static viewmodels:SettingsViewModel+SettingsCategory.Advanced}"
+                             Style="{StaticResource MaterialDesignChoiceChipRadioButton}"
+                             Margin="4,2"/>
+            </WrapPanel>
+        </materialDesign:Card>
+
+        <!-- 2: Categorized Settings Content Panels -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+            <StackPanel MaxWidth="850" HorizontalAlignment="Left">
+
+                <!-- SECTION 1: GENERAL -->
+                <StackPanel Visibility="{Binding IsGeneralActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Appearance &amp; Theme" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Customize the application visual palette between modern Windows light and dark surfaces." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Active UI Theme" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                      SelectedItem="{Binding Settings.Theme}"
+                                      Width="200" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Application Lifecycle &amp; System Tray" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Control how Tidy-up behaves during window minimization and background execution." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.SystemTrayEnabled}"
+                                      Content="Enable System Tray Notification Icon"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock Text="Keeps Tidy-up accessible in the notification tray even when windows are closed." FontSize="10" Opacity="0.6" Margin="28,0,0,10"/>
+
+                            <CheckBox IsChecked="{Binding Settings.MinimizeToTray}"
+                                      Content="Minimize to System Tray instead of Windows Taskbar"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock Text="Reduces taskbar clutter during continuous background folder observation." FontSize="10" Opacity="0.6" Margin="28,0,0,10"/>
+
+                            <CheckBox IsChecked="{Binding Settings.QuietMode}"
+                                      Content="Run in Quiet Mode"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock Text="Suppresses non-essential notification dialogs during background automated organization." FontSize="10" Opacity="0.6" Margin="28,0,0,4"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Windows Toast Notifications" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Deliver real-time alerts when operations succeed or require intervention." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.ToastNotificationsEnabled}"
+                                      Content="Enable Windows Toast Notifications"
+                                      Margin="0,0,0,8"/>
+
+                            <CheckBox IsChecked="{Binding Settings.ShowSuccessNotifications}"
+                                      Content="Show notifications for successful file organization events"
+                                      Margin="0,0,0,8"/>
+
+                            <CheckBox IsChecked="{Binding Settings.ShowErrorNotifications}"
+                                      Content="Show notifications when a file lock or processing error occurs"
+                                      Margin="0,0,0,4"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+
+                <!-- SECTION 2: SAFETY & SAFEGUARDS -->
+                <StackPanel Visibility="{Binding IsSafetyActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Default Conflict Resolution Policy" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Determines what happens when a moved or copied file shares the same name as an existing destination file." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <ComboBox ItemsSource="{Binding AvailableConflictStrategies}"
+                                      SelectedItem="{Binding Settings.DefaultConflictResolution}"
+                                      Width="240" HorizontalAlignment="Left" Margin="0,0,0,6"/>
+
+                            <Border Background="#FFF3E0" CornerRadius="4" Padding="10,6" Margin="0,6,0,4">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="ShieldAlertOutline" Foreground="#E65100" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Safety Note: Selecting 'Overwrite' will permanently replace destination files. 'RenameNew' preserves all existing data safely."
+                                               Foreground="#E65100" FontSize="11" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Recycle Bin Deletion Safeguard" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Protect against accidental permanent data loss by routing deleted files through the Windows Recycle Bin." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.UseRecycleBinByDefault}"
+                                      Content="Always use Windows Recycle Bin for deletions by default"
+                                      Margin="0,0,4,0"/>
+                            <TextBlock Text="Recommended: Files can be recovered from the Windows Recycle Bin if deleted accidentally." FontSize="10" Opacity="0.6" Margin="28,2,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.RequireDestructiveConfirmations}"
+                                      Content="Require explicit confirmation before applying high-risk operations"
+                                      Margin="0,0,4,0"/>
+                            <TextBlock Text="Displays the Safeguard Risk Modal when deleting files or moving more than 50 files in a single batch." FontSize="10" Opacity="0.6" Margin="28,2,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+
+                <!-- SECTION 3: PERFORMANCE & ENGINE -->
+                <StackPanel Visibility="{Binding IsPerformanceActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Throughput &amp; Worker Concurrency" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Tune execution pipeline thread pool limits and file scanning batch sizes." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Max Concurrent Worker Operations" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.MaxConcurrentOperations, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Number of parallel worker tasks for bulk moves/copies. Default: 4." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Scan Batch Pagination Size" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.ScanBatchSize, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Max records processed per pagination chunk during disk discovery. Default: 500." FontSize="10" Opacity="0.6" Margin="0,0,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Watcher Throttling &amp; File Lock Handlers" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Stabilize file detection during downloads, stream writes, or network share latency." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="File Event Debounce Delay (ms)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.DebounceDelayMs, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Throttles rapid multi-write events from applications. Default: 500ms." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Network Share Polling Interval (seconds)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.NetworkFolderPollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Polling frequency for remote UNC/SMB shares. Default: 30s." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Locked File Max Retries" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.FileLockRetryCount, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Attempts to re-open files currently locked by other apps. Default: 3." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Locked File Retry Delay (ms)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.FileLockRetryDelayMs, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Time between lock polling attempts. Default: 1000ms." FontSize="10" Opacity="0.6" Margin="0,0,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+
+                <!-- SECTION 4: STORAGE & LOGS -->
+                <StackPanel Visibility="{Binding IsStorageLogsActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Journal &amp; Log Retention" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Prune historical execution journals and diagnostic logs to conserve disk capacity." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Audit Retention Period (days)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBlock Text="Journal entries older than this will be pruned. Default: 30 days." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.AutoCleanupLogs}"
+                                      Content="Automatically prune expired logs on application launch"
+                                      Margin="0,0,0,4"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Database Backup &amp; Recovery" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Manage SQLite database snapshots to protect rules, journals, and configuration." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <TextBlock Text="Backup Storage Directory:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
+                            <TextBox Text="{Binding Settings.DatabaseBackupPath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,0,6"/>
+
+                            <Button Content="Create Database Backup Now"
+                                    Command="{Binding BackupDatabaseCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    HorizontalAlignment="Left" Height="30" Padding="12,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+
+                <!-- SECTION 5: ADVANCED & MAINTENANCE -->
+                <StackPanel Visibility="{Binding IsAdvancedActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Diagnostic Telemetry" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Enable verbose logging for troubleshooting rule evaluation and monitor events." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <CheckBox IsChecked="{Binding Settings.DebugLoggingEnabled}"
+                                      Content="Enable Verbose Debug Telemetry Logging"
+                                      Margin="0,0,0,4"/>
+                            <TextBlock Text="Warning: Detailed debug telemetry increases log disk write frequency. Use only for diagnosing issues." FontSize="10" Foreground="#C62828" Margin="28,0,0,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="SQLite Database Optimization (VACUUM)" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Defragments database file storage, reclaims deleted record pages, and reorganizes database indices." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <Button Content="Optimize Database Storage (VACUUM)"
+                                    Command="{Binding VacuumDatabaseCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    HorizontalAlignment="Left" Height="30" Padding="12,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="Configuration Reset" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Revert all application settings back to original factory defaults. Existing rules and folders are not modified." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <Button Content="Reset All Settings to Factory Defaults"
+                                    Command="{Binding ResetToDefaultsCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Foreground="#D32F2F"
+                                    BorderBrush="#D32F2F"
+                                    HorizontalAlignment="Left" Height="30" Padding="12,0"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+                </StackPanel>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
 </UserControl>

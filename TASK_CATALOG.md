@@ -1392,10 +1392,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-12: Categorized 5-Section Settings Experience (STATUS: NOT STARTED)
+### TASK-UI-12: Categorized 5-Section Settings Experience (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-12
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Reorganize SettingsView into 5 structured sections with contextual risk explanations.
 

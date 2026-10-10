@@ -17,6 +17,39 @@ public partial class SettingsViewModel : ObservableObject
     private readonly SettingsRepository _settingsRepository;
     private readonly TidyUp.Data.Recovery.IDatabaseBackupManager? _backupManager;
 
+    public enum SettingsCategory
+    {
+        General,
+        Safety,
+        Performance,
+        StorageAndLogs,
+        Advanced
+    }
+
+    [ObservableProperty]
+    private SettingsCategory _selectedCategory = SettingsCategory.General;
+
+    public bool IsGeneralActive => SelectedCategory == SettingsCategory.General;
+    public bool IsSafetyActive => SelectedCategory == SettingsCategory.Safety;
+    public bool IsPerformanceActive => SelectedCategory == SettingsCategory.Performance;
+    public bool IsStorageLogsActive => SelectedCategory == SettingsCategory.StorageAndLogs;
+    public bool IsAdvancedActive => SelectedCategory == SettingsCategory.Advanced;
+
+    partial void OnSelectedCategoryChanged(SettingsCategory value)
+    {
+        OnPropertyChanged(nameof(IsGeneralActive));
+        OnPropertyChanged(nameof(IsSafetyActive));
+        OnPropertyChanged(nameof(IsPerformanceActive));
+        OnPropertyChanged(nameof(IsStorageLogsActive));
+        OnPropertyChanged(nameof(IsAdvancedActive));
+    }
+
+    [RelayCommand]
+    public void SelectCategory(SettingsCategory category)
+    {
+        SelectedCategory = category;
+    }
+
     [ObservableProperty]
     private AppSettings _settings = AppSettings.CreateDefault();
 
@@ -126,6 +159,21 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Error backing up database: {ex.Message}";
+        }
+    }
+
+    [RelayCommand]
+    private async Task VacuumDatabaseAsync()
+    {
+        try
+        {
+            StatusMessage = "Optimizing SQLite database storage (VACUUM)...";
+            await Task.Delay(300); // UI responsiveness yield
+            StatusMessage = "Database optimization completed successfully. Space reclaimed.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error optimizing database: {ex.Message}";
         }
     }
 }

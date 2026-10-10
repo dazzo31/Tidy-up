@@ -58,6 +58,27 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty]
     private string _theme = "Dark";
 
+    // Safety Settings
+    [ObservableProperty]
+    private bool _useRecycleBinByDefault = true;
+
+    [ObservableProperty]
+    private bool _requireDestructiveConfirmations = true;
+
+    // Performance Settings
+    [ObservableProperty]
+    private int _maxConcurrentOperations = 4;
+
+    [ObservableProperty]
+    private int _scanBatchSize = 500;
+
+    // Advanced & Storage Settings
+    [ObservableProperty]
+    private bool _debugLoggingEnabled = false;
+
+    [ObservableProperty]
+    private string _databaseBackupPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TidyUp", "Backups");
+
     // Window Geometry Persistence (TASK-GUI-08)
     [ObservableProperty]
     private double? _windowWidth;
