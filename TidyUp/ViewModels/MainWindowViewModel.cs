@@ -482,16 +482,8 @@ public partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            var previewWindow = _serviceProvider.GetService(typeof(Views.PreviewWindow)) as Views.PreviewWindow;
-            if (previewWindow != null)
-            {
-                await previewWindow.ShowPreviewAsync(SelectedRule);
-            }
-            else
-            {
-                var legacyPreviewWindow = (Views.RulePreviewWindow)_serviceProvider.GetService(typeof(Views.RulePreviewWindow))!;
-                await legacyPreviewWindow.ShowPreviewAsync(SelectedRule);
-            }
+            var previewWindow = (Views.PreviewWindow)_serviceProvider.GetService(typeof(Views.PreviewWindow))!;
+            await previewWindow.ShowPreviewAsync(SelectedRule);
 
             StateManager.NotifyRuleSimulated();
         }
@@ -692,13 +684,12 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Opens the Help window.
+    /// Navigates to the embedded Help view.
     /// </summary>
     [RelayCommand]
     private void ViewHelp()
     {
-        var helpWindow = new Views.HelpWindow();
-        helpWindow.ShowDialog();
+        CurrentView = NavigationView.Help;
         StatusMessage = "Help";
     }
 

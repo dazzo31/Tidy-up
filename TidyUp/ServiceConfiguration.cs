@@ -86,10 +86,8 @@ public static class ServiceConfiguration
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<DashboardViewModel>();
         services.AddTransient<RuleWizardViewModel>();
-        services.AddTransient<LogViewerViewModel>();
         services.AddTransient<LogsViewModel>();
         services.AddTransient<SettingsViewModel>();
-        services.AddTransient<RulePreviewViewModel>();
         services.AddTransient<PreviewViewModel>();
         services.AddTransient<ViewModels.Dialogs.SafeguardConfirmationViewModel>();
         services.AddTransient<HistoryViewModel>();
@@ -102,9 +100,6 @@ public static class ServiceConfiguration
         services.AddTransient<MainWindow>();
         services.AddTransient<Views.DashboardView>();
         services.AddTransient<Views.RuleEditor.RuleWizardView>();
-        services.AddTransient<Views.LogViewerWindow>();
-        services.AddTransient<Views.SettingsWindow>();
-        services.AddTransient<Views.RulePreviewWindow>();
         services.AddTransient<Views.PreviewWindow>();
         services.AddTransient<Views.Dialogs.SafeguardConfirmationDialog>();
         services.AddTransient<Views.Dialogs.RuleDiagnosticsDialog>();
