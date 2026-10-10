@@ -1083,10 +1083,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-02: Persistent Modern Navigation Rail (STATUS: NOT STARTED)
+### TASK-UI-02: Persistent Modern Navigation Rail (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-02
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Replace the legacy ToolBarTray in MainWindow.xaml with a persistent, modern Windows 11 navigation rail supporting the 6 core destinations.
 

@@ -21,6 +21,12 @@
     
     <!-- Keyboard Shortcuts -->
     <Window.InputBindings>
+        <KeyBinding Key="D1" Modifiers="Control" Command="{Binding NavigateToDashboardCommand}"/>
+        <KeyBinding Key="D2" Modifiers="Control" Command="{Binding NavigateToRuleEditorCommand}"/>
+        <KeyBinding Key="D3" Modifiers="Control" Command="{Binding NavigateToFoldersCommand}"/>
+        <KeyBinding Key="D4" Modifiers="Control" Command="{Binding NavigateToPreviewReviewCommand}"/>
+        <KeyBinding Key="D5" Modifiers="Control" Command="{Binding ViewHistoryCommand}"/>
+        <KeyBinding Key="D6" Modifiers="Control" Command="{Binding OpenSettingsCommand}"/>
         <KeyBinding Key="D" Modifiers="Control" Command="{Binding NavigateToDashboardCommand}"/>
         <KeyBinding Key="N" Modifiers="Control" Command="{Binding CreateNewRuleCommand}"/>
         <KeyBinding Key="S" Modifiers="Control" Command="{Binding SaveRuleCommand}"/>
@@ -32,145 +38,202 @@
     </Window.InputBindings>
     
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="220" MinWidth="68" MaxWidth="280"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
-        <!-- Application Toolbar (separate from window chrome) -->
-        <ToolBarTray Grid.Row="0" IsLocked="True">
-            <ToolBar Band="0" BandIndex="0" Header="View">
-                <Button ToolTip="Dashboard (Ctrl+D)"
-                        Command="{Binding NavigateToDashboardCommand}"
-                        AutomationProperties.Name="Dashboard">
+        <!-- Modern Persistent Navigation Rail (Left Sidebar) -->
+        <Border Grid.Column="0" 
+                Background="{DynamicResource MaterialDesignToolBarBackground}"
+                BorderBrush="{DynamicResource MaterialDesignDivider}"
+                BorderThickness="0,0,1,0">
+            <DockPanel>
+                <!-- App Header -->
+                <Border DockPanel.Dock="Top" 
+                        Padding="16,14" 
+                        BorderBrush="{DynamicResource MaterialDesignDivider}" 
+                        BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="ViewDashboard" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Dashboard" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                        <Image Source="pack://application:,,,/Resources/tidyup.ico" 
+                               Width="24" Height="24" 
+                               VerticalAlignment="Center" 
+                               Margin="0,0,10,0"/>
+                        <TextBlock Text="TidyUp" 
+                                   FontSize="16" 
+                                   FontWeight="SemiBold" 
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
-                </Button>
-                <Button ToolTip="Rules Editor"
-                        Command="{Binding NavigateToRuleEditorCommand}"
-                        AutomationProperties.Name="Rules">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="FilterList" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Rules" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-            </ToolBar>
-            <ToolBar Band="0" BandIndex="1" Header="File">
-                <Button ToolTip="New Rule (Ctrl+N)"
-                        Command="{Binding CreateNewRuleCommand}"
-                        AutomationProperties.Name="New Rule">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="New" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Separator/>
-                <Button ToolTip="Import Rules"
-                        Command="{Binding ImportRulesCommand}"
-                        AutomationProperties.Name="Import Rules">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Import" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Import" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button ToolTip="Export Selected Rule"
-                        Command="{Binding ExportRuleCommand}"
-                        AutomationProperties.Name="Export Rule">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Export" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Export" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button ToolTip="Export All Rules"
-                        Command="{Binding ExportAllRulesCommand}"
-                        AutomationProperties.Name="Export All Rules">
-                    <materialDesign:PackIcon Kind="ExportVariant" Width="18" Height="18"/>
-                </Button>
-            </ToolBar>
-            <ToolBar Band="0" BandIndex="2" Header="Actions">
-                <Button ToolTip="Test Rule (Ctrl+T)"
-                        Command="{Binding TestRuleCommand}"
-                        AutomationProperties.Name="Test Rule">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="TestTube" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Test" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button ToolTip="Refresh Rules (F5)"
-                        Command="{Binding LoadRulesCommand}"
-                        AutomationProperties.Name="Refresh">
-                    <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18"/>
-                </Button>
-                <Separator/>
-                <Button ToolTip="View Logs"
-                        Command="{Binding ViewLogsCommand}"
-                        AutomationProperties.Name="View Logs">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="History" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="Logs" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button ToolTip="Operation History &amp; Rollback"
-                        Command="{Binding ViewHistoryCommand}"
-                        AutomationProperties.Name="View History">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="BackupRestore" Width="18" Height="18" VerticalAlignment="Center"/>
-                        <TextBlock Text="History" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
-                <Button ToolTip="Help (F1)"
-                        Command="{Binding ViewHelpCommand}"
-                        AutomationProperties.Name="Help">
-                    <materialDesign:PackIcon Kind="HelpCircle" Width="18" Height="18"/>
-                </Button>
-                <Button ToolTip="Settings"
-                        Command="{Binding OpenSettingsCommand}"
-                        AutomationProperties.Name="Settings">
-                    <materialDesign:PackIcon Kind="Cog" Width="18" Height="18"/>
-                </Button>
-            </ToolBar>
-        </ToolBarTray>
+                </Border>
 
-        <!-- Main Content Area -->
-        <Grid Grid.Row="1">
-            <!-- Rule Editor view (full split layout) -->
-            <Grid>
-                <Grid.Style>
-                    <Style TargetType="Grid">
-                        <Setter Property="Visibility" Value="Visible"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding CurrentView}" Value="Dashboard">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding CurrentView}" Value="Help">
-                                <Setter Property="Visibility" Value="Collapsed"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </Grid.Style>
-                
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="280" MinWidth="220"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*" MinWidth="400"/>
-                </Grid.ColumnDefinitions>
+                <!-- Bottom Quick Actions & Guide -->
+                <StackPanel DockPanel.Dock="Bottom" Margin="8,8,8,12">
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding CreateNewRuleCommand}"
+                            ToolTip="Create New Rule (Ctrl+N)"
+                            AutomationProperties.Name="Create New Rule"
+                            Height="36"
+                            Margin="0,0,0,6"
+                            HorizontalContentAlignment="Left">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Plus" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="New Rule" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignFlatButton}"
+                            Command="{Binding ViewHelpCommand}"
+                            ToolTip="Help &amp; Guide (F1)"
+                            AutomationProperties.Name="Help and Guide"
+                            Height="32"
+                            HorizontalContentAlignment="Left">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="HelpCircleOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Help &amp; Guide" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- 6 Core Navigation Destinations -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Margin="8,10,8,10">
+                        <!-- 1. Dashboard -->
+                        <Button Command="{Binding NavigateToDashboardCommand}"
+                                ToolTip="Operational Dashboard (Ctrl+1, Ctrl+D)"
+                                AutomationProperties.Name="Dashboard"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ViewDashboardOutline" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Dashboard" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 2. Rules -->
+                        <Button Command="{Binding NavigateToRuleEditorCommand}"
+                                ToolTip="Rule Management (Ctrl+2)"
+                                AutomationProperties.Name="Rules"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FilterList" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Rules" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 3. Folders -->
+                        <Button Command="{Binding NavigateToFoldersCommand}"
+                                ToolTip="Monitored Folders (Ctrl+3)"
+                                AutomationProperties.Name="Monitored Folders"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FolderMultipleOutline" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Folders" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 4. Preview & Review -->
+                        <Button Command="{Binding NavigateToPreviewReviewCommand}"
+                                ToolTip="Preview &amp; Review (Ctrl+4, Ctrl+T)"
+                                AutomationProperties.Name="Preview and Review"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="EyeCheckOutline" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Preview &amp; Review" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 5. History -->
+                        <Button Command="{Binding ViewHistoryCommand}"
+                                ToolTip="Operation History &amp; Journal (Ctrl+5)"
+                                AutomationProperties.Name="History and Journal"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="History" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="History" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- 6. Settings -->
+                        <Button Command="{Binding OpenSettingsCommand}"
+                                ToolTip="Settings (Ctrl+6)"
+                                AutomationProperties.Name="Settings"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="40" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="CogOutline" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Settings" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <Separator Margin="0,8" Background="{DynamicResource MaterialDesignDivider}"/>
+
+                        <!-- Auxiliary: Logs -->
+                        <Button Command="{Binding ViewLogsCommand}"
+                                ToolTip="System Logs"
+                                AutomationProperties.Name="System Logs"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="36" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileDocumentOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Logs" VerticalAlignment="Center" Opacity="0.85"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </ScrollViewer>
+            </DockPanel>
+        </Border>
+
+        <!-- Right Side: Content Area (Row 0) and Status Bar (Row 1) -->
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Main Content Area -->
+            <Grid Grid.Row="0">
+                <!-- Rule Editor view (full split layout) -->
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentView}" Value="RuleEditor">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="280" MinWidth="220"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*" MinWidth="400"/>
+                    </Grid.ColumnDefinitions>
 
                 <!-- Left Panel: Rule List -->
                 <DockPanel Grid.Column="0" Margin="4,4,2,4">
                     <!-- Rule List Header -->
                     <Border DockPanel.Dock="Top" 
                             Background="{DynamicResource MaterialDesignToolBarBackground}" 
-                            Padding="12,8">
-                        <TextBlock Text="Rules" FontSize="14" FontWeight="SemiBold"/>
+                            Padding="12,6,6,6">
+                        <DockPanel>
+                            <TextBlock Text="Rules" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button ToolTip="Refresh (F5)" Command="{Binding LoadRulesCommand}" Style="{StaticResource MaterialDesignIconButton}" Width="28" Height="28">
+                                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16"/>
+                                </Button>
+                                <Button ToolTip="Import Rules" Command="{Binding ImportRulesCommand}" Style="{StaticResource MaterialDesignIconButton}" Width="28" Height="28">
+                                    <materialDesign:PackIcon Kind="Import" Width="16" Height="16"/>
+                                </Button>
+                                <Button ToolTip="Export All Rules" Command="{Binding ExportAllRulesCommand}" Style="{StaticResource MaterialDesignIconButton}" Width="28" Height="28">
+                                    <materialDesign:PackIcon Kind="ExportVariant" Width="16" Height="16"/>
+                                </Button>
+                            </StackPanel>
+                        </DockPanel>
                     </Border>
                     
                     <!-- Search Box -->
@@ -283,6 +346,20 @@
                                       VerticalAlignment="Center"/>
                             
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                       ToolTip="Test Rule Preview (Ctrl+T)"
+                                       Command="{Binding TestRuleCommand}"
+                                       AutomationProperties.Name="Test rule preview"
+                                       Margin="2,0">
+                                    <materialDesign:PackIcon Kind="TestTube" Width="18" Height="18"/>
+                                </Button>
+                                <Button Style="{StaticResource MaterialDesignIconButton}"
+                                       ToolTip="Export Selected Rule"
+                                       Command="{Binding ExportRuleCommand}"
+                                       AutomationProperties.Name="Export selected rule"
+                                       Margin="2,0">
+                                    <materialDesign:PackIcon Kind="Export" Width="18" Height="18"/>
+                                </Button>
                                 <Button Style="{StaticResource MaterialDesignIconButton}"
                                        ToolTip="Toggle Enable/Disable (Space)"
                                        Command="{Binding ToggleRuleCommand}"
@@ -579,6 +656,46 @@
                 </views:HistoryView.Style>
             </views:HistoryView>
 
+            <!-- Folders Hub (Dedicated Workspace) -->
+            <Border Background="{DynamicResource MaterialDesignPaper}" Padding="32">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="Folders">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <controls:EmptyStateControl
+                    IconKind="FolderMultiple"
+                    Title="Monitored Folders Hub"
+                    Description="Centralized directory monitoring hub and health status overview."
+                    ActionText="View Rules"
+                    ActionCommand="{Binding NavigateToRuleEditorCommand}"/>
+            </Border>
+
+            <!-- Preview & Review Workspace -->
+            <Border Background="{DynamicResource MaterialDesignPaper}" Padding="32">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CurrentView}" Value="PreviewReview">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <controls:EmptyStateControl
+                    IconKind="EyeCheckOutline"
+                    Title="Preview &amp; Review Workspace"
+                    Description="Simulate and verify rule operations safely before applying changes to disk."
+                    ActionText="Run Rule Preview (Ctrl+T)"
+                    ActionCommand="{Binding TestRuleCommand}"/>
+            </Border>
+
             <!-- Help View -->
             <views:HelpView>
                 <views:HelpView.Style>
@@ -595,7 +712,7 @@
         </Grid>
 
         <!-- Status Bar -->
-        <StatusBar Grid.Row="2">
+        <StatusBar Grid.Row="1">
             <StatusBarItem>
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="Information" 
@@ -632,5 +749,6 @@
                 </ProgressBar>
             </StatusBarItem>
         </StatusBar>
+        </Grid>
     </Grid>
 </Window>

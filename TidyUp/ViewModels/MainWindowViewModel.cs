@@ -716,6 +716,45 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Navigates to the monitored folders hub.
+    /// </summary>
+    [RelayCommand]
+    private void NavigateToFolders()
+    {
+        if (!ConfirmDiscardRuleEdits()) return;
+        CurrentView = NavigationView.Folders;
+        StatusMessage = "Monitored Folders Hub";
+    }
+
+    /// <summary>
+    /// Navigates to the preview and review workspace.
+    /// </summary>
+    [RelayCommand]
+    private void NavigateToPreviewReview()
+    {
+        if (!ConfirmDiscardRuleEdits()) return;
+        CurrentView = NavigationView.PreviewReview;
+        StatusMessage = "Preview & Review Workspace";
+    }
+
+    partial void OnCurrentViewChanged(NavigationView value)
+    {
+        OnPropertyChanged(nameof(IsDashboardActive));
+        OnPropertyChanged(nameof(IsRulesActive));
+        OnPropertyChanged(nameof(IsFoldersActive));
+        OnPropertyChanged(nameof(IsPreviewActive));
+        OnPropertyChanged(nameof(IsHistoryActive));
+        OnPropertyChanged(nameof(IsSettingsActive));
+    }
+
+    public bool IsDashboardActive => CurrentView == NavigationView.Dashboard;
+    public bool IsRulesActive => CurrentView == NavigationView.RuleEditor;
+    public bool IsFoldersActive => CurrentView == NavigationView.Folders;
+    public bool IsPreviewActive => CurrentView == NavigationView.PreviewReview;
+    public bool IsHistoryActive => CurrentView == NavigationView.History;
+    public bool IsSettingsActive => CurrentView == NavigationView.Settings;
+
+    /// <summary>
     /// Event handler for SelectedRule property changes.
     /// </summary>
     private void SelectedRule_PropertyChanged(object? sender, PropertyChangedEventArgs e)

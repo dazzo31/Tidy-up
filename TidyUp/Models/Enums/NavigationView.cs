@@ -16,6 +16,16 @@ public enum NavigationView
     RuleEditor,
     
     /// <summary>
+    /// Monitored folders hub.
+    /// </summary>
+    Folders,
+
+    /// <summary>
+    /// Preview and impact review workspace.
+    /// </summary>
+    PreviewReview,
+
+    /// <summary>
     /// Settings view.
     /// </summary>
     Settings,
