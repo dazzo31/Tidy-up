@@ -68,6 +68,22 @@
   - [TASK-DOC-01: Authoritative README & Architecture Documentation](#task-doc-01-authoritative-readme--architecture-documentation)
   - [TASK-DOC-02: Authoritative Feature Verification Matrix](#task-doc-02-authoritative-feature-verification-matrix)
   - [TASK-CI-01: GitHub Actions CI Matrix Build & Automated Test Gate](#task-ci-01-github-actions-ci-matrix-build--automated-test-gate)
+- [Phase 6: UI/UX Modernization & Workflow Experience](#phase-6-uiux-modernization--workflow-experience)
+  - [TASK-UI-01: View Redundancy Elimination & Registration Cleanup](#task-ui-01-view-redundancy-elimination--registration-cleanup)
+  - [TASK-UI-02: Persistent Modern Navigation Rail](#task-ui-02-persistent-modern-navigation-rail)
+  - [TASK-UI-03: Real-Time Monitoring Status Bar & Health Indicator](#task-ui-03-real-time-monitoring-status-bar--health-indicator)
+  - [TASK-UI-04: Enhanced Rules List with Search, Filter & Unsaved Dirty Indicators](#task-ui-04-enhanced-rules-list-with-search-filter--unsaved-dirty-indicators)
+  - [TASK-UI-05: Integrated Guided Wizard & Advanced Rule Editor Toggle](#task-ui-05-integrated-guided-wizard--advanced-rule-editor-toggle)
+  - [TASK-UI-06: Condition Builder Nested Expression Visualization](#task-ui-06-condition-builder-nested-expression-visualization)
+  - [TASK-UI-07: Dedicated Folders Management View](#task-ui-07-dedicated-folders-management-view)
+  - [TASK-UI-08: Folder Picker & Exclusion Pattern Configuration](#task-ui-08-folder-picker--exclusion-pattern-configuration)
+  - [TASK-UI-09: Integrated Preview & Review Workspace](#task-ui-09-integrated-preview--review-workspace)
+  - [TASK-UI-10: File-Level Explainability Inspector & Two-Step Apply Workflow](#task-ui-10-file-level-explainability-inspector--two-step-apply-workflow)
+  - [TASK-UI-11: History View Actionable Explanations & Safe Rollback Controls](#task-ui-11-history-view-actionable-explanations--safe-rollback-controls)
+  - [TASK-UI-12: Categorized 5-Section Settings Experience](#task-ui-12-categorized-5-section-settings-experience)
+  - [TASK-UI-13: Windows 11 Styling & Centralized Design Tokens](#task-ui-13-windows-11-styling--centralized-design-tokens)
+  - [TASK-UI-14: Keyboard Navigation, High-DPI Scaling & Screen Reader Accessibility](#task-ui-14-keyboard-navigation-high-dpi-scaling--screen-reader-accessibility)
+  - [TASK-UI-15: Full Integration Regression & Verification Release Gate](#task-ui-15-full-integration-regression--verification-release-gate)
 
 ---
 
@@ -1024,5 +1040,476 @@ OUT OF SCOPE:
 
 DONE WHEN:
 - `.github/workflows/ci.yml` passes cleanly on GitHub Actions runner.
+```
+
+---
+
+# Phase 6: UI/UX Modernization & Workflow Experience
+
+### TASK-UI-01: View Redundancy Elimination & Registration Cleanup (STATUS: COMPLETE)
+```text
+TASK ID: TASK-UI-01
+STATUS: COMPLETE
+OBJECTIVE:
+Consolidate duplicate Window and UserControl files across the Views directory into single-source UserControls.
+
+DEPENDENCIES: None
+TARGET FILES:
+- `TidyUp/Views/HelpWindow.xaml` / `.cs`
+- `TidyUp/Views/SettingsWindow.xaml` / `.cs`
+- `TidyUp/Views/LogViewerWindow.xaml` / `.cs`
+- `TidyUp/Views/RulePreviewWindow.xaml` / `.cs`
+- `TidyUp/ViewModels/LogViewerViewModel.cs`
+- `TidyUp/ViewModels/RulePreviewViewModel.cs`
+- `TidyUp/ServiceConfiguration.cs`
+- `TidyUp/ViewModels/MainWindowViewModel.cs`
+
+IN SCOPE:
+- Identify and remove redundant standalone Window wrappers (`HelpWindow`, `SettingsWindow`, `LogViewerWindow`, `RulePreviewWindow`) in favor of canonical UserControls (`HelpView`, `SettingsView`, `LogsView`, `PreviewWindow`).
+- Remove dead ViewModels (`LogViewerViewModel`, `RulePreviewViewModel`).
+- Update DI registrations in `ServiceConfiguration.cs` to eliminate orphan registrations.
+- Update `MainWindowViewModel.cs` so `ViewHelp()` and `TestRuleAsync` use the canonical views cleanly.
+
+OUT OF SCOPE:
+- Redesigning the interior layout of the consolidated views.
+- Modifying underlying ViewModel logic.
+- Navigation rail changes.
+
+DONE WHEN:
+- All duplicate Window files are cleanly removed or consolidated.
+- Application builds cleanly with zero compile errors.
+- Full test suite passes.
+```
+
+---
+
+### TASK-UI-02: Persistent Modern Navigation Rail (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-02
+STATUS: NOT STARTED
+OBJECTIVE:
+Replace the legacy ToolBarTray in MainWindow.xaml with a persistent, modern Windows 11 navigation rail supporting the 6 core destinations.
+
+DEPENDENCIES: TASK-UI-01
+TARGET FILES:
+- `TidyUp/MainWindow.xaml`
+- `TidyUp/MainWindow.xaml.cs`
+- `TidyUp/ViewModels/MainWindowViewModel.cs`
+- `TidyUp/Models/Enums/NavigationView.cs`
+
+IN SCOPE:
+- Update `NavigationView` enum to include: `Dashboard`, `Rules`, `Folders`, `PreviewReview`, `History`, `Settings`.
+- Replace `ToolBarTray` with a persistent left navigation sidebar or modern rail styled with subtle borders, consistent icon sizes, and accessible labels.
+- Implement responsive resizing behavior (compact icon-only mode when window width < 1000px, expanded mode with labels when width >= 1000px).
+- Add keyboard shortcuts for all 6 destinations (`Ctrl+1` through `Ctrl+6`).
+
+OUT OF SCOPE:
+- Modifying the internal content of individual views.
+- Changing business logic or service interfaces.
+
+DONE WHEN:
+- Navigation rail renders cleanly with 6 active destinations and accessible focus.
+- Clicking any destination smoothly switches the main content area.
+- Resizing the main window handles layout adjustments cleanly.
+- Unit tests verify `MainWindowViewModel.CurrentView` switching commands and shortcuts.
+```
+
+---
+
+### TASK-UI-03: Real-Time Monitoring Status Bar & Health Indicator (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-03
+STATUS: NOT STARTED
+OBJECTIVE:
+Upgrade the main window status bar to reflect real-time monitoring service state, active operations, and unresolved health warnings.
+
+DEPENDENCIES: TASK-UI-02
+TARGET FILES:
+- `TidyUp/MainWindow.xaml`
+- `TidyUp/ViewModels/MainWindowViewModel.cs`
+- `TidyUp/Services/Monitoring/IWatcherHealthMonitor.cs`
+
+IN SCOPE:
+- Connect the status bar badge directly to `HardenedFileSystemWatcher` and `IWatcherHealthMonitor`.
+- Visually distinguish states: `Running`, `Paused`, `Stopped`, `Starting`, `Recovering`, `Degraded`, and `Error`.
+- Include an active work indicator (file progress ticker during batch execution) and an alert counter for inaccessible folders or buffer overflows.
+- Provide tooltip summaries detailing the exact reason for degraded or paused states.
+
+OUT OF SCOPE:
+- Modifying watcher buffer internals or debounce timers.
+- Modal error popups.
+
+DONE WHEN:
+- Status bar displays accurate service state without manual refresh.
+- State transitions update badge background, icon, text, and accessible tooltips.
+- Automated tests verify status bar properties reflect mocked health state changes.
+```
+
+---
+
+### TASK-UI-04: Enhanced Rules List with Search, Filter & Unsaved Dirty Indicators (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-04
+STATUS: NOT STARTED
+OBJECTIVE:
+Enhance the Rules view with multi-attribute filtering, sorting, plain-language summaries, and visual unsaved change indicators.
+
+DEPENDENCIES: TASK-UI-02
+TARGET FILES:
+- `TidyUp/MainWindow.xaml` (Rules view section)
+- `TidyUp/ViewModels/MainWindowViewModel.cs`
+
+IN SCOPE:
+- Add filter chips: All, Enabled Only, Disabled Only, Has Errors.
+- Add sort dropdown: Execution Priority, Name, Last Run, Modification Date.
+- Render a concise natural-language rule summary beneath each rule name in the list.
+- Display a modified dirty badge (`*` / Unsaved icon) on rules with unsaved edits.
+- Prompt with confirmation before discarding unsaved edits when switching rules.
+- Ensure newly created rules default to Disabled.
+
+OUT OF SCOPE:
+- Redesigning condition logic or execution operators.
+- Modifying SQLite rule persistence schema.
+
+DONE WHEN:
+- Search and filter chips dynamically filter the list without UI lag.
+- Unsaved edits are clearly signaled visually and protected by discard prompts.
+- Unit tests verify filtering, sorting, dirty-state detection, and discard protection.
+```
+
+---
+
+### TASK-UI-05: Integrated Guided Wizard & Advanced Rule Editor Toggle (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-05
+STATUS: NOT STARTED
+OBJECTIVE:
+Integrate the 4-stage guided wizard directly into the Rules view with an in-place toggle between Guided Workflow and Advanced Tabbed Editor.
+
+DEPENDENCIES: TASK-UI-04
+TARGET FILES:
+- `TidyUp/MainWindow.xaml`
+- `TidyUp/Views/RuleEditor/RuleWizardView.xaml`
+- `TidyUp/ViewModels/MainWindowViewModel.cs`
+- `TidyUp/ViewModels/RuleEditor/RuleWizardViewModel.cs`
+
+IN SCOPE:
+- Convert `RuleWizardView` into an embeddable UserControl usable inside `MainWindow`.
+- Provide an editor mode switch: "Guided Workflow (4-Stage)" vs "Advanced Editor (Tabs)".
+- Synchronize state between both modes so users can switch seamlessly without data loss.
+- Provide explicit "Save Rule" and separate "Enable Rule" actions in both modes.
+
+OUT OF SCOPE:
+- Introducing new action types or condition properties.
+- Changing rule serialization format.
+
+DONE WHEN:
+- Users can create or edit rules using either the 4-stage wizard or advanced tabs.
+- Switching modes preserves all entered folders, conditions, and actions.
+- Unit tests verify state synchronization between wizard VM and rule entity.
+```
+
+---
+
+### TASK-UI-06: Condition Builder Nested Expression Visualization (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-06
+STATUS: NOT STARTED
+OBJECTIVE:
+Improve visual hierarchy, inline validation, and regex assistance in Stage 2 of the Condition Builder.
+
+DEPENDENCIES: TASK-UI-05
+TARGET FILES:
+- `TidyUp/Controls/ConditionEditorControl.xaml`
+- `TidyUp/Views/RuleEditor/Stages/Stage2ConditionsView.xaml`
+- `TidyUp/ViewModels/ConditionEditorViewModel.cs`
+
+IN SCOPE:
+- Visual indentation and group borders for nested AND/OR container conditions.
+- Context-sensitive value editors (file picker, size units, date pickers) matching the selected property.
+- Inline regex validation with real-time syntax checking and explanatory error messages.
+- Add/remove buttons for condition groups with safety checks against accidental deletion.
+
+OUT OF SCOPE:
+- Changing the underlying boolean AST evaluator.
+
+DONE WHEN:
+- Nested condition trees render with clear visual boundaries and readable logical operators.
+- Invalid regex strings display immediate inline warning banners.
+- Unit tests verify nested group modifications preserve evaluation semantics.
+```
+
+---
+
+### TASK-UI-07: Dedicated Folders Management View (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-07
+STATUS: NOT STARTED
+OBJECTIVE:
+Create a dedicated top-level Folders view displaying all monitored directories, permissions, recursive flags, and linked rules.
+
+DEPENDENCIES: TASK-UI-02
+TARGET FILES:
+- `TidyUp/Views/FoldersView.xaml` (New)
+- `TidyUp/Views/FoldersView.xaml.cs` (New)
+- `TidyUp/ViewModels/FoldersViewModel.cs` (New)
+- `TidyUp/ServiceConfiguration.cs`
+
+IN SCOPE:
+- Aggregate all monitored folders from all rules into a centralized table/card layout.
+- Display folder path, existence, read/write permission status, watcher health badge, and linked rules count.
+- Provide actions: "Scan Folder Now", "Open in Explorer", "Edit Linked Rules", "Pause Watching".
+- Clear empty state when no folders are monitored with quick-add action.
+
+OUT OF SCOPE:
+- Filesystem watcher engine modifications.
+
+DONE WHEN:
+- Folders view renders all watched directories across rules.
+- Permission warnings are clearly displayed for inaccessible paths.
+- Unit tests cover folder aggregation, scanning trigger, and empty states.
+```
+
+---
+
+### TASK-UI-08: Folder Picker & Exclusion Pattern Configuration (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-08
+STATUS: NOT STARTED
+OBJECTIVE:
+Provide an enhanced folder picker with recursive depth options and exclusion pattern management.
+
+DEPENDENCIES: TASK-UI-07
+TARGET FILES:
+- `TidyUp/Views/FoldersView.xaml`
+- `TidyUp/Views/RuleEditor/Stages/Stage1FoldersView.xaml`
+- `TidyUp/ViewModels/FoldersViewModel.cs`
+
+IN SCOPE:
+- Windows native folder browse dialog integration.
+- UI controls for configuring folder exclusion patterns (e.g. `node_modules`, `.git`, `*.tmp`).
+- Validation against invalid drive roots, system protected directories, and disconnected network shares.
+
+OUT OF SCOPE:
+- Virtual filesystem abstraction layers.
+
+DONE WHEN:
+- Users can add folders and define exclusion lists with immediate syntax validation.
+- Unit tests verify exclusion pattern storage and validation rules.
+```
+
+---
+
+### TASK-UI-09: Integrated Preview & Review Workspace (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-09
+STATUS: NOT STARTED
+OBJECTIVE:
+Promote the Preview dialog into a first-class, navigable Preview & Review workspace within the primary application shell.
+
+DEPENDENCIES: TASK-UI-02, TASK-UI-05
+TARGET FILES:
+- `TidyUp/Views/PreviewView.xaml` (Convert from PreviewWindow)
+- `TidyUp/Views/PreviewView.xaml.cs`
+- `TidyUp/ViewModels/PreviewViewModel.cs`
+- `TidyUp/MainWindow.xaml`
+
+IN SCOPE:
+- Host the preview table as a full-page navigable destination under `NavigationView.PreviewReview`.
+- Display original path, planned action, proposed destination, matching rule name, and conflict status.
+- Summary bar grouping planned operations by action type (Move: X, Copy: Y, Rename: Z, Recycle: W).
+- Search box and filter toggles: "Conflicts Only", "Deletions Only", "Specific Rule".
+- Virtualized DataGrid supporting 10,000+ simulated files smoothly.
+
+OUT OF SCOPE:
+- Executing actual filesystem changes from this view (handled in TASK-UI-10).
+
+DONE WHEN:
+- Preview view displays simulation results with sub-second virtualization response.
+- Filter chips and search refine table items instantly.
+- Automated tests verify preview data population without touching disk.
+```
+
+---
+
+### TASK-UI-10: File-Level Explainability Inspector & Two-Step Apply Workflow (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-10
+STATUS: NOT STARTED
+OBJECTIVE:
+Add an expandable "Why Did This File Match?" inspection drawer and a guarded two-step Apply workflow with pre-flight re-check.
+
+DEPENDENCIES: TASK-UI-09
+TARGET FILES:
+- `TidyUp/Views/PreviewView.xaml`
+- `TidyUp/ViewModels/PreviewViewModel.cs`
+- `TidyUp/Services/Simulation/IExplainableDecisionEngine.cs`
+
+IN SCOPE:
+- Expandable side panel showing exactly which conditions passed or failed for a selected file.
+- "Apply Changes" button requiring two-step explicit confirmation:
+  1. Pre-flight re-check (verify files haven't changed or become locked since preview).
+  2. Final impact confirmation dialog displaying total counts and Recycle Bin safety badge.
+- Explicit cancellation support during batch execution.
+
+OUT OF SCOPE:
+- Automated rule adjustments.
+
+DONE WHEN:
+- Clicking any previewed file displays clear evaluation breakdown of all conditions.
+- Applying changes requires confirmation, revalidates file states, and reports progress.
+- Unit and integration tests verify pre-flight verification and cancellation handling.
+```
+
+---
+
+### TASK-UI-11: History View Actionable Explanations & Safe Rollback Controls (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-11
+STATUS: NOT STARTED
+OBJECTIVE:
+Enhance HistoryView with plain-language actionable error explanations and safe one-click rollback controls.
+
+DEPENDENCIES: TASK-UI-02
+TARGET FILES:
+- `TidyUp/Views/HistoryView.xaml`
+- `TidyUp/ViewModels/HistoryViewModel.cs`
+
+IN SCOPE:
+- Replace raw technical exceptions with user-actionable explanations (e.g. "Destination folder is read-only; check permissions").
+- Expandable technical diagnostic drawer containing stack traces and error codes.
+- Contextual Rollback button enabled only for operations marked reversible in the journal.
+- Pre-rollback safety check: ensure the file has not been modified since the operation before reversing.
+
+OUT OF SCOPE:
+- Altering SQLite journal schema.
+
+DONE WHEN:
+- History view displays friendly explanations alongside expandable diagnostics.
+- Rollback button verifies file hash integrity prior to reversal.
+- Unit tests verify actionable error mappings and safe rollback triggers.
+```
+
+---
+
+### TASK-UI-12: Categorized 5-Section Settings Experience (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-12
+STATUS: NOT STARTED
+OBJECTIVE:
+Reorganize SettingsView into 5 structured sections with contextual risk explanations.
+
+DEPENDENCIES: TASK-UI-02
+TARGET FILES:
+- `TidyUp/Views/SettingsView.xaml`
+- `TidyUp/ViewModels/SettingsViewModel.cs`
+
+IN SCOPE:
+- Organize settings into tabbed/navigable sections:
+  1. **General:** App startup, minimize to tray, notifications, theme.
+  2. **Safety:** Deletion policy (Recycle Bin default), conflict defaults, confirmation prompts.
+  3. **Performance:** Concurrency limits, scan batch size, debounce delay.
+  4. **Storage & Logs:** Journal retention days, log verbosity, database backup location.
+  5. **Advanced:** Database vacuum, debug logging, schema maintenance.
+- Add descriptive subtitle and impact warning to every setting control.
+
+OUT OF SCOPE:
+- Modifying underlying configuration storage keys.
+
+DONE WHEN:
+- Settings view renders all 5 sections cleanly.
+- Changes persist across app restarts and take immediate effect.
+- Unit tests verify all settings bindings, persistence, and default values.
+```
+
+---
+
+### TASK-UI-13: Windows 11 Styling & Centralized Design Tokens (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-13
+STATUS: NOT STARTED
+OBJECTIVE:
+Standardize borders, typography, accent colors, and control sizes into centralized resource dictionaries.
+
+DEPENDENCIES: TASK-UI-05, TASK-UI-09, TASK-UI-12
+TARGET FILES:
+- `TidyUp/Styles/Colors.xaml` (New/Updated)
+- `TidyUp/Styles/Typography.xaml` (New/Updated)
+- `TidyUp/Styles/Controls.xaml` (New/Updated)
+- `TidyUp/App.xaml`
+
+IN SCOPE:
+- Adopt Windows 11 styling cues: subtle 1px borders, 4px/8px corner radii, standard 8px grid spacing.
+- Centralize all brushes, font sizes, and card styles in `TidyUp/Styles/`.
+- Ensure consistent appearance in both Light and Dark modes.
+- Replace ad-hoc inline styles across views with theme-aware StaticResource references.
+
+OUT OF SCOPE:
+- Introducing external third-party styling packages.
+
+DONE WHEN:
+- All views render with visual consistency across fonts, paddings, and card elevations.
+- Theme switching works seamlessly without unreadable low-contrast text.
+```
+
+---
+
+### TASK-UI-14: Keyboard Navigation, High-DPI Scaling & Screen Reader Accessibility (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-14
+STATUS: NOT STARTED
+OBJECTIVE:
+Audit and remediate keyboard focus, tab ordering, accessible automation names, and DPI scaling.
+
+DEPENDENCIES: TASK-UI-13
+TARGET FILES:
+- `TidyUp/MainWindow.xaml`
+- All Views in `TidyUp/Views/`
+
+IN SCOPE:
+- Set explicit, logical `TabIndex` across all primary workflows.
+- Provide visible focus indicator borders on focused interactive controls.
+- Add `AutomationProperties.Name` and `AutomationProperties.HelpText` to all icon buttons and input fields.
+- Test and verify window layout at 100%, 125%, 150%, and 175% Windows display scaling.
+- Ensure all dialogs fit within minimum supported window dimensions (900x600).
+
+OUT OF SCOPE:
+- Custom third-party accessibility tools.
+
+DONE WHEN:
+- All primary workflows can be fully operated via keyboard alone (Tab, Enter, Space, Esc, Arrows).
+- Screen readers announce all controls and status updates clearly.
+- Resizing and display scaling preserve layout readability without clipped buttons.
+```
+
+---
+
+### TASK-UI-15: Full Integration Regression & Verification Release Gate (STATUS: NOT STARTED)
+```text
+TASK ID: TASK-UI-15
+STATUS: NOT STARTED
+OBJECTIVE:
+Execute full automated test suite, perform multi-resolution smoke tests, and document completion against all 17 acceptance criteria.
+
+DEPENDENCIES: All previous tasks (TASK-UI-01 through TASK-UI-14)
+TARGET FILES:
+- `TidyUp.Tests/`
+- `TASK_CATALOG.md`
+- `CHANGELOG.md`
+- `README.md`
+
+IN SCOPE:
+- Run complete `dotnet test -c Release` suite, ensuring 100% pass rate.
+- Add UI workflow regression tests for navigation switching, rule wizard persistence, and preview filtering.
+- Validate against all 17 Acceptance Criteria defined in Section 14 of the specification.
+- Update documentation and master task catalog with complete verification proof.
+
+OUT OF SCOPE:
+- Feature additions or new scope.
+
+DONE WHEN:
+- 100% automated test suite passes cleanly.
+- All 17 acceptance criteria are verified and marked complete with concrete evidence.
+- Clean git working tree and focused release commit.
 ```
 
