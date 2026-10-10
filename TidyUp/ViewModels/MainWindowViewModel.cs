@@ -13,6 +13,7 @@ using TidyUp.Models.Enums;
 using TidyUp.Services;
 using TidyUp.Services.Monitoring;
 using TidyUp.Services.Rules;
+using TidyUp.Services.Simulation;
 using TidyUp.Services.State;
 using TidyUp.Services.Validation;
 using TidyUp.ViewModels.RuleEditor;
@@ -34,6 +35,12 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly IRuleSummaryGenerator _ruleSummaryGenerator;
     private readonly IRuleValidator _ruleValidator;
+
+    public DashboardViewModel DashboardViewModel { get; }
+    public SettingsViewModel SettingsViewModel { get; }
+    public LogsViewModel LogsViewModel { get; }
+    public HistoryViewModel HistoryViewModel { get; }
+    public RuleWizardViewModel WizardViewModel { get; }
 
     [ObservableProperty]
     private ObservableCollection<Rule> _rules = new();
@@ -118,6 +125,58 @@ public partial class MainWindowViewModel : ObservableObject
         FilterRules();
     }
 
+    [ObservableProperty]
+    private RuleEditorMode _currentEditorMode = RuleEditorMode.GuidedWorkflow;
+
+    public bool IsGuidedModeActive => CurrentEditorMode == RuleEditorMode.GuidedWorkflow;
+    public bool IsAdvancedModeActive => CurrentEditorMode == RuleEditorMode.AdvancedTabs;
+    public double GuidedModeOpacity => IsGuidedModeActive ? 1.0 : 0.6;
+    public double AdvancedModeOpacity => IsAdvancedModeActive ? 1.0 : 0.6;
+    public string GuidedModeFontWeight => IsGuidedModeActive ? "Bold" : "Normal";
+    public string AdvancedModeFontWeight => IsAdvancedModeActive ? "Bold" : "Normal";
+
+    [RelayCommand]
+    public void SetEditorMode(RuleEditorMode mode)
+    {
+        if (CurrentEditorMode == mode) return;
+
+        if (mode == RuleEditorMode.AdvancedTabs)
+        {
+            if (SelectedRule != null)
+            {
+                WizardViewModel.SyncToRule(SelectedRule);
+                ConditionEditor.RootCondition = SelectedRule.Conditions ?? new Models.Domain.ConditionGroup { Operator = Models.Enums.LogicOperator.And };
+                ActionEditor.Actions.Clear();
+                foreach (var action in SelectedRule.Actions.OrderBy(a => a.Order))
+                {
+                    ActionEditor.Actions.Add(action);
+                }
+                ConditionEditor.SetMonitoredFolders(SelectedRule.MonitoredFolders.ToList());
+            }
+        }
+        else if (mode == RuleEditorMode.GuidedWorkflow)
+        {
+            if (SelectedRule != null)
+            {
+                SelectedRule.Conditions = ConditionEditor.RootCondition;
+                SelectedRule.Actions.Clear();
+                foreach (var action in ActionEditor.Actions)
+                {
+                    SelectedRule.Actions.Add(action);
+                }
+                WizardViewModel.LoadFromRule(SelectedRule);
+            }
+        }
+
+        CurrentEditorMode = mode;
+        OnPropertyChanged(nameof(IsGuidedModeActive));
+        OnPropertyChanged(nameof(IsAdvancedModeActive));
+        OnPropertyChanged(nameof(GuidedModeOpacity));
+        OnPropertyChanged(nameof(AdvancedModeOpacity));
+        OnPropertyChanged(nameof(GuidedModeFontWeight));
+        OnPropertyChanged(nameof(AdvancedModeFontWeight));
+    }
+
     private Rule? _selectedRule;
     
     public Rule? SelectedRule
@@ -162,6 +221,9 @@ public partial class MainWindowViewModel : ObservableObject
                     
                     // Update preview with monitored folders
                     ConditionEditor.SetMonitoredFolders(value.MonitoredFolders.ToList());
+
+                    // Sync to wizard viewmodel
+                    WizardViewModel?.LoadFromRule(value);
                 }
                 
                 // Notify all commands that depend on SelectedRule
@@ -221,10 +283,6 @@ public partial class MainWindowViewModel : ObservableObject
         return proceed;
     }
 
-    public DashboardViewModel DashboardViewModel { get; }
-    public SettingsViewModel SettingsViewModel { get; }
-    public LogsViewModel LogsViewModel { get; }
-    public HistoryViewModel HistoryViewModel { get; }
     public IApplicationStateManager StateManager { get; }
     private readonly IWatcherHealthMonitor? _healthMonitor;
     private string _activeAlertSummary = string.Empty;
@@ -274,6 +332,22 @@ public partial class MainWindowViewModel : ObservableObject
         SettingsViewModel = (SettingsViewModel)serviceProvider.GetService(typeof(SettingsViewModel))!;
         LogsViewModel = (LogsViewModel)serviceProvider.GetService(typeof(LogsViewModel))!;
         HistoryViewModel = (HistoryViewModel)serviceProvider.GetService(typeof(HistoryViewModel))!;
+
+        var executionPlanGen = (IExecutionPlanGenerator?)serviceProvider.GetService(typeof(IExecutionPlanGenerator))
+            ?? new ExecutionPlanGenerator(
+                (IRuleEngine?)serviceProvider.GetService(typeof(IRuleEngine)) ?? new RuleEngine(),
+                (IVariableEngine?)serviceProvider.GetService(typeof(IVariableEngine)) ?? new VariableEngine());
+
+        WizardViewModel = (RuleWizardViewModel?)serviceProvider.GetService(typeof(RuleWizardViewModel))
+            ?? new RuleWizardViewModel(_ruleRepository, _ruleValidator, executionPlanGen, _ruleSummaryGenerator);
+
+        WizardViewModel.RuleSaved += async (s, savedRule) =>
+        {
+            await LoadRulesAsync();
+            SelectedRule = Rules.FirstOrDefault(r => r.Id == savedRule.Id) ?? savedRule;
+            IsRuleDirty = false;
+            StatusMessage = $"Rule '{savedRule.Name}' saved successfully";
+        };
 
         DashboardViewModel.RequestNavigate += view =>
         {
@@ -453,27 +527,26 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Launches the guided 4-stage rule creation wizard.
+    /// Creates a new rule defaulting to Disabled in Guided Workflow mode.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanCreateNewRule))]
-    private async Task CreateNewRuleAsync()
+    private void CreateNewRule()
     {
-        var wizardVm = (RuleWizardViewModel)_serviceProvider.GetService(typeof(RuleWizardViewModel))!;
-        var wizardWindow = new Views.RuleEditor.RuleWizardView(wizardVm);
+        if (!ConfirmDiscardRuleEdits()) return;
 
-        if (Application.Current?.MainWindow != null)
+        var newRule = new Rule
         {
-            wizardWindow.Owner = Application.Current.MainWindow;
-        }
+            Name = "New Rule",
+            IsEnabled = false
+        };
 
-        var result = wizardWindow.ShowDialog();
-        if (result == true && wizardVm.CreatedRule != null)
-        {
-            await LoadRulesAsync();
-            SelectedRule = Rules.FirstOrDefault(r => r.Id == wizardVm.CreatedRule.Id);
-            CurrentView = NavigationView.RuleEditor;
-            StatusMessage = $"Rule '{wizardVm.CreatedRule.Name}' created successfully (Disabled)";
-        }
+        WizardViewModel.ResetWizard();
+        WizardViewModel.RuleName = "New Rule";
+        CurrentEditorMode = RuleEditorMode.GuidedWorkflow;
+        CurrentView = NavigationView.RuleEditor;
+        SelectedRule = newRule;
+        IsRuleDirty = true;
+        StatusMessage = "Creating new rule in Guided Workflow (Disabled)";
     }
 
     private bool CanCreateNewRule() => StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
@@ -491,12 +564,18 @@ public partial class MainWindowViewModel : ObservableObject
 
         try
         {
-            // Update rule with current editor state
-            SelectedRule.Conditions = ConditionEditor.RootCondition;
-            SelectedRule.Actions.Clear();
-            foreach (var action in ActionEditor.Actions)
+            if (CurrentEditorMode == RuleEditorMode.GuidedWorkflow)
             {
-                SelectedRule.Actions.Add(action);
+                WizardViewModel.SyncToRule(SelectedRule);
+            }
+            else
+            {
+                SelectedRule.Conditions = ConditionEditor.RootCondition;
+                SelectedRule.Actions.Clear();
+                foreach (var action in ActionEditor.Actions)
+                {
+                    SelectedRule.Actions.Add(action);
+                }
             }
 
             var existing = await _ruleRepository.GetByIdAsync(SelectedRule.Id);

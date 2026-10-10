@@ -49,6 +49,12 @@ public partial class RuleWizardViewModel : ObservableObject
     private string _ruleDescription = string.Empty;
 
     [ObservableProperty]
+    private Guid? _editingRuleId;
+
+    [ObservableProperty]
+    private bool _isRuleEnabled;
+
+    [ObservableProperty]
     private string _newFolderPathInput = string.Empty;
 
     public ObservableCollection<MonitoredFolder> MonitoredFolders { get; } = new();
@@ -219,15 +225,109 @@ public partial class RuleWizardViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Loads an existing Rule into the wizard for guided editing.
+    /// </summary>
+    public void LoadFromRule(Rule rule)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        EditingRuleId = rule.Id;
+        RuleName = rule.Name ?? string.Empty;
+        RuleDescription = rule.Description ?? string.Empty;
+        IsRuleEnabled = rule.IsEnabled;
+
+        MonitoredFolders.Clear();
+        foreach (var folder in rule.MonitoredFolders)
+        {
+            MonitoredFolders.Add(new MonitoredFolder
+            {
+                Path = folder.Path,
+                IncludeSubfolders = folder.IncludeSubfolders,
+                ExclusionPatterns = new ObservableCollection<string>(folder.ExclusionPatterns)
+            });
+        }
+
+        ConditionEditor.RootCondition = rule.Conditions ?? new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
+        ConditionEditor.SetMonitoredFolders(MonitoredFolders.ToList());
+
+        ActionEditor.Actions.Clear();
+        foreach (var action in rule.Actions.OrderBy(a => a.Order))
+        {
+            ActionEditor.Actions.Add(action);
+        }
+
+        CurrentStage = WizardStage.Folders;
+        PrepareReviewStage();
+    }
+
+    /// <summary>
+    /// Updates the specified rule entity with current wizard configuration.
+    /// </summary>
+    public void SyncToRule(Rule rule)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        rule.Name = RuleName.Trim();
+        rule.Description = RuleDescription.Trim();
+        rule.IsEnabled = IsRuleEnabled;
+
+        rule.MonitoredFolders.Clear();
+        foreach (var folder in MonitoredFolders)
+        {
+            rule.MonitoredFolders.Add(new MonitoredFolder
+            {
+                Path = folder.Path,
+                IncludeSubfolders = folder.IncludeSubfolders,
+                ExclusionPatterns = new ObservableCollection<string>(folder.ExclusionPatterns)
+            });
+        }
+
+        rule.Conditions = ConditionEditor.RootCondition;
+
+        rule.Actions.Clear();
+        foreach (var action in ActionEditor.Actions)
+        {
+            rule.Actions.Add(action);
+        }
+    }
+
+    /// <summary>
+    /// Resets the wizard to clean initial state.
+    /// </summary>
+    public void ResetWizard()
+    {
+        EditingRuleId = null;
+        RuleName = string.Empty;
+        RuleDescription = string.Empty;
+        IsRuleEnabled = false;
+        MonitoredFolders.Clear();
+        ConditionEditor.RootCondition = new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
+        ActionEditor.Actions.Clear();
+        CurrentStage = WizardStage.Folders;
+        ValidationResult = null;
+        ExecutionPlan = null;
+        ErrorMessage = null;
+        CreatedRule = null;
+    }
+
+    /// <summary>
+    /// Toggles the rule enabled state.
+    /// </summary>
+    [RelayCommand]
+    public void ToggleRuleEnabled()
+    {
+        IsRuleEnabled = !IsRuleEnabled;
+    }
+
+    /// <summary>
     /// Builds the domain Rule object representation from current wizard settings.
     /// </summary>
     public Rule BuildRule()
     {
         var rule = new Rule
         {
+            Id = EditingRuleId ?? Guid.NewGuid(),
             Name = RuleName.Trim(),
             Description = RuleDescription.Trim(),
-            IsEnabled = false, // Rule starts in Disabled state upon creation per specification!
+            IsEnabled = IsRuleEnabled,
             Conditions = ConditionEditor.RootCondition
         };
 
@@ -285,7 +385,7 @@ public partial class RuleWizardViewModel : ObservableObject
     }
 
     /// <summary>
-    /// Saves the configured rule to SQLite in Disabled state and notifies completion.
+    /// Saves the configured rule to SQLite and notifies completion.
     /// </summary>
     [RelayCommand]
     public async Task SaveRuleAsync()
@@ -303,8 +403,23 @@ public partial class RuleWizardViewModel : ObservableObject
                 return;
             }
 
-            // Save to database
-            await _ruleRepository.AddAsync(rule);
+            if (EditingRuleId.HasValue && EditingRuleId.Value != Guid.Empty)
+            {
+                var existing = await _ruleRepository.GetByIdAsync(rule.Id);
+                if (existing != null)
+                {
+                    await _ruleRepository.UpdateAsync(rule);
+                }
+                else
+                {
+                    await _ruleRepository.AddAsync(rule);
+                }
+            }
+            else
+            {
+                await _ruleRepository.AddAsync(rule);
+            }
+
             CreatedRule = rule;
             RuleSaved?.Invoke(this, rule);
             RequestClose?.Invoke();

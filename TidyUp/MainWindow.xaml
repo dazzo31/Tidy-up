@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:TidyUp"
         xmlns:controls="clr-namespace:TidyUp.Controls"
         xmlns:views="clr-namespace:TidyUp.Views"
+        xmlns:ruleeditor="clr-namespace:TidyUp.Views.RuleEditor"
         xmlns:enums="clr-namespace:TidyUp.Models.Enums"
         xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -426,6 +427,36 @@
                             <TextBlock DockPanel.Dock="Left" Text="Rule Details" 
                                       FontSize="14" FontWeight="SemiBold"
                                       VerticalAlignment="Center"/>
+
+                            <!-- Editor Presentation Mode Switch -->
+                            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Margin="16,0,0,0" VerticalAlignment="Center">
+                                <StackPanel.Style>
+                                    <Style TargetType="StackPanel">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </StackPanel.Style>
+                                <Button Content="Guided (4-Stage)"
+                                        Command="{Binding SetEditorModeCommand}"
+                                        CommandParameter="{x:Static enums:RuleEditorMode.GuidedWorkflow}"
+                                        Height="24" Padding="8,1" Margin="0,0,4,0" FontSize="11"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Opacity="{Binding GuidedModeOpacity}"
+                                        FontWeight="{Binding GuidedModeFontWeight}"
+                                        ToolTip="Guided 4-Stage Rule Workflow (Folders, Conditions, Actions, Review)"/>
+                                <Button Content="Advanced (Tabs)"
+                                        Command="{Binding SetEditorModeCommand}"
+                                        CommandParameter="{x:Static enums:RuleEditorMode.AdvancedTabs}"
+                                        Height="24" Padding="8,1" FontSize="11"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Opacity="{Binding AdvancedModeOpacity}"
+                                        FontWeight="{Binding AdvancedModeFontWeight}"
+                                        ToolTip="Advanced tabbed direct rule editor"/>
+                            </StackPanel>
                             
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                                 <Button Style="{StaticResource MaterialDesignIconButton}"
@@ -465,36 +496,75 @@
                            BorderBrush="{DynamicResource MaterialDesignDivider}" 
                            BorderThickness="0,1,0,0" Padding="12,8">
                         <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                               Content="_Save Rule"
-                               Command="{Binding SaveRuleCommand}"
-                               AutomationProperties.Name="Save rule"
-                               HorizontalAlignment="Right"/>
+                                Content="_Save Rule"
+                                Command="{Binding SaveRuleCommand}"
+                                AutomationProperties.Name="Save rule"
+                                HorizontalAlignment="Right"/>
                     </Border>
 
-                    <!-- Rule Editor Content -->
-                    <ScrollViewer VerticalScrollBarVisibility="Auto">
-                        <Grid Margin="12">
-                            <!-- No rule selected message -->
-                            <TextBlock Text="Select a rule from the list, or press Ctrl+N to create a new one."
-                                      Opacity="0.6"
-                                      FontSize="14"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center"
-                                      Margin="0,48,0,0">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
+                    <!-- Rule Editor Content Area -->
+                    <Grid>
+                        <!-- No rule selected message -->
+                        <TextBlock Text="Select a rule from the list, or press Ctrl+N to create a new one."
+                                  Opacity="0.6"
+                                  FontSize="14"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Margin="0,48,0,0">
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
+
+                        <!-- Content when rule is selected -->
+                        <Grid>
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+
+                            <!-- Mode 1: Guided 4-Stage Rule Wizard View -->
+                            <ruleeditor:RuleWizardView DataContext="{Binding WizardViewModel}">
+                                <ruleeditor:RuleWizardView.Style>
+                                    <Style TargetType="ruleeditor:RuleWizardView">
                                         <Setter Property="Visibility" Value="Collapsed"/>
                                         <Style.Triggers>
-                                            <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
+                                            <DataTrigger Binding="{Binding DataContext.IsGuidedModeActive, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                                </ruleeditor:RuleWizardView.Style>
+                            </ruleeditor:RuleWizardView>
 
-                            <!-- Rule Editor -->
-                            <StackPanel DataContext="{Binding SelectedRule}">
+                            <!-- Mode 2: Advanced Tabbed Editor -->
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <ScrollViewer.Style>
+                                    <Style TargetType="ScrollViewer">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsAdvancedModeActive}" Value="True">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ScrollViewer.Style>
+                                <Grid Margin="12">
+                                    <!-- Rule Editor -->
+                                    <StackPanel DataContext="{Binding SelectedRule}">
                                 <StackPanel.Style>
                                     <Style TargetType="StackPanel">
                                         <Setter Property="Visibility" Value="Visible"/>
@@ -679,6 +749,8 @@
                             </StackPanel>
                         </Grid>
                     </ScrollViewer>
+                        </Grid>
+                    </Grid>
                 </DockPanel>
             </Grid>
 

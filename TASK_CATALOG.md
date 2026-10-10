@@ -1179,10 +1179,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-05: Integrated Guided Wizard & Advanced Rule Editor Toggle (STATUS: NOT STARTED)
+### TASK-UI-05: Integrated Guided Wizard & Advanced Rule Editor Toggle (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-05
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Integrate the 4-stage guided wizard directly into the Rules view with an in-place toggle between Guided Workflow and Advanced Tabbed Editor.
 
