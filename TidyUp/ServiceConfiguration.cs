@@ -95,10 +95,12 @@ public static class ServiceConfiguration
         services.AddTransient<ExecutionSummaryViewModel>();
         services.AddTransient<RuleConflictsViewModel>();
         services.AddTransient<RuleRevisionDiffViewModel>();
+        services.AddTransient<FoldersViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();
         services.AddTransient<Views.DashboardView>();
+        services.AddTransient<Views.FoldersView>();
         services.AddTransient<Views.RuleEditor.RuleWizardView>();
         services.AddTransient<Views.PreviewWindow>();
         services.AddTransient<Views.Dialogs.SafeguardConfirmationDialog>();

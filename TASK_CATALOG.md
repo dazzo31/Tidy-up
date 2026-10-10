@@ -1241,10 +1241,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-07: Dedicated Folders Management View (STATUS: NOT STARTED)
+### TASK-UI-07: Dedicated Folders Management View (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-07
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Create a dedicated top-level Folders view displaying all monitored directories, permissions, recursive flags, and linked rules.
 
@@ -1272,10 +1272,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-08: Folder Picker & Exclusion Pattern Configuration (STATUS: NOT STARTED)
+### TASK-UI-08: Folder Picker & Exclusion Pattern Configuration (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-08
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Provide an enhanced folder picker with recursive depth options and exclusion pattern management.
 

@@ -811,9 +811,9 @@
             </views:HistoryView>
 
             <!-- Folders Hub (Dedicated Workspace) -->
-            <Border Background="{DynamicResource MaterialDesignPaper}" Padding="32">
-                <Border.Style>
-                    <Style TargetType="Border">
+            <views:FoldersView DataContext="{Binding FoldersViewModel}">
+                <views:FoldersView.Style>
+                    <Style TargetType="views:FoldersView">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Folders">
@@ -821,14 +821,8 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </Border.Style>
-                <controls:EmptyStateControl
-                    IconKind="FolderMultiple"
-                    Title="Monitored Folders Hub"
-                    Description="Centralized directory monitoring hub and health status overview."
-                    ActionText="View Rules"
-                    ActionCommand="{Binding NavigateToRuleEditorCommand}"/>
-            </Border>
+                </views:FoldersView.Style>
+            </views:FoldersView>
 
             <!-- Preview & Review Workspace -->
             <Border Background="{DynamicResource MaterialDesignPaper}" Padding="32">

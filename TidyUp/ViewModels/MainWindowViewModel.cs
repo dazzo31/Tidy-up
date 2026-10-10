@@ -41,6 +41,7 @@ public partial class MainWindowViewModel : ObservableObject
     public LogsViewModel LogsViewModel { get; }
     public HistoryViewModel HistoryViewModel { get; }
     public RuleWizardViewModel WizardViewModel { get; }
+    public FoldersViewModel FoldersViewModel { get; }
 
     [ObservableProperty]
     private ObservableCollection<Rule> _rules = new();
@@ -347,6 +348,20 @@ public partial class MainWindowViewModel : ObservableObject
             SelectedRule = Rules.FirstOrDefault(r => r.Id == savedRule.Id) ?? savedRule;
             IsRuleDirty = false;
             StatusMessage = $"Rule '{savedRule.Name}' saved successfully";
+        };
+
+        FoldersViewModel = (FoldersViewModel?)serviceProvider.GetService(typeof(FoldersViewModel))
+            ?? new FoldersViewModel(_ruleRepository, _healthMonitor);
+
+        FoldersViewModel.RequestEditRuleCallback = ruleId =>
+        {
+            if (!ConfirmDiscardRuleEdits()) return;
+            CurrentView = NavigationView.RuleEditor;
+            var targetRule = Rules.FirstOrDefault(r => r.Id == ruleId);
+            if (targetRule != null)
+            {
+                SelectedRule = targetRule;
+            }
         };
 
         DashboardViewModel.RequestNavigate += view =>
@@ -1013,6 +1028,11 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(IsPreviewActive));
         OnPropertyChanged(nameof(IsHistoryActive));
         OnPropertyChanged(nameof(IsSettingsActive));
+
+        if (value == NavigationView.Folders)
+        {
+            _ = FoldersViewModel.LoadFoldersAsync();
+        }
     }
 
     public bool IsDashboardActive => CurrentView == NavigationView.Dashboard;
