@@ -6,9 +6,53 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
 using TidyUp.Data;
 using TidyUp.Data.Entities;
+using TidyUp.Services.FileSystem;
 using TidyUp.Services.Rollback;
 
 namespace TidyUp.ViewModels;
+
+/// <summary>
+/// Provides user-actionable explanations for file operation failures and rollback conflicts.
+/// </summary>
+public static class ActionableErrorExplainer
+{
+    public static string ExplainError(string? rawError)
+    {
+        if (string.IsNullOrWhiteSpace(rawError))
+            return string.Empty;
+
+        var lower = rawError.ToLowerInvariant();
+
+        if (lower.Contains("unauthorized") || lower.Contains("access is denied") || lower.Contains("access denied"))
+            return "Permission Denied: The destination folder or file requires elevated permissions or is marked read-only. Check permissions in Windows Explorer.";
+
+        if (lower.Contains("sharing violation") || lower.Contains("used by another process") || lower.Contains("locked"))
+            return "File In Use: The file is currently open in another program (e.g. Office, media player, editor). Close the application and retry.";
+
+        if (lower.Contains("directory not found") || lower.Contains("path not found") || lower.Contains("could not find a part of the path"))
+            return "Folder Not Found: The destination drive or folder no longer exists or is disconnected. Check network drive connection.";
+
+        if (lower.Contains("path too long") || lower.Contains("pathtoolongexception") || lower.Contains("filename or extension is too long"))
+            return "Path Too Long: Path exceeds Windows 260-character limit. Move to a shorter folder or enable long paths in Windows.";
+
+        if (lower.Contains("there is not enough space") || lower.Contains("disk full"))
+            return "Disk Full: The destination drive does not have enough free disk space to complete this file operation.";
+
+        if (lower.Contains("target file") && lower.Contains("was modified"))
+            return "Safety Lock: The file was modified externally after being moved. Rollback was aborted to protect your changes.";
+
+        if (lower.Contains("occupied") || lower.Contains("already exists"))
+            return "Destination Conflict: Another file with the same name already exists at the destination path.";
+
+        if (lower.Contains("file not found") || lower.Contains("no longer exists"))
+            return "File Missing: The source file no longer exists or was moved prior to processing.";
+
+        if (lower.Contains("already rolled back") || lower.Contains("already been rolled back"))
+            return "Already Rolled Back: This operation was already reversed.";
+
+        return $"Execution Issue: {rawError.Trim()}";
+    }
+}
 
 /// <summary>
 /// Presentation wrapper for a single journal entry row in the History viewer.
@@ -23,15 +67,37 @@ public partial class HistoryRowItemViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanRollback))]
+    [NotifyPropertyChangedFor(nameof(HasError))]
+    [NotifyPropertyChangedFor(nameof(ActionableExplanation))]
     [NotifyPropertyChangedFor(nameof(StatusBadgeBackground))]
     [NotifyPropertyChangedFor(nameof(StatusBadgeForeground))]
     private string _status;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRollback))]
     private DateTime? _rolledBackAt;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasError))]
+    [NotifyPropertyChangedFor(nameof(ActionableExplanation))]
     private string? _rollbackMessage;
+
+    [ObservableProperty]
+    private bool _isDiagnosticsExpanded;
+
+    [RelayCommand]
+    public void ToggleDiagnostics()
+    {
+        IsDiagnosticsExpanded = !IsDiagnosticsExpanded;
+    }
+
+    public bool HasError => string.Equals(Status, "Failed", StringComparison.OrdinalIgnoreCase) ||
+                            (!string.IsNullOrEmpty(RollbackMessage) && (RollbackMessage.Contains("conflict", StringComparison.OrdinalIgnoreCase) || RollbackMessage.Contains("error", StringComparison.OrdinalIgnoreCase) || RollbackMessage.Contains("blocked", StringComparison.OrdinalIgnoreCase)));
+
+    public string ActionableExplanation => ActionableErrorExplainer.ExplainError(
+        !string.IsNullOrEmpty(RollbackMessage) ? RollbackMessage : (Details ?? string.Empty));
+
+    public string TechnicalDiagnostics => !string.IsNullOrEmpty(Details) ? Details : (RollbackMessage ?? "No additional diagnostic telemetry recorded.");
 
     public HistoryRowItemViewModel(OperationJournalEntry entry)
     {
@@ -51,7 +117,7 @@ public partial class HistoryRowItemViewModel : ObservableObject
     public string? PostActionHash => Entry.PostActionHash;
     public string? Details => Entry.Details;
 
-    public bool CanRollback => string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase);
+    public bool CanRollback => string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase) && RolledBackAt == null;
 
     public string ActionBadgeBackground => ActionType switch
     {
@@ -411,6 +477,19 @@ public partial class HistoryViewModel : ObservableObject
         if (!ConfirmRollbackHandler(confirmMsg, "Confirm Undo Operation"))
             return;
 
+        // Pre-rollback safety check: ensure the file has not been modified since the operation before reversing
+        if (!string.IsNullOrWhiteSpace(item.TargetPath) && File.Exists(item.TargetPath) && !string.IsNullOrWhiteSpace(item.PostActionHash))
+        {
+            var currentHash = FileChecksumHelper.ComputeSha256(item.TargetPath);
+            if (!string.Equals(currentHash, item.PostActionHash, StringComparison.OrdinalIgnoreCase))
+            {
+                var explanation = ActionableErrorExplainer.ExplainError("Target file was modified by an external process after operation.");
+                item.RollbackMessage = $"Rollback blocked: {explanation}";
+                StatusMessage = "Rollback aborted: Target file was modified after operation.";
+                return;
+            }
+        }
+
         IsLoading = true;
         StatusMessage = $"Rolling back operation {item.OperationId}...";
 
@@ -426,7 +505,8 @@ public partial class HistoryViewModel : ObservableObject
             }
             else
             {
-                item.RollbackMessage = $"Rollback blocked: {result.Message}";
+                var explanation = ActionableErrorExplainer.ExplainError(result.Message);
+                item.RollbackMessage = $"Rollback blocked: {explanation}";
                 StatusMessage = $"Rollback conflict: {result.Message}";
             }
         }

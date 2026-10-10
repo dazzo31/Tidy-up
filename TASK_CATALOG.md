@@ -1363,10 +1363,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-11: History View Actionable Explanations & Safe Rollback Controls (STATUS: NOT STARTED)
+### TASK-UI-11: History View Actionable Explanations & Safe Rollback Controls (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-11
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Enhance HistoryView with plain-language actionable error explanations and safe one-click rollback controls.
 

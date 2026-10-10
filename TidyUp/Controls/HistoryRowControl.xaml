@@ -153,10 +153,46 @@
                         </StackPanel>
                     </Grid>
 
-                    <!-- Rollback Status Message (if any) -->
-                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="8,4" CornerRadius="4" Background="#FFF3E0"
-                            Visibility="{Binding RollbackMessage, Converter={StaticResource StringToVisibilityConverter}}">
-                        <TextBlock Text="{Binding RollbackMessage}" FontSize="11" Foreground="#E65100" FontWeight="SemiBold"/>
+                    <!-- Actionable Error & Diagnostic Drawer -->
+                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="10,8" CornerRadius="6" Background="#FFEBEE"
+                            Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                                <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="#C62828" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Actionable Diagnostic Summary" FontWeight="Bold" Foreground="#C62828" FontSize="11"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ActionableExplanation}" Foreground="#B71C1C" FontSize="11" TextWrapping="Wrap" Margin="24,0,0,0"/>
+
+                            <!-- Technical Diagnostic Drawer Toggle -->
+                            <Expander Header="Technical Diagnostics &amp; Telemetry" Margin="24,6,0,0" FontSize="10" Foreground="#555555">
+                                <Border Background="#263238" CornerRadius="4" Padding="8" Margin="0,4,0,0">
+                                    <TextBox Text="{Binding TechnicalDiagnostics}" IsReadOnly="True" TextWrapping="Wrap"
+                                             Foreground="#ECEFF1" FontFamily="Consolas" FontSize="10" BorderThickness="0" Background="Transparent"/>
+                                </Border>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Rollback Status Message (if non-error) -->
+                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="8,4" CornerRadius="4" Background="#E8F5E9">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <MultiDataTrigger>
+                                        <MultiDataTrigger.Conditions>
+                                            <Condition Binding="{Binding HasError}" Value="False"/>
+                                            <Condition Binding="{Binding Status}" Value="RolledBack"/>
+                                        </MultiDataTrigger.Conditions>
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </MultiDataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="CheckCircleOutline" Foreground="#2E7D32" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding RollbackMessage, TargetNullValue='Operation successfully reversed.'}" FontSize="11" Foreground="#2E7D32" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        </StackPanel>
                     </Border>
 
                     <!-- Action Bar inside Expanded Row -->
