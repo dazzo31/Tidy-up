@@ -722,8 +722,24 @@
                     <TextBlock Text="{Binding StatusMessage}" VerticalAlignment="Center"/>
                 </StackPanel>
             </StatusBarItem>
+            <!-- Active Warnings / Alert Badge -->
+            <StatusBarItem HorizontalAlignment="Right" Margin="0,0,8,0">
+                <Border Background="#FFEBEE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                        ToolTip="{Binding AlertBadgeTooltip}"
+                        Visibility="{Binding HasActiveAlerts, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="AlertCircleOutline" Width="14" Height="14"
+                                                 Foreground="#C62828" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="{Binding AlertBadgeText}" FontSize="10" FontWeight="Bold"
+                                   Foreground="#C62828" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </StatusBarItem>
+
+            <!-- State Badge with Tooltip -->
             <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
-                <Border Background="{Binding StateBadgeBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                <Border Background="{Binding StateBadgeBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                        ToolTip="{Binding StateBadgeTooltip}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="{Binding StateBadgeIcon}" Width="14" Height="14"
                                                  Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center" Margin="0,0,4,0"/>

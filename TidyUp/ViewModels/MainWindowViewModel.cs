@@ -11,6 +11,7 @@ using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services;
+using TidyUp.Services.Monitoring;
 using TidyUp.Services.State;
 using TidyUp.ViewModels.RuleEditor;
 
@@ -152,12 +153,15 @@ public partial class MainWindowViewModel : ObservableObject
     public LogsViewModel LogsViewModel { get; }
     public HistoryViewModel HistoryViewModel { get; }
     public IApplicationStateManager StateManager { get; }
+    private readonly IWatcherHealthMonitor? _healthMonitor;
+    private string _activeAlertSummary = string.Empty;
 
     public MainWindowViewModel(
         IRuleRepository ruleRepository,
         IImportExportService importExportService,
         IServiceProvider serviceProvider,
-        IApplicationStateManager? stateManager = null)
+        IApplicationStateManager? stateManager = null,
+        IWatcherHealthMonitor? healthMonitor = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
@@ -167,7 +171,17 @@ public partial class MainWindowViewModel : ObservableObject
             ?? (IApplicationStateManager?)serviceProvider.GetService(typeof(IApplicationStateManager))
             ?? new ApplicationStateManager();
 
+        _healthMonitor = healthMonitor
+            ?? (IWatcherHealthMonitor?)serviceProvider.GetService(typeof(IWatcherHealthMonitor));
+
         StateManager.StateChanged += OnStateChanged;
+        
+        if (_healthMonitor != null)
+        {
+            _healthMonitor.FolderHealthChanged += (s, e) => UpdateHealthAlerts();
+            UpdateHealthAlerts();
+        }
+
         UpdateTitleAndStateProperties();
 
         // Get ViewModels from DI
@@ -202,7 +216,9 @@ public partial class MainWindowViewModel : ObservableObject
             ApplicationLifecycleState.Simulating => "TidyUp - File Organization Manager [Simulating Rule...]",
             ApplicationLifecycleState.PreviewReady => "TidyUp - File Organization Manager [Preview Ready]",
             ApplicationLifecycleState.ExecutingBatch => "TidyUp - File Organization Manager [Executing Operations...]",
-            ApplicationLifecycleState.MonitoringRunning => "TidyUp - File Organization Manager [Monitoring Active]",
+            ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 
+                ? $"TidyUp - File Organization Manager [Monitoring (Degraded - {AlertCount} Alert{(AlertCount == 1 ? "" : "s")})]"
+                : "TidyUp - File Organization Manager [Monitoring Active]",
             ApplicationLifecycleState.MonitoringPaused => "TidyUp - File Organization Manager [Monitoring Paused]",
             _ => "TidyUp - File Organization Manager"
         };
@@ -211,6 +227,51 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(StateBadgeBackground));
         OnPropertyChanged(nameof(StateBadgeForeground));
         OnPropertyChanged(nameof(StateBadgeIcon));
+        OnPropertyChanged(nameof(StateBadgeTooltip));
+    }
+
+    private int _alertCount;
+    public int AlertCount
+    {
+        get => _alertCount;
+        set
+        {
+            if (SetProperty(ref _alertCount, value))
+            {
+                OnPropertyChanged(nameof(HasActiveAlerts));
+                OnPropertyChanged(nameof(AlertBadgeText));
+                OnPropertyChanged(nameof(AlertBadgeTooltip));
+                OnPropertyChanged(nameof(StateBadgeText));
+                OnPropertyChanged(nameof(StateBadgeBackground));
+                OnPropertyChanged(nameof(StateBadgeForeground));
+                OnPropertyChanged(nameof(StateBadgeIcon));
+                OnPropertyChanged(nameof(StateBadgeTooltip));
+            }
+        }
+    }
+
+    public bool HasActiveAlerts => AlertCount > 0;
+    public string AlertBadgeText => $"{AlertCount} Alert{(AlertCount == 1 ? "" : "s")}";
+    public string AlertBadgeTooltip => string.IsNullOrWhiteSpace(_activeAlertSummary)
+        ? "One or more monitored folders require attention (disconnected, degraded, or permissions error)."
+        : _activeAlertSummary;
+
+    public void UpdateHealthAlerts()
+    {
+        if (_healthMonitor == null) return;
+        var allHealth = _healthMonitor.GetAllFolderHealth();
+        var warningFolders = allHealth.Values
+            .Where(h => h.Status == Services.Monitoring.WatcherHealthStatus.Degraded 
+                     || h.Status == Services.Monitoring.WatcherHealthStatus.Disconnected 
+                     || h.Status == Services.Monitoring.WatcherHealthStatus.Error)
+            .ToList();
+
+        AlertCount = warningFolders.Count;
+        _activeAlertSummary = warningFolders.Count > 0
+            ? string.Join("; ", warningFolders.Select(w => $"{(Path.GetFileName(w.Path) is { Length: > 0 } n ? n : w.Path)}: {w.Status} ({w.StatusDetail ?? "Check folder access"})"))
+            : string.Empty;
+
+        UpdateTitleAndStateProperties();
     }
 
     public string StateBadgeText => StateManager.CurrentState switch
@@ -220,7 +281,7 @@ public partial class MainWindowViewModel : ObservableObject
         ApplicationLifecycleState.Simulating => "SIMULATING",
         ApplicationLifecycleState.PreviewReady => "PREVIEW READY",
         ApplicationLifecycleState.ExecutingBatch => "EXECUTING",
-        ApplicationLifecycleState.MonitoringRunning => "MONITORING ACTIVE",
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "MONITORING (DEGRADED)" : "MONITORING ACTIVE",
         ApplicationLifecycleState.MonitoringPaused => "MONITORING PAUSED",
         _ => StateManager.CurrentState.ToString().ToUpperInvariant()
     };
@@ -232,7 +293,7 @@ public partial class MainWindowViewModel : ObservableObject
         ApplicationLifecycleState.Simulating => "#E3F2FD",
         ApplicationLifecycleState.PreviewReady => "#E8F5E9",
         ApplicationLifecycleState.ExecutingBatch => "#FFEBEE",
-        ApplicationLifecycleState.MonitoringRunning => "#E8F5E9",
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "#FFF3E0" : "#E8F5E9",
         ApplicationLifecycleState.MonitoringPaused => "#FFF8E1",
         _ => "#EEEEEE"
     };
@@ -244,7 +305,7 @@ public partial class MainWindowViewModel : ObservableObject
         ApplicationLifecycleState.Simulating => "#1565C0",
         ApplicationLifecycleState.PreviewReady => "#2E7D32",
         ApplicationLifecycleState.ExecutingBatch => "#C62828",
-        ApplicationLifecycleState.MonitoringRunning => "#1B5E20",
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "#E65100" : "#1B5E20",
         ApplicationLifecycleState.MonitoringPaused => "#F57F17",
         _ => "#424242"
     };
@@ -256,9 +317,22 @@ public partial class MainWindowViewModel : ObservableObject
         ApplicationLifecycleState.Simulating => "TestTube",
         ApplicationLifecycleState.PreviewReady => "CheckCircleOutline",
         ApplicationLifecycleState.ExecutingBatch => "CogSync",
-        ApplicationLifecycleState.MonitoringRunning => "RadioboxMarked",
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "AlertCircle" : "RadioboxMarked",
         ApplicationLifecycleState.MonitoringPaused => "PauseCircle",
         _ => "Information"
+    };
+
+    public string StateBadgeTooltip => StateManager.CurrentState switch
+    {
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0
+            ? $"Monitoring active with {AlertCount} alert(s): {_activeAlertSummary}"
+            : "File system monitoring is active and healthy across all watched folders.",
+        ApplicationLifecycleState.MonitoringPaused => "File monitoring is temporarily paused.",
+        ApplicationLifecycleState.ExecutingBatch => "Executing automated file operations batch...",
+        ApplicationLifecycleState.Simulating => "Running safe read-only rule simulation...",
+        ApplicationLifecycleState.PreviewReady => "Rule preview ready. Review planned actions before execution.",
+        ApplicationLifecycleState.ConfiguringRule => "Configuring rule conditions, folders, and actions.",
+        _ => "Application is idle. Select a rule or view to begin."
     };
 
     /// <summary>

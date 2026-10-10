@@ -1116,10 +1116,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-03: Real-Time Monitoring Status Bar & Health Indicator (STATUS: NOT STARTED)
+### TASK-UI-03: Real-Time Monitoring Status Bar & Health Indicator (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-03
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Upgrade the main window status bar to reflect real-time monitoring service state, active operations, and unresolved health warnings.
 
