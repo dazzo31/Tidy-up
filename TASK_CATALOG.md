@@ -1424,10 +1424,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-13: Windows 11 Styling & Centralized Design Tokens (STATUS: NOT STARTED)
+### TASK-UI-13: Windows 11 Styling & Centralized Design Tokens (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-13
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Standardize borders, typography, accent colors, and control sizes into centralized resource dictionaries.
 
@@ -1454,10 +1454,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-14: Keyboard Navigation, High-DPI Scaling & Screen Reader Accessibility (STATUS: NOT STARTED)
+### TASK-UI-14: Keyboard Navigation, High-DPI Scaling & Screen Reader Accessibility (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-14
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Audit and remediate keyboard focus, tab ordering, accessible automation names, and DPI scaling.
 

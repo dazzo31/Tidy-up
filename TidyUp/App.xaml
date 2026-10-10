@@ -11,7 +11,11 @@
                 <!-- Material Design -->
                 <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="DeepOrange" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign3.Defaults.xaml" />
+                <!-- Centralized Windows 11 Design Tokens -->
+                <ResourceDictionary Source="Styles/Colors.xaml" />
+                <ResourceDictionary Source="Styles/Typography.xaml" />
                 <ResourceDictionary Source="Styles/AccessibilityStyles.xaml" />
+                <ResourceDictionary Source="Styles/Controls.xaml" />
             </ResourceDictionary.MergedDictionaries>
             
             <!-- Converters -->

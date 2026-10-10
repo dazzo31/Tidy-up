@@ -20,6 +20,10 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
+        SnapsToDevicePixels="True"
+        UseLayoutRounding="True"
+        TextOptions.TextFormattingMode="Display"
+        RenderOptions.BitmapScalingMode="HighQuality"
         Icon="pack://application:,,,/Resources/tidyup.ico">
     
     <!-- Keyboard Shortcuts -->
@@ -103,6 +107,9 @@
                         <Button Command="{Binding NavigateToDashboardCommand}"
                                 ToolTip="Operational Dashboard (Ctrl+1, Ctrl+D)"
                                 AutomationProperties.Name="Dashboard"
+                                AutomationProperties.HelpText="Navigate to operational dashboard"
+                                TabIndex="1"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
@@ -115,6 +122,9 @@
                         <Button Command="{Binding NavigateToRuleEditorCommand}"
                                 ToolTip="Rule Management (Ctrl+2)"
                                 AutomationProperties.Name="Rules"
+                                AutomationProperties.HelpText="Navigate to rule management"
+                                TabIndex="2"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
@@ -127,6 +137,9 @@
                         <Button Command="{Binding NavigateToFoldersCommand}"
                                 ToolTip="Monitored Folders (Ctrl+3)"
                                 AutomationProperties.Name="Monitored Folders"
+                                AutomationProperties.HelpText="Navigate to monitored folders hub"
+                                TabIndex="3"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
@@ -139,6 +152,9 @@
                         <Button Command="{Binding NavigateToPreviewReviewCommand}"
                                 ToolTip="Preview &amp; Review (Ctrl+4, Ctrl+T)"
                                 AutomationProperties.Name="Preview and Review"
+                                AutomationProperties.HelpText="Navigate to preview and review workspace"
+                                TabIndex="4"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
@@ -151,6 +167,9 @@
                         <Button Command="{Binding ViewHistoryCommand}"
                                 ToolTip="Operation History &amp; Journal (Ctrl+5)"
                                 AutomationProperties.Name="History and Journal"
+                                AutomationProperties.HelpText="Navigate to execution history and rollback journal"
+                                TabIndex="5"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
@@ -163,6 +182,9 @@
                         <Button Command="{Binding OpenSettingsCommand}"
                                 ToolTip="Settings (Ctrl+6)"
                                 AutomationProperties.Name="Settings"
+                                AutomationProperties.HelpText="Navigate to application preferences and settings"
+                                TabIndex="6"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="40" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
