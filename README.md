@@ -1,6 +1,6 @@
 # TidyUp
 
-[![Build & Test](https://github.com/dazzo/Tidy-up/actions/workflows/ci.yml/badge.svg)](https://github.com/dazzo/Tidy-up/actions/workflows/ci.yml)
+[![Build & Test](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml/badge.svg)](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml)
 [![Target .NET](https://img.shields.io/badge/.NET-9.0--windows-blue.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -52,7 +52,7 @@ dotnet --version
 
 ### 2. Clone the Repository
 ```powershell
-git clone https://github.com/dazzo/Tidy-up.git
+git clone https://github.com/dazzo31/Tidy-up.git
 cd Tidy-up
 ```
 
