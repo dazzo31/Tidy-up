@@ -45,9 +45,10 @@ public partial class Rule : ObservableObject
 
     /// <summary>
     /// Whether the rule is currently enabled.
+    /// Defaults to false per safe-by-default design principle.
     /// </summary>
     [ObservableProperty]
-    private bool _isEnabled = true;
+    private bool _isEnabled = false;
 
     /// <summary>
     /// Execution order priority (lower numbers execute first).
@@ -96,6 +97,30 @@ public partial class Rule : ObservableObject
     /// </summary>
     [ObservableProperty]
     private int _filesProcessedCount;
+
+    /// <summary>
+    /// Plain-language natural language summary of this rule's behavior.
+    /// </summary>
+    [ObservableProperty]
+    private string _summary = string.Empty;
+
+    /// <summary>
+    /// Whether this rule has unsaved changes.
+    /// </summary>
+    [ObservableProperty]
+    private bool _isDirty;
+
+    /// <summary>
+    /// Whether this rule currently has validation errors or invalid configuration.
+    /// </summary>
+    [ObservableProperty]
+    private bool _hasErrors;
+
+    /// <summary>
+    /// Validation error message when HasErrors is true.
+    /// </summary>
+    [ObservableProperty]
+    private string? _errorMessage;
 }
 
 /// <summary>

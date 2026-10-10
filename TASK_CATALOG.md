@@ -1147,10 +1147,10 @@ DONE WHEN:
 
 ---
 
-### TASK-UI-04: Enhanced Rules List with Search, Filter & Unsaved Dirty Indicators (STATUS: NOT STARTED)
+### TASK-UI-04: Enhanced Rules List with Search, Filter & Unsaved Dirty Indicators (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-UI-04
-STATUS: NOT STARTED
+STATUS: COMPLETE
 OBJECTIVE:
 Enhance the Rules view with multi-attribute filtering, sorting, plain-language summaries, and visual unsaved change indicators.
 

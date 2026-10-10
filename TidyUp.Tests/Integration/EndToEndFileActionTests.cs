@@ -58,6 +58,7 @@ public class EndToEndFileActionTests : IDisposable
         var rule = new Rule
         {
             Name = "Organize Reports",
+            IsEnabled = true,
             Conditions = new ConditionGroup
             {
                 Conditions = new System.Collections.ObjectModel.ObservableCollection<Condition>

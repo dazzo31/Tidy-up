@@ -6,6 +6,8 @@
         xmlns:local="clr-namespace:TidyUp"
         xmlns:controls="clr-namespace:TidyUp.Controls"
         xmlns:views="clr-namespace:TidyUp.Views"
+        xmlns:enums="clr-namespace:TidyUp.Models.Enums"
+        xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" 
@@ -250,6 +252,59 @@
                         </TextBox.Style>
                     </TextBox>
 
+                    <!-- Filter Chips & Sort Controls -->
+                    <DockPanel DockPanel.Dock="Top" Margin="8,2,8,6">
+                        <ComboBox DockPanel.Dock="Right"
+                                  ItemsSource="{x:Static viewmodels:MainWindowViewModel.AvailableSortOptions}"
+                                  SelectedItem="{Binding SelectedSortOption}"
+                                  DisplayMemberPath="DisplayName"
+                                  Width="85"
+                                  Height="26"
+                                  FontSize="11"
+                                  Padding="4,2"
+                                  VerticalAlignment="Center"
+                                  ToolTip="Sort rules by execution priority, name, last run, or modified date"
+                                  AutomationProperties.Name="Sort rules"/>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- All Chip -->
+                            <Button Content="All"
+                                    Command="{Binding SetFilterCommand}"
+                                    CommandParameter="{x:Static enums:RuleFilterType.All}"
+                                    Height="24" Padding="6,1" Margin="0,0,3,0" FontSize="11"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Opacity="{Binding FilterAllOpacity}"
+                                    FontWeight="{Binding FilterAllFontWeight}"
+                                    ToolTip="Show all rules"/>
+                            <!-- Enabled Chip -->
+                            <Button Content="Active"
+                                    Command="{Binding SetFilterCommand}"
+                                    CommandParameter="{x:Static enums:RuleFilterType.EnabledOnly}"
+                                    Height="24" Padding="6,1" Margin="0,0,3,0" FontSize="11"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Opacity="{Binding FilterEnabledOpacity}"
+                                    FontWeight="{Binding FilterEnabledFontWeight}"
+                                    ToolTip="Show enabled rules only"/>
+                            <!-- Disabled Chip -->
+                            <Button Content="Disabled"
+                                    Command="{Binding SetFilterCommand}"
+                                    CommandParameter="{x:Static enums:RuleFilterType.DisabledOnly}"
+                                    Height="24" Padding="6,1" Margin="0,0,3,0" FontSize="11"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Opacity="{Binding FilterDisabledOpacity}"
+                                    FontWeight="{Binding FilterDisabledFontWeight}"
+                                    ToolTip="Show disabled rules only"/>
+                            <!-- Errors Chip -->
+                            <Button Content="Errors"
+                                    Command="{Binding SetFilterCommand}"
+                                    CommandParameter="{x:Static enums:RuleFilterType.HasErrors}"
+                                    Height="24" Padding="6,1" FontSize="11"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    Opacity="{Binding FilterErrorsOpacity}"
+                                    FontWeight="{Binding FilterErrorsFontWeight}"
+                                    ToolTip="Show rules with configuration or validation errors"/>
+                        </StackPanel>
+                    </DockPanel>
+
                     <!-- Rules List Area with Empty State -->
                     <Grid>
                         <!-- Empty State for Rules -->
@@ -277,7 +332,7 @@
                                  Visibility="{Binding FilteredRules.Count, Converter={StaticResource CountToVisibilityConverter}}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Grid Margin="4">
+                                    <Grid Margin="4,3">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
@@ -292,32 +347,59 @@
                                                 <Style TargetType="materialDesign:PackIcon">
                                                     <Setter Property="Kind" Value="CheckCircle"/>
                                                     <Setter Property="Foreground" Value="Green"/>
+                                                    <Setter Property="ToolTip" Value="Rule is enabled"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsEnabled}" Value="False">
                                                             <Setter Property="Kind" Value="CloseCircle"/>
                                                             <Setter Property="Foreground" Value="Gray"/>
+                                                            <Setter Property="ToolTip" Value="Rule is disabled"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </materialDesign:PackIcon.Style>
                                         </materialDesign:PackIcon>
 
-                                        <StackPanel Grid.Column="1">
-                                            <TextBlock Text="{Binding Name}" 
-                                                      FontWeight="SemiBold"
-                                                      FontSize="13"
-                                                      TextTrimming="CharacterEllipsis"/>
-                                            <TextBlock Text="{Binding Description}" 
-                                                      Opacity="0.6"
-                                                      FontSize="11"
-                                                      TextTrimming="CharacterEllipsis"/>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <DockPanel LastChildFill="False">
+                                                <TextBlock DockPanel.Dock="Left"
+                                                           Text="{Binding Name}" 
+                                                           FontWeight="SemiBold"
+                                                           FontSize="13"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                
+                                                <!-- Unsaved dirty badge -->
+                                                <Border DockPanel.Dock="Left"
+                                                        Visibility="{Binding IsDirty, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                        Background="#FFF3E0" CornerRadius="3" Padding="4,0" Margin="6,0,0,0"
+                                                        VerticalAlignment="Center" ToolTip="Rule has unsaved edits">
+                                                    <TextBlock Text="* Unsaved" FontSize="9" FontWeight="Bold" Foreground="#E65100"/>
+                                                </Border>
+
+                                                <!-- Validation error badge -->
+                                                <materialDesign:PackIcon DockPanel.Dock="Left"
+                                                                         Kind="AlertCircle"
+                                                                         Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                                         Foreground="#D32F2F" Width="14" Height="14" Margin="6,0,0,0"
+                                                                         VerticalAlignment="Center"
+                                                                         ToolTip="{Binding ErrorMessage}"/>
+                                            </DockPanel>
+
+                                            <!-- Natural language rule summary -->
+                                            <TextBlock Text="{Binding Summary}" 
+                                                       Opacity="0.75"
+                                                       FontSize="11"
+                                                       TextTrimming="CharacterEllipsis"
+                                                       Margin="0,2,0,0"
+                                                       ToolTip="{Binding Summary}"/>
                                         </StackPanel>
 
                                         <Border Grid.Column="2"
                                                Background="{DynamicResource MaterialDesignToolBarBackground}"
                                                CornerRadius="8"
                                                Padding="6,2"
-                                               VerticalAlignment="Center">
+                                               Margin="6,0,0,0"
+                                               VerticalAlignment="Center"
+                                               ToolTip="Execution Priority Order">
                                             <TextBlock Text="{Binding ExecutionOrder}" 
                                                       FontSize="10"
                                                       FontWeight="Bold"/>

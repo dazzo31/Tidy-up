@@ -12,10 +12,17 @@ using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services;
 using TidyUp.Services.Monitoring;
+using TidyUp.Services.Rules;
 using TidyUp.Services.State;
+using TidyUp.Services.Validation;
 using TidyUp.ViewModels.RuleEditor;
 
 namespace TidyUp.ViewModels;
+
+public record RuleSortOption(RuleSortType Type, string DisplayName)
+{
+    public override string ToString() => DisplayName;
+}
 
 /// <summary>
 /// ViewModel for the main window.
@@ -25,6 +32,8 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IRuleRepository _ruleRepository;
     private readonly IImportExportService _importExportService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly IRuleSummaryGenerator _ruleSummaryGenerator;
+    private readonly IRuleValidator _ruleValidator;
 
     [ObservableProperty]
     private ObservableCollection<Rule> _rules = new();
@@ -43,6 +52,70 @@ public partial class MainWindowViewModel : ObservableObject
                 FilterRules();
             }
         }
+    }
+
+    public static IReadOnlyList<RuleSortOption> AvailableSortOptions { get; } = new[]
+    {
+        new RuleSortOption(RuleSortType.ExecutionPriority, "Priority"),
+        new RuleSortOption(RuleSortType.Name, "Name"),
+        new RuleSortOption(RuleSortType.LastRun, "Last Run"),
+        new RuleSortOption(RuleSortType.ModificationDate, "Modified")
+    };
+
+    [ObservableProperty]
+    private RuleSortOption _selectedSortOption = AvailableSortOptions[0];
+
+    [ObservableProperty]
+    private RuleFilterType _selectedFilter = RuleFilterType.All;
+
+    public bool IsFilterAllActive => SelectedFilter == RuleFilterType.All;
+    public bool IsFilterEnabledActive => SelectedFilter == RuleFilterType.EnabledOnly;
+    public bool IsFilterDisabledActive => SelectedFilter == RuleFilterType.DisabledOnly;
+    public bool IsFilterErrorsActive => SelectedFilter == RuleFilterType.HasErrors;
+
+    public double FilterAllOpacity => IsFilterAllActive ? 1.0 : 0.6;
+    public double FilterEnabledOpacity => IsFilterEnabledActive ? 1.0 : 0.6;
+    public double FilterDisabledOpacity => IsFilterDisabledActive ? 1.0 : 0.6;
+    public double FilterErrorsOpacity => IsFilterErrorsActive ? 1.0 : 0.6;
+
+    public string FilterAllFontWeight => IsFilterAllActive ? "Bold" : "Normal";
+    public string FilterEnabledFontWeight => IsFilterEnabledActive ? "Bold" : "Normal";
+    public string FilterDisabledFontWeight => IsFilterDisabledActive ? "Bold" : "Normal";
+    public string FilterErrorsFontWeight => IsFilterErrorsActive ? "Bold" : "Normal";
+
+    [RelayCommand]
+    public void SetFilter(RuleFilterType filter)
+    {
+        if (SelectedFilter == filter)
+        {
+            FilterRules();
+        }
+        else
+        {
+            SelectedFilter = filter;
+        }
+    }
+
+    partial void OnSelectedFilterChanged(RuleFilterType value)
+    {
+        OnPropertyChanged(nameof(IsFilterAllActive));
+        OnPropertyChanged(nameof(IsFilterEnabledActive));
+        OnPropertyChanged(nameof(IsFilterDisabledActive));
+        OnPropertyChanged(nameof(IsFilterErrorsActive));
+        OnPropertyChanged(nameof(FilterAllOpacity));
+        OnPropertyChanged(nameof(FilterEnabledOpacity));
+        OnPropertyChanged(nameof(FilterDisabledOpacity));
+        OnPropertyChanged(nameof(FilterErrorsOpacity));
+        OnPropertyChanged(nameof(FilterAllFontWeight));
+        OnPropertyChanged(nameof(FilterEnabledFontWeight));
+        OnPropertyChanged(nameof(FilterDisabledFontWeight));
+        OnPropertyChanged(nameof(FilterErrorsFontWeight));
+        FilterRules();
+    }
+
+    partial void OnSelectedSortOptionChanged(RuleSortOption value)
+    {
+        FilterRules();
     }
 
     private Rule? _selectedRule;
@@ -161,11 +234,23 @@ public partial class MainWindowViewModel : ObservableObject
         IImportExportService importExportService,
         IServiceProvider serviceProvider,
         IApplicationStateManager? stateManager = null,
-        IWatcherHealthMonitor? healthMonitor = null)
+        IWatcherHealthMonitor? healthMonitor = null,
+        IRuleSummaryGenerator? ruleSummaryGenerator = null,
+        IRuleValidator? ruleValidator = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
         _serviceProvider = serviceProvider;
+
+        _ruleSummaryGenerator = ruleSummaryGenerator
+            ?? (IRuleSummaryGenerator?)serviceProvider.GetService(typeof(IRuleSummaryGenerator))
+            ?? new RuleSummaryGenerator();
+
+        _ruleValidator = ruleValidator
+            ?? (IRuleValidator?)serviceProvider.GetService(typeof(IRuleValidator))
+            ?? new RuleValidator();
+
+        _rules.CollectionChanged += (s, e) => FilterRules();
         
         StateManager = stateManager
             ?? (IApplicationStateManager?)serviceProvider.GetService(typeof(IApplicationStateManager))
@@ -350,6 +435,7 @@ public partial class MainWindowViewModel : ObservableObject
             Rules.Clear();
             foreach (var rule in rules.OrderBy(r => r.ExecutionOrder))
             {
+                UpdateRuleMetadata(rule);
                 Rules.Add(rule);
             }
             FilterRules();
@@ -433,6 +519,12 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsLoading = false;
             IsRuleDirty = false;
+            if (SelectedRule != null)
+            {
+                SelectedRule.IsDirty = false;
+                UpdateRuleMetadata(SelectedRule);
+            }
+            FilterRules();
             StateManager.NotifyRuleSaved();
         }
     }
@@ -443,32 +535,55 @@ public partial class MainWindowViewModel : ObservableObject
         StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
-    /// Filters rules based on search text.
+    /// Generates plain-language natural language summary and performs validation on the rule.
     /// </summary>
-    private void FilterRules()
+    public void UpdateRuleMetadata(Rule rule)
     {
-        FilteredRules.Clear();
+        if (rule == null) return;
+        rule.Summary = _ruleSummaryGenerator.GenerateSummary(rule);
+        var validation = _ruleValidator.ValidateRule(rule);
+        rule.HasErrors = !validation.IsValid;
+        rule.ErrorMessage = validation.IsValid ? null : string.Join("; ", validation.Errors.Select(e => e.ErrorMessage));
+    }
+
+    /// <summary>
+    /// Filters and sorts rules based on search text, active filter chips, and selected sort order.
+    /// </summary>
+    public void FilterRules()
+    {
+        var query = Rules.AsEnumerable();
         
-        if (string.IsNullOrWhiteSpace(SearchText))
+        if (!string.IsNullOrWhiteSpace(SearchText))
         {
-            // No filter - show all rules
-            foreach (var rule in Rules)
-            {
-                FilteredRules.Add(rule);
-            }
-        }
-        else
-        {
-            // Filter by name or description
             var searchLower = SearchText.ToLowerInvariant();
-            foreach (var rule in Rules)
-            {
-                if (rule.Name.ToLowerInvariant().Contains(searchLower) ||
-                    (rule.Description?.ToLowerInvariant().Contains(searchLower) ?? false))
-                {
-                    FilteredRules.Add(rule);
-                }
-            }
+            query = query.Where(rule =>
+                (rule.Name != null && rule.Name.ToLowerInvariant().Contains(searchLower)) ||
+                (rule.Description != null && rule.Description.ToLowerInvariant().Contains(searchLower)) ||
+                (rule.Summary != null && rule.Summary.ToLowerInvariant().Contains(searchLower)));
+        }
+
+        query = SelectedFilter switch
+        {
+            RuleFilterType.EnabledOnly => query.Where(r => r.IsEnabled),
+            RuleFilterType.DisabledOnly => query.Where(r => !r.IsEnabled),
+            RuleFilterType.HasErrors => query.Where(r => r.HasErrors),
+            _ => query
+        };
+
+        var sortType = SelectedSortOption?.Type ?? RuleSortType.ExecutionPriority;
+        query = sortType switch
+        {
+            RuleSortType.Name => query.OrderBy(r => r.Name, StringComparer.OrdinalIgnoreCase),
+            RuleSortType.LastRun => query.OrderByDescending(r => r.LastRunDate ?? DateTime.MinValue),
+            RuleSortType.ModificationDate => query.OrderByDescending(r => r.ModifiedDate),
+            _ => query.OrderBy(r => r.ExecutionOrder)
+        };
+
+        var filtered = query.ToList();
+        FilteredRules.Clear();
+        foreach (var rule in filtered)
+        {
+            FilteredRules.Add(rule);
         }
     }
 
@@ -833,7 +948,21 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void SelectedRule_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(Rule.IsDirty) ||
+            e.PropertyName == nameof(Rule.Summary) ||
+            e.PropertyName == nameof(Rule.HasErrors) ||
+            e.PropertyName == nameof(Rule.ErrorMessage))
+        {
+            return;
+        }
+
         IsRuleDirty = true;
+        if (SelectedRule != null)
+        {
+            SelectedRule.IsDirty = true;
+            UpdateRuleMetadata(SelectedRule);
+        }
+
         StateManager.NotifyRuleModified(SelectedRule?.Name);
         if (e.PropertyName == nameof(Rule.Name))
         {
@@ -851,6 +980,11 @@ public partial class MainWindowViewModel : ObservableObject
     private void MonitoredFolders_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
         IsRuleDirty = true;
+        if (SelectedRule != null)
+        {
+            SelectedRule.IsDirty = true;
+            UpdateRuleMetadata(SelectedRule);
+        }
         StateManager.NotifyRuleModified(SelectedRule?.Name);
         TestRuleCommand.NotifyCanExecuteChanged();
     }
