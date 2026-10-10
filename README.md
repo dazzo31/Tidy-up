@@ -81,6 +81,9 @@ dotnet test -c Release --verbosity normal
 - 🏛️ [Architecture & Technical Design](docs/ARCHITECTURE.md) - Subsystem details, sequence diagrams, and design principles.
 - 📋 [Feature Verification Matrix](docs/FEATURE_MATRIX.md) - Authoritative verification status and test coverage for all requirements.
 - 📑 [Task Catalog](TASK_CATALOG.md) - Work breakdown structure, task specifications, and governance log.
+- 📜 [Specifications](docs/spec/) - Original architectural plan and GUI design specifications.
+- 🛠️ [Helper Scripts](scripts/) - Standalone utilities for Google Takeout photo organization.
+- 📂 [Historical Archive](docs/historical/) - Pre-v1.0 milestone logs and session notes.
 
 ---
 
