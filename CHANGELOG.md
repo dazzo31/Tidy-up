@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-10-11
+
+### Summary
+Comprehensive UI/UX modernization, accessibility overhaul, and workflow experience release (Phase 6: `TASK-UI-01` through `TASK-UI-15`). 411 automated tests passing with 0 failures.
+
+### Added & Enhanced (Phase 6: UI/UX Modernization & Workflow Experience)
+- **Persistent Navigation Rail (`TASK-UI-02`):** Modern Windows 11 left rail navigation with 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`).
+- **Real-Time Monitoring Status Bar (`TASK-UI-03`):** Interactive health badge with animated status indicators, degraded state alerts, and dynamic folder telemetry.
+- **Rules List Filtering & Dirty Tracking (`TASK-UI-04`):** Filter chips (All, Enabled, Disabled, Has Errors), sorting dropdown, plain-language summaries, and unsaved-changes dirty indicator.
+- **Dual-Mode Rule Editor & 4-Stage Wizard (`TASK-UI-05`):** Lossless dual-mode synchronization between 4-stage guided wizard and tabbed advanced rule editor.
+- **Nested Condition Builder (`TASK-UI-06`):** Visual tree grouping cards, context-sensitive date/number editors, `FileSizeUnit` selector (`Bytes`, `KB`, `MB`, `GB`), and inline regex validation error feedback.
+- **Dedicated Folders Management Hub (`TASK-UI-07` & `TASK-UI-08`):** Full-page folders workspace with directory permission audit (`Read/Write`, `Read Only`, `Access Denied`), system-protected path detection, and exclusion patterns (`.git`, `node_modules`).
+- **Integrated Preview & Review Workspace (`TASK-UI-09` & `TASK-UI-10`):** Full-page dry-run simulation workspace with operation breakdown counters, virtualized DataGrid, side-by-side impact review, and cooperative batch cancellation.
+- **Explainability Inspector (`TASK-UI-10`):** "Why Did This File Match?" drawer evaluating and presenting per-condition pass/fail decision breakdowns.
+- **Two-Step Guarded Apply Workflow (`TASK-UI-10`):** Pre-flight filesystem mutation re-check verifying files haven't been deleted or altered since simulation before applying disk operations.
+- **Actionable History & Safe Rollback (`TASK-UI-11`):** Plain-language actionable failure explanations, expandable technical diagnostic telemetry drawer, and pre-rollback SHA-256 target verification preventing clobbering external modifications.
+- **Categorized 5-Section Settings Experience (`TASK-UI-12`):** Reorganized settings into General, Safety, Performance, Storage & Logs, and Advanced sections with contextual risk explanations, database VACUUM optimization, and manual backups.
+- **Centralized Windows 11 Tokens & Accessibility (`TASK-UI-13` & `TASK-UI-14`):** Standardized design tokens in `Styles/Colors.xaml`, `Styles/Typography.xaml`, `Styles/Controls.xaml`, and `Styles/AccessibilityStyles.xaml` with high-contrast focus rings, explicit `TabIndex`, and high-DPI scaling.
+- **Dead Code Cleanup (`TASK-UI-01`):** Removed 10 dead legacy views (-1,463 lines) from codebase.
+- **Full Integration Regression Gate (`TASK-UI-15`):** End-to-end UI workflow regression suite verifying all 17 Acceptance Criteria.
+
+---
+
 ## [1.0.0] - 2026-10-10
 
 ### Summary

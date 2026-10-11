@@ -161,3 +161,4 @@ public class FoldersViewModelTests : IDisposable
         _viewModel.StatusMessage.Should().Contain("Scan complete: found 2 active files");
     }
 }
+

@@ -12,3 +12,4 @@ public partial class PreviewView : UserControl
         InitializeComponent();
     }
 }
+

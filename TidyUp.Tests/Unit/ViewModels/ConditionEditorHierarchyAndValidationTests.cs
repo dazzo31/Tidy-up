@@ -213,3 +213,4 @@ public class ConditionEditorHierarchyAndValidationTests
         _viewModel.RootCondition.Conditions.Should().BeEmpty();
     }
 }
+

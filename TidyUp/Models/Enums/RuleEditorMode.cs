@@ -8,3 +8,4 @@ public enum RuleEditorMode
     GuidedWorkflow,
     AdvancedTabs
 }
+

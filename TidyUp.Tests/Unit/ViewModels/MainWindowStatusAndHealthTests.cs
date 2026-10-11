@@ -135,3 +135,4 @@ public class MainWindowStatusAndHealthTests
         vm.StateBadgeBackground.Should().Be("#E8F5E9");
     }
 }
+

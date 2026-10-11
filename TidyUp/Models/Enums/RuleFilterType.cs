@@ -10,3 +10,4 @@ public enum RuleFilterType
     DisabledOnly,
     HasErrors
 }
+

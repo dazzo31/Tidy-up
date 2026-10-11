@@ -46,3 +46,4 @@
     <SolidColorBrush x:Key="Win11TextDisabledBrush" Color="{StaticResource Win11TextDisabledColor}"/>
 
 </ResourceDictionary>
+

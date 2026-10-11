@@ -463,3 +463,4 @@ public partial class FoldersViewModel : ObservableObject
         RequestEditRuleCallback?.Invoke(folder.LinkedRuleIds[0]);
     }
 }
+

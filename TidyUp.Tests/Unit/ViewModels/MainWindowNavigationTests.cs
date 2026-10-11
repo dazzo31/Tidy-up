@@ -106,3 +106,4 @@ public class MainWindowNavigationTests
         _viewModel.IsFoldersActive.Should().BeFalse();
     }
 }
+
