@@ -777,9 +777,9 @@
             </Grid>
 
             <!-- Dashboard View (Operational Overview) -->
-            <views:DashboardView DataContext="{Binding DashboardViewModel}">
-                <views:DashboardView.Style>
-                    <Style TargetType="views:DashboardView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Dashboard">
@@ -787,13 +787,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:DashboardView.Style>
-            </views:DashboardView>
+                </Grid.Style>
+                <views:DashboardView DataContext="{Binding DashboardViewModel}"/>
+            </Grid>
 
             <!-- Settings View (replaces entire content area) -->
-            <views:SettingsView DataContext="{Binding SettingsViewModel}">
-                <views:SettingsView.Style>
-                    <Style TargetType="views:SettingsView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Settings">
@@ -801,13 +802,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:SettingsView.Style>
-            </views:SettingsView>
+                </Grid.Style>
+                <views:SettingsView DataContext="{Binding SettingsViewModel}"/>
+            </Grid>
 
             <!-- Logs View -->
-            <views:LogsView DataContext="{Binding LogsViewModel}">
-                <views:LogsView.Style>
-                    <Style TargetType="views:LogsView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Logs">
@@ -815,13 +817,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:LogsView.Style>
-            </views:LogsView>
+                </Grid.Style>
+                <views:LogsView DataContext="{Binding LogsViewModel}"/>
+            </Grid>
 
             <!-- History View -->
-            <views:HistoryView DataContext="{Binding HistoryViewModel}">
-                <views:HistoryView.Style>
-                    <Style TargetType="views:HistoryView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="History">
@@ -829,13 +832,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:HistoryView.Style>
-            </views:HistoryView>
+                </Grid.Style>
+                <views:HistoryView DataContext="{Binding HistoryViewModel}"/>
+            </Grid>
 
             <!-- Folders Hub (Dedicated Workspace) -->
-            <views:FoldersView DataContext="{Binding FoldersViewModel}">
-                <views:FoldersView.Style>
-                    <Style TargetType="views:FoldersView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Folders">
@@ -843,13 +847,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:FoldersView.Style>
-            </views:FoldersView>
+                </Grid.Style>
+                <views:FoldersView DataContext="{Binding FoldersViewModel}"/>
+            </Grid>
 
             <!-- Preview & Review Workspace -->
-            <views:PreviewView DataContext="{Binding PreviewViewModel}">
-                <views:PreviewView.Style>
-                    <Style TargetType="views:PreviewView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="PreviewReview">
@@ -857,13 +862,14 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:PreviewView.Style>
-            </views:PreviewView>
+                </Grid.Style>
+                <views:PreviewView DataContext="{Binding PreviewViewModel}"/>
+            </Grid>
 
             <!-- Help View -->
-            <views:HelpView>
-                <views:HelpView.Style>
-                    <Style TargetType="views:HelpView">
+            <Grid>
+                <Grid.Style>
+                    <Style TargetType="Grid">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding CurrentView}" Value="Help">
@@ -871,8 +877,9 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </views:HelpView.Style>
-            </views:HelpView>
+                </Grid.Style>
+                <views:HelpView/>
+            </Grid>
         </Grid>
 
         <!-- Status Bar -->

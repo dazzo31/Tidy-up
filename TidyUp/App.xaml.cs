@@ -24,55 +24,73 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Configure services
-        _serviceProvider = ServiceConfiguration.ConfigureServices();
-
-        // Ensure database is created
         try
         {
-            await ServiceConfiguration.EnsureDatabaseCreatedAsync(_serviceProvider);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to initialize database: {ex.Message}",
-                "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
-            Shutdown();
-            return;
-        }
+            // Configure services
+            _serviceProvider = ServiceConfiguration.ConfigureServices();
 
-        // Load settings
-        try
-        {
-            AppSettings = await ServiceConfiguration.LoadSettingsAsync(_serviceProvider);
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
-                "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            AppSettings = AppSettings.CreateDefault();
-        }
-
-        // Initialize tray icon and notification service
-        _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
-        _toastService = _serviceProvider.GetRequiredService<IToastNotificationService>();
-
-        _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-        if (_trayIcon != null)
-        {
-            _trayIconService.Initialize(_trayIcon);
-            if (_toastService is ToastNotificationService concreteToast)
+            // Ensure database is created
+            try
             {
-                concreteToast.SetTrayIconService(_trayIconService);
+                await ServiceConfiguration.EnsureDatabaseCreatedAsync(_serviceProvider);
             }
-        }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to initialize database: {ex.Message}",
+                    "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                Shutdown();
+                return;
+            }
 
-        // Show main window
-        _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        
-        // Handle window close to minimize to tray
-        _mainWindow.Closing += MainWindow_Closing;
-        
-        _mainWindow.Show();
+            // Load settings
+            try
+            {
+                AppSettings = await ServiceConfiguration.LoadSettingsAsync(_serviceProvider);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
+                    "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppSettings = AppSettings.CreateDefault();
+            }
+
+            // Initialize tray icon and notification service
+            _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
+            _toastService = _serviceProvider.GetRequiredService<IToastNotificationService>();
+
+            try
+            {
+                _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
+                if (_trayIcon != null)
+                {
+                    _trayIconService.Initialize(_trayIcon);
+                    if (_toastService is ToastNotificationService concreteToast)
+                    {
+                        concreteToast.SetTrayIconService(_trayIconService);
+                    }
+                }
+            }
+            catch
+            {
+                // Tray icon initialization fallback
+            }
+
+            // Show main window
+            _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            MainWindow = _mainWindow;
+            
+            // Handle window close to minimize to tray
+            _mainWindow.Closing += MainWindow_Closing;
+            
+            _mainWindow.Show();
+            _mainWindow.WindowState = WindowState.Normal;
+            _mainWindow.Activate();
+            _mainWindow.Focus();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Unhandled Startup Exception: {ex.Message}\n\n{ex.StackTrace}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
