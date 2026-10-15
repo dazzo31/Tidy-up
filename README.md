@@ -76,7 +76,7 @@ dotnet run --project TidyUp -c Release
 ```
 
 ### 4. Run the Test Suite
-The solution contains 410+ comprehensive unit and integration tests:
+The solution contains 426 comprehensive unit and integration tests:
 ```powershell
 dotnet test -c Release --verbosity normal
 ```

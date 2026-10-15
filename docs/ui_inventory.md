@@ -7,6 +7,11 @@
 
 ---
 
+> **⚠️ HISTORICAL BASELINE (2026-10-09) — SUPERSEDED FOR STATUS**
+> This inventory captured the pre-Phase-2..6 state. The "Disconnected" / "STUB" findings below were wired in later phases. See `docs/FEATURE_MATRIX.md` for current wiring status; do not treat these rows as current without re-verifying against `main`.
+
+---
+
 ## 1. Executive Summary of Findings
 
 1. **Rule Engine & Editor are Wired and Functional:** The core rule management (CRUD), nested condition building (AND/OR), action configuration, and variable substitution are properly connected to the database and services.

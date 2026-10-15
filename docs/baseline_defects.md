@@ -7,6 +7,11 @@
 
 ---
 
+> **⚠️ HISTORICAL BASELINE (2026-10-09) — SUPERSEDED FOR STATUS**
+> This defect catalog captured the pre-Phase-1..6 state. The P0/P1/P2 defects listed below were addressed in v1.0.0 and v1.1.0. See `docs/FEATURE_MATRIX.md` and the release-verification report for current status; do not treat these rows as open defects without re-verifying against `main`.
+
+---
+
 ## 1. Executive Summary
 
 A critical reason for project misalignment in previous development sessions was the proliferation of historical status documents claiming full completion:

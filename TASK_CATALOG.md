@@ -1017,7 +1017,7 @@ DONE WHEN:
 
 ---
 
-### TASK-DOC-03: GitHub Actions CI Matrix Build & Automated Test Gate (STATUS: COMPLETE)
+### TASK-CI-01: GitHub Actions CI Matrix Build & Automated Test Gate (STATUS: COMPLETE)
 ```text
 TASK ID: TASK-CI-01
 STATUS: COMPLETE

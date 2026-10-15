@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2026-10-11
 
 ### Summary
-Comprehensive UI/UX modernization, accessibility overhaul, and workflow experience release (Phase 6: `TASK-UI-01` through `TASK-UI-15`). 411 automated tests passing with 0 failures.
+Comprehensive UI/UX modernization, accessibility overhaul, and workflow experience release (Phase 6: `TASK-UI-01` through `TASK-UI-15`). 426 automated tests passing with 0 failures.
 
 ### Added & Enhanced (Phase 6: UI/UX Modernization & Workflow Experience)
 - **Persistent Navigation Rail (`TASK-UI-02`):** Modern Windows 11 left rail navigation with 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`).
@@ -27,6 +27,11 @@ Comprehensive UI/UX modernization, accessibility overhaul, and workflow experien
 - **Centralized Windows 11 Tokens & Accessibility (`TASK-UI-13` & `TASK-UI-14`):** Standardized design tokens in `Styles/Colors.xaml`, `Styles/Typography.xaml`, `Styles/Controls.xaml`, and `Styles/AccessibilityStyles.xaml` with high-contrast focus rings, explicit `TabIndex`, and high-DPI scaling.
 - **Dead Code Cleanup (`TASK-UI-01`):** Removed 10 dead legacy views (-1,463 lines) from codebase.
 - **Full Integration Regression Gate (`TASK-UI-15`):** End-to-end UI workflow regression suite verifying all 17 Acceptance Criteria.
+
+### Hardening & Governance (pre-release)
+- **Shared Monitored-Folder Catalog:** Introduced `MonitoredFolderCatalog` as the single source of truth for monitored folders, backed by `FolderPathNormalizer` (canonical path casing/slashes/UNC) and `FolderValidator` (existence + permission audit). A `RulesChanged` event keeps catalog, Dashboard, Folders hub, and Rule Wizard synchronized.
+- **Dependency Security:** Resolved SharpCompress zip-slip vulnerability (GHSA-6c8g-7p36-r338) by bumping 0.41.0 → 0.48.0, and cleared the transitive `SQLitePCLRaw.lib.e_sqlite3` High severity advisory (GHSA-2m69-gcr7-jv3q) by aligning EF Core Sqlite / Microsoft.Extensions.* to 9.0.21. Adapted `ActionExecutor` to the renamed `ArchiveFactory.OpenArchive` API.
+- **CI Security Gate:** Added a `dotnet list package --vulnerable` step that fails the build workflow when any vulnerable package (direct or transitive) is present.
 
 ---
 

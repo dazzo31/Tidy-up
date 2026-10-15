@@ -8,14 +8,18 @@
 
 ---
 
+> **⚠️ HISTORICAL BASELINE (2026-10-09) — SUPERSEDED FOR STATUS**
+> This report captured the pre-Phase-1..6 state (61 tests, 1 vulnerability). Current `main` has 426 passing tests and zero vulnerable packages. See `docs/FEATURE_MATRIX.md` and the latest CI run for current numbers.
+
+---
+
 ## 1. Executive Summary
 
 | Metric | Result | Notes |
 | :--- | :--- | :--- |
 | **Solution Compilation** | **SUCCEEDED** | 0 errors, 3 warnings |
 | **Total Automated Tests** | **61** | 61 passing, 0 failing, 0 skipped |
-| **Total Test Execution Time** | **1.89 seconds** | High execution speed; in-memory/mocked operations |
-| **Vulnerabilities / Deprecations** | **1 Vulnerability** | NU1902: `SharpCompress 0.41.0` (GHSA-6c8g-7p36-r338) |
+| **Total Test Execution Time** | **1.89 seconds** | High execution speed; in-memory/mocked operations || **Vulnerabilities / Deprecations** | **1 Vulnerability** | NU1902: `SharpCompress 0.41.0` (GHSA-6c8g-7p36-r338) |
 
 ---
 
