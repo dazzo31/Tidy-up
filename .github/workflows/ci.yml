@@ -40,6 +40,16 @@ jobs:
       - name: Build Solution (Release)
         run: dotnet build TidyUp.sln --configuration Release --no-restore
 
+      - name: Audit Packages for Known Vulnerabilities
+        shell: pwsh
+        run: |
+          $vulnerable = dotnet list TidyUp.sln package --vulnerable --include-transitive
+          $vulnerable
+          if ($vulnerable -match '(?i)has the following vulnerable packages') {
+            Write-Error "Vulnerable packages detected. Upgrade or remove them before merging."
+            exit 1
+          }
+
       - name: Execute Automated Test Suite
         run: >
           dotnet test TidyUp.sln
