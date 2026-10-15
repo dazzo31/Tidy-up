@@ -6,6 +6,8 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
+using TidyUp.Models.Folders;
+using TidyUp.Services.Folders;
 using TidyUp.Services.Monitoring;
 using TidyUp.Services.Watcher;
 
@@ -74,6 +76,8 @@ public partial class FoldersViewModel : ObservableObject
 {
     private readonly IRuleRepository _ruleRepository;
     private readonly IWatcherHealthMonitor? _healthMonitor;
+    private readonly IMonitoredFolderCatalog? _monitoredFolderCatalog;
+    private readonly IFolderPathNormalizer _pathNormalizer;
 
     [ObservableProperty]
     private ObservableCollection<MonitoredFolderItemViewModel> _monitoredFolders = new();
@@ -126,10 +130,93 @@ public partial class FoldersViewModel : ObservableObject
 
     public FoldersViewModel(
         IRuleRepository ruleRepository,
-        IWatcherHealthMonitor? healthMonitor = null)
+        IWatcherHealthMonitor? healthMonitor = null,
+        IMonitoredFolderCatalog? monitoredFolderCatalog = null,
+        IFolderPathNormalizer? pathNormalizer = null)
     {
         _ruleRepository = ruleRepository;
         _healthMonitor = healthMonitor;
+        _monitoredFolderCatalog = monitoredFolderCatalog;
+        _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
+
+        if (_monitoredFolderCatalog != null)
+        {
+            _monitoredFolderCatalog.CatalogChanged += OnCatalogChanged;
+        }
+    }
+
+    private void OnCatalogChanged(object? sender, FolderCatalogChangedEventArgs e)
+    {
+        void Update()
+        {
+            SyncFoldersFromCatalog(e.Folders);
+            UpdateStats();
+            FilterFolders();
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
+        }
+    }
+
+    private void SyncFoldersFromCatalog(IEnumerable<MonitoredFolderState> catalogFolders)
+    {
+        MonitoredFolders.Clear();
+        foreach (var state in catalogFolders.OrderBy(s => s.NormalizedPath))
+        {
+            var isPaused = state.WatcherHealth == WatcherHealthStatus.Paused;
+            var watcherStatusText = state.ValidationStatus switch
+            {
+                FolderValidationStatus.Missing => "Error (Missing)",
+                FolderValidationStatus.AccessDenied => "Error (Access Denied)",
+                _ => state.WatcherHealth switch
+                {
+                    WatcherHealthStatus.Paused => "Paused",
+                    WatcherHealthStatus.Degraded => "Degraded",
+                    WatcherHealthStatus.Disconnected => "Error (Missing)",
+                    WatcherHealthStatus.Error => "Error",
+                    _ => "Watching"
+                }
+            };
+
+            var permissionStatusText = state.ValidationStatus switch
+            {
+                FolderValidationStatus.Missing => "Directory does not exist",
+                FolderValidationStatus.AccessDenied => "Access Denied",
+                FolderValidationStatus.InvalidPath => "Invalid path",
+                _ => (state.HasReadPermission, state.HasWritePermission) switch
+                {
+                    (true, true) => "Read / Write (Full Access)",
+                    (true, false) => "Read Only",
+                    _ => "Access Denied"
+                }
+            };
+
+            var item = new MonitoredFolderItemViewModel
+            {
+                Path = state.NormalizedPath,
+                Exists = state.Exists,
+                HasReadPermission = state.HasReadPermission,
+                HasWritePermission = state.HasWritePermission,
+                IsSystemProtected = state.IsSystemProtected,
+                PermissionStatus = permissionStatusText,
+                IncludeSubfolders = state.IncludeSubfolders,
+                ExclusionPatternsText = string.Join(", ", state.ExclusionPatterns),
+                ExclusionPatterns = new ObservableCollection<string>(state.ExclusionPatterns),
+                LinkedRulesCount = state.TotalRuleCount,
+                LinkedRuleIds = state.LinkedRuleIds.ToList(),
+                LinkedRulesSummary = state.AssociatedRulesSummary,
+                WatcherStatus = watcherStatusText,
+                IsPaused = isPaused
+            };
+
+            MonitoredFolders.Add(item);
+        }
     }
 
     [RelayCommand]
@@ -140,47 +227,77 @@ public partial class FoldersViewModel : ObservableObject
 
         try
         {
-            var rules = await _ruleRepository.GetAllAsync();
-            var folderMap = new Dictionary<string, MonitoredFolderItemViewModel>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var rule in rules)
+            if (_monitoredFolderCatalog != null)
             {
-                foreach (var folder in rule.MonitoredFolders)
+                await _monitoredFolderCatalog.RefreshAsync();
+                SyncFoldersFromCatalog(_monitoredFolderCatalog.Folders);
+            }
+            else
+            {
+                var rules = await _ruleRepository.GetAllAsync();
+                var folderMap = new Dictionary<string, MonitoredFolderItemViewModel>(StringComparer.OrdinalIgnoreCase);
+
+                foreach (var rule in rules)
                 {
-                    if (string.IsNullOrWhiteSpace(folder.Path)) continue;
-
-                    var normalizedPath = folder.Path.Trim();
-                    if (!folderMap.TryGetValue(normalizedPath, out var item))
+                    foreach (var folder in rule.MonitoredFolders)
                     {
-                        item = new MonitoredFolderItemViewModel
+                        if (string.IsNullOrWhiteSpace(folder.Path)) continue;
+
+                        var normalizedPath = _pathNormalizer.TryNormalize(folder.Path, out var norm, out _)
+                            ? norm
+                            : folder.Path.Trim();
+
+                        if (!folderMap.TryGetValue(normalizedPath, out var item))
                         {
-                            Path = normalizedPath,
-                            IncludeSubfolders = folder.IncludeSubfolders,
-                            ExclusionPatternsText = string.Join(", ", folder.ExclusionPatterns),
-                            ExclusionPatterns = new ObservableCollection<string>(folder.ExclusionPatterns)
-                        };
+                            item = new MonitoredFolderItemViewModel
+                            {
+                                Path = normalizedPath,
+                                IncludeSubfolders = folder.IncludeSubfolders,
+                                ExclusionPatternsText = string.Join(", ", folder.ExclusionPatterns),
+                                ExclusionPatterns = new ObservableCollection<string>(folder.ExclusionPatterns)
+                            };
 
-                        InspectPath(item);
-                        folderMap[normalizedPath] = item;
-                    }
+                            InspectPath(item);
+                            folderMap[normalizedPath] = item;
+                        }
+                        else
+                        {
+                            if (folder.IncludeSubfolders)
+                            {
+                                item.IncludeSubfolders = true;
+                            }
 
-                    item.LinkedRulesCount++;
-                    item.LinkedRuleIds.Add(rule.Id);
-                    if (!string.IsNullOrWhiteSpace(item.LinkedRulesSummary))
-                    {
-                        item.LinkedRulesSummary += $", {rule.Name}";
-                    }
-                    else
-                    {
-                        item.LinkedRulesSummary = rule.Name;
+                            foreach (var pattern in folder.ExclusionPatterns)
+                            {
+                                if (!item.ExclusionPatterns.Any(p => string.Equals(p, pattern, StringComparison.OrdinalIgnoreCase)))
+                                {
+                                    item.ExclusionPatterns.Add(pattern);
+                                }
+                            }
+                            item.ExclusionPatternsText = string.Join(", ", item.ExclusionPatterns);
+                        }
+
+                        if (!item.LinkedRuleIds.Contains(rule.Id))
+                        {
+                            item.LinkedRulesCount++;
+                            item.LinkedRuleIds.Add(rule.Id);
+                            if (!string.IsNullOrWhiteSpace(item.LinkedRulesSummary))
+                            {
+                                item.LinkedRulesSummary += $", {rule.Name}";
+                            }
+                            else
+                            {
+                                item.LinkedRulesSummary = rule.Name;
+                            }
+                        }
                     }
                 }
-            }
 
-            MonitoredFolders.Clear();
-            foreach (var item in folderMap.Values.OrderBy(f => f.Path))
-            {
-                MonitoredFolders.Add(item);
+                MonitoredFolders.Clear();
+                foreach (var item in folderMap.Values.OrderBy(f => f.Path))
+                {
+                    MonitoredFolders.Add(item);
+                }
             }
 
             UpdateStats();
@@ -352,8 +469,10 @@ public partial class FoldersViewModel : ObservableObject
             return;
         }
 
-        var path = NewFolderPathInput.Trim();
-        if (MonitoredFolders.Any(f => f.Path.Equals(path, StringComparison.OrdinalIgnoreCase)))
+        var path = _pathNormalizer.TryNormalize(NewFolderPathInput, out var normalized, out _)
+            ? normalized
+            : NewFolderPathInput.Trim();
+        if (MonitoredFolders.Any(f => _pathNormalizer.AreEqual(f.Path, path)))
         {
             StatusMessage = $"Folder '{path}' is already being monitored.";
             return;

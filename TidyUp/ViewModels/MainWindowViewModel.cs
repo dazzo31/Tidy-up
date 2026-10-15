@@ -12,6 +12,7 @@ using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services;
 using TidyUp.Services.Diagnostics;
+using TidyUp.Services.Folders;
 using TidyUp.Services.Monitoring;
 using TidyUp.Services.Processing;
 using TidyUp.Services.Rules;
@@ -37,6 +38,8 @@ public partial class MainWindowViewModel : ObservableObject
     private readonly IServiceProvider _serviceProvider;
     private readonly IRuleSummaryGenerator _ruleSummaryGenerator;
     private readonly IRuleValidator _ruleValidator;
+    private readonly IFolderPathNormalizer _pathNormalizer;
+    private readonly IMonitoredFolderCatalog? _folderCatalog;
 
     public DashboardViewModel DashboardViewModel { get; }
     public SettingsViewModel SettingsViewModel { get; }
@@ -298,7 +301,9 @@ public partial class MainWindowViewModel : ObservableObject
         IApplicationStateManager? stateManager = null,
         IWatcherHealthMonitor? healthMonitor = null,
         IRuleSummaryGenerator? ruleSummaryGenerator = null,
-        IRuleValidator? ruleValidator = null)
+        IRuleValidator? ruleValidator = null,
+        IFolderPathNormalizer? pathNormalizer = null,
+        IMonitoredFolderCatalog? folderCatalog = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
@@ -311,6 +316,13 @@ public partial class MainWindowViewModel : ObservableObject
         _ruleValidator = ruleValidator
             ?? (IRuleValidator?)serviceProvider.GetService(typeof(IRuleValidator))
             ?? new RuleValidator();
+
+        _pathNormalizer = pathNormalizer
+            ?? (IFolderPathNormalizer?)serviceProvider.GetService(typeof(IFolderPathNormalizer))
+            ?? new FolderPathNormalizer();
+
+        _folderCatalog = folderCatalog
+            ?? (IMonitoredFolderCatalog?)serviceProvider.GetService(typeof(IMonitoredFolderCatalog));
 
         _rules.CollectionChanged += (s, e) => FilterRules();
         
@@ -329,6 +341,11 @@ public partial class MainWindowViewModel : ObservableObject
             UpdateHealthAlerts();
         }
 
+        if (_folderCatalog != null)
+        {
+            _folderCatalog.CatalogChanged += (s, e) => UpdateHealthAlerts();
+        }
+
         UpdateTitleAndStateProperties();
 
         // Get ViewModels from DI
@@ -343,7 +360,7 @@ public partial class MainWindowViewModel : ObservableObject
                 (IVariableEngine?)serviceProvider.GetService(typeof(IVariableEngine)) ?? new VariableEngine());
 
         WizardViewModel = (RuleWizardViewModel?)serviceProvider.GetService(typeof(RuleWizardViewModel))
-            ?? new RuleWizardViewModel(_ruleRepository, _ruleValidator, executionPlanGen, _ruleSummaryGenerator);
+            ?? new RuleWizardViewModel(_ruleRepository, _ruleValidator, executionPlanGen, _ruleSummaryGenerator, _pathNormalizer);
 
         WizardViewModel.RuleSaved += async (s, savedRule) =>
         {
@@ -354,7 +371,7 @@ public partial class MainWindowViewModel : ObservableObject
         };
 
         FoldersViewModel = (FoldersViewModel?)serviceProvider.GetService(typeof(FoldersViewModel))
-            ?? new FoldersViewModel(_ruleRepository, _healthMonitor);
+            ?? new FoldersViewModel(_ruleRepository, _healthMonitor, _folderCatalog, _pathNormalizer);
 
         FoldersViewModel.RequestEditRuleCallback = ruleId =>
         {
@@ -446,17 +463,42 @@ public partial class MainWindowViewModel : ObservableObject
 
     public void UpdateHealthAlerts()
     {
-        if (_healthMonitor == null) return;
-        var allHealth = _healthMonitor.GetAllFolderHealth();
-        var warningFolders = allHealth.Values
-            .Where(h => h.Status == Services.Monitoring.WatcherHealthStatus.Degraded 
-                     || h.Status == Services.Monitoring.WatcherHealthStatus.Disconnected 
-                     || h.Status == Services.Monitoring.WatcherHealthStatus.Error)
-            .ToList();
+        if (_healthMonitor == null && _folderCatalog == null) return;
 
-        AlertCount = warningFolders.Count;
-        _activeAlertSummary = warningFolders.Count > 0
-            ? string.Join("; ", warningFolders.Select(w => $"{(Path.GetFileName(w.Path) is { Length: > 0 } n ? n : w.Path)}: {w.Status} ({w.StatusDetail ?? "Check folder access"})"))
+        var alertSummaries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        if (_healthMonitor != null)
+        {
+            var allHealth = _healthMonitor.GetAllFolderHealth();
+            var warningFolders = allHealth.Values
+                .Where(h => h.Status == Services.Monitoring.WatcherHealthStatus.Degraded 
+                         || h.Status == Services.Monitoring.WatcherHealthStatus.Disconnected 
+                         || h.Status == Services.Monitoring.WatcherHealthStatus.Error)
+                .ToList();
+
+            foreach (var w in warningFolders)
+            {
+                var key = _pathNormalizer.TryNormalize(w.Path, out var norm, out _) ? norm : w.Path;
+                var displayName = Path.GetFileName(key) is { Length: > 0 } n ? n : key;
+                alertSummaries[key] = $"{displayName}: {w.Status} ({w.StatusDetail ?? "Check folder access"})";
+            }
+        }
+
+        if (_folderCatalog != null)
+        {
+            foreach (var f in _folderCatalog.Folders.Where(x => x.IsAnyRuleEnabled && x.HasAlert))
+            {
+                if (!alertSummaries.ContainsKey(f.NormalizedPath))
+                {
+                    var displayName = Path.GetFileName(f.NormalizedPath) is { Length: > 0 } n ? n : f.NormalizedPath;
+                    alertSummaries[f.NormalizedPath] = $"{displayName}: {f.HealthSummary} (Rules: {f.AssociatedRulesSummary})";
+                }
+            }
+        }
+
+        AlertCount = alertSummaries.Count;
+        _activeAlertSummary = alertSummaries.Count > 0
+            ? string.Join("; ", alertSummaries.Values)
             : string.Empty;
 
         UpdateTitleAndStateProperties();
@@ -538,11 +580,14 @@ public partial class MainWindowViewModel : ObservableObject
             Rules.Clear();
             foreach (var rule in rules.OrderBy(r => r.ExecutionOrder))
             {
+                CanonicalizeRuleFolders(rule);
                 UpdateRuleMetadata(rule);
                 Rules.Add(rule);
             }
             FilterRules();
             await DashboardViewModel.LoadDashboardDataAsync();
+            await FoldersViewModel.LoadFoldersAsync();
+            UpdateHealthAlerts();
             StatusMessage = $"Loaded {rules.Count} rule(s)";
         }
         catch (Exception ex)
@@ -552,6 +597,53 @@ public partial class MainWindowViewModel : ObservableObject
         finally
         {
             IsLoading = false;
+        }
+    }
+
+    private void CanonicalizeRuleFolders(Rule rule)
+    {
+        if (rule?.MonitoredFolders == null || rule.MonitoredFolders.Count == 0)
+            return;
+
+        var deduplicated = new List<MonitoredFolder>();
+        foreach (var folder in rule.MonitoredFolders)
+        {
+            if (string.IsNullOrWhiteSpace(folder.Path))
+                continue;
+
+            folder.Path = _pathNormalizer.TryNormalize(folder.Path, out var canonical, out _)
+                ? canonical
+                : folder.Path.Trim();
+
+            var existing = deduplicated.FirstOrDefault(f => _pathNormalizer.AreEqual(f.Path, folder.Path));
+            if (existing == null)
+            {
+                deduplicated.Add(folder);
+            }
+            else
+            {
+                if (folder.IncludeSubfolders)
+                {
+                    existing.IncludeSubfolders = true;
+                }
+
+                foreach (var excl in folder.ExclusionPatterns)
+                {
+                    if (!existing.ExclusionPatterns.Any(p => string.Equals(p, excl, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        existing.ExclusionPatterns.Add(excl);
+                    }
+                }
+            }
+        }
+
+        if (deduplicated.Count != rule.MonitoredFolders.Count)
+        {
+            rule.MonitoredFolders.Clear();
+            foreach (var item in deduplicated)
+            {
+                rule.MonitoredFolders.Add(item);
+            }
         }
     }
 
@@ -607,10 +699,16 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
 
+            CanonicalizeRuleFolders(SelectedRule);
+
             var existing = await _ruleRepository.GetByIdAsync(SelectedRule.Id);
             if (existing == null)
             {
                 await _ruleRepository.AddAsync(SelectedRule);
+                if (!Rules.Any(r => r.Id == SelectedRule.Id))
+                {
+                    Rules.Add(SelectedRule);
+                }
                 StatusMessage = "Rule created successfully";
             }
             else
@@ -634,6 +732,9 @@ public partial class MainWindowViewModel : ObservableObject
             }
             FilterRules();
             StateManager.NotifyRuleSaved();
+            await DashboardViewModel.LoadDashboardDataAsync();
+            await FoldersViewModel.LoadFoldersAsync();
+            UpdateHealthAlerts();
         }
     }
 
@@ -726,6 +827,9 @@ public partial class MainWindowViewModel : ObservableObject
             Rules.Remove(SelectedRule);
             FilterRules();
             SelectedRule = null;
+            await DashboardViewModel.LoadDashboardDataAsync();
+            await FoldersViewModel.LoadFoldersAsync();
+            UpdateHealthAlerts();
             StatusMessage = "Rule deleted successfully";
         }
         catch (Exception ex)

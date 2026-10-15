@@ -15,6 +15,7 @@ using TidyUp.Services.Simulation;
 using TidyUp.Services.Validation;
 using TidyUp.Services.Watcher;
 using TidyUp.Services.State;
+using TidyUp.Services.Folders;
 using TidyUp.ViewModels;
 using TidyUp.ViewModels.RuleEditor;
 
@@ -82,6 +83,9 @@ public static class ServiceConfiguration
         services.AddTransient<IRuleRevisionManager, RuleRevisionManager>();
         services.AddSingleton<IRuleSerializationService, RuleSerializationService>();
         services.AddSingleton<IExplainableDecisionEngine, ExplainableDecisionEngine>();
+        services.AddSingleton<IFolderPathNormalizer, FolderPathNormalizer>();
+        services.AddSingleton<IFolderValidator, FolderValidator>();
+        services.AddSingleton<IMonitoredFolderCatalog, MonitoredFolderCatalog>();
 
         // ViewModels  transient so each request gets a fresh instance
         services.AddTransient<MainWindowViewModel>();

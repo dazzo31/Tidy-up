@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
+using TidyUp.Services.Folders;
 using TidyUp.Services.Rules;
 using TidyUp.Services.Simulation;
 using TidyUp.Services.Validation;
@@ -32,6 +33,7 @@ public partial class RuleWizardViewModel : ObservableObject
     private readonly IRuleValidator _ruleValidator;
     private readonly IExecutionPlanGenerator _executionPlanGenerator;
     private readonly IRuleSummaryGenerator _ruleSummaryGenerator;
+    private readonly IFolderPathNormalizer _pathNormalizer;
 
     public event Action? RequestClose;
     public event EventHandler<Rule>? RuleSaved;
@@ -99,12 +101,14 @@ public partial class RuleWizardViewModel : ObservableObject
         IRuleRepository ruleRepository,
         IRuleValidator ruleValidator,
         IExecutionPlanGenerator executionPlanGenerator,
-        IRuleSummaryGenerator? ruleSummaryGenerator = null)
+        IRuleSummaryGenerator? ruleSummaryGenerator = null,
+        IFolderPathNormalizer? pathNormalizer = null)
     {
         _ruleRepository = ruleRepository;
         _ruleValidator = ruleValidator;
         _executionPlanGenerator = executionPlanGenerator;
         _ruleSummaryGenerator = ruleSummaryGenerator ?? new RuleSummaryGenerator();
+        _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
 
         // Initialize default empty root condition
         ConditionEditor.RootCondition = new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
@@ -116,11 +120,15 @@ public partial class RuleWizardViewModel : ObservableObject
     [RelayCommand]
     public void AddFolder(string? path = null)
     {
-        var targetPath = !string.IsNullOrWhiteSpace(path) ? path : NewFolderPathInput?.Trim();
-        if (string.IsNullOrWhiteSpace(targetPath))
+        var rawPath = !string.IsNullOrWhiteSpace(path) ? path : NewFolderPathInput?.Trim();
+        if (string.IsNullOrWhiteSpace(rawPath))
             return;
 
-        if (MonitoredFolders.Any(f => f.Path.Equals(targetPath, StringComparison.OrdinalIgnoreCase)))
+        var targetPath = _pathNormalizer.TryNormalize(rawPath, out var normalized, out _)
+            ? normalized
+            : rawPath.Trim();
+
+        if (MonitoredFolders.Any(f => _pathNormalizer.AreEqual(f.Path, targetPath)))
         {
             ErrorMessage = $"Folder '{targetPath}' is already in the list.";
             return;

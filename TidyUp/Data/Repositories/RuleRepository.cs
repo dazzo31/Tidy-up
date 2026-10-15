@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TidyUp.Data.Entities;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
+using TidyUp.Services.Folders;
 using TidyUp.Services.Validation;
 
 namespace TidyUp.Data.Repositories;
@@ -11,13 +12,29 @@ namespace TidyUp.Data.Repositories;
 /// <summary>
 /// Repository for rule data operations with JSON serialization and validation.
 /// </summary>
-public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidator = null) : IRuleRepository
+public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidator = null, IFolderPathNormalizer? pathNormalizer = null) : IRuleRepository
 {
+    private readonly IFolderPathNormalizer _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
+
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         WriteIndented = false,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
+
+    public event EventHandler<RulesChangedEventArgs>? RulesChanged;
+
+    /// <summary>
+    /// Static event raised across any transient RuleRepository instance so singleton catalogs stay synchronized.
+    /// </summary>
+    public static event EventHandler<RulesChangedEventArgs>? AnyRulesChanged;
+
+    private void NotifyRulesChanged(Guid? ruleId, string changeType)
+    {
+        var args = new RulesChangedEventArgs { AffectedRuleId = ruleId, ChangeType = changeType };
+        RulesChanged?.Invoke(this, args);
+        AnyRulesChanged?.Invoke(this, args);
+    }
 
     public async Task<List<Rule>> GetAllAsync()
     {
@@ -33,6 +50,8 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
 
     public async Task<Rule> AddAsync(Rule rule)
     {
+        CanonicalizeFolders(rule);
+
         if (ruleValidator is not null)
         {
             var validation = ruleValidator.ValidateRule(rule);
@@ -52,11 +71,16 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         var entity = ModelToEntity(rule);
         context.Rules.Add(entity);
         await context.SaveChangesAsync();
-        return EntityToModel(entity);
+
+        var added = EntityToModel(entity);
+        NotifyRulesChanged(added.Id, "Added");
+        return added;
     }
 
     public async Task UpdateAsync(Rule rule)
     {
+        CanonicalizeFolders(rule);
+
         if (ruleValidator is not null)
         {
             var validation = ruleValidator.ValidateRule(rule);
@@ -83,6 +107,8 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         // Update properties on the tracked entity instead of attaching a new one
         context.Entry(existing).CurrentValues.SetValues(entity);
         await context.SaveChangesAsync();
+
+        NotifyRulesChanged(rule.Id, "Updated");
     }
 
     public async Task DeleteAsync(Guid id)
@@ -92,6 +118,7 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         {
             context.Rules.Remove(entity);
             await context.SaveChangesAsync();
+            NotifyRulesChanged(id, "Deleted");
         }
     }
 
@@ -103,6 +130,19 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
             .ToListAsync();
         
         return entities.Select(EntityToModel).ToList();
+    }
+
+    private void CanonicalizeFolders(Rule rule)
+    {
+        if (rule.MonitoredFolders == null) return;
+
+        foreach (var folder in rule.MonitoredFolders)
+        {
+            if (_pathNormalizer.TryNormalize(folder.Path, out var normalized, out _))
+            {
+                folder.Path = normalized;
+            }
+        }
     }
 
     private Rule EntityToModel(RuleEntity entity)
@@ -131,6 +171,7 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         if (config.MonitoredFolders is not null)
         {
             rule.MonitoredFolders = new ObservableCollection<MonitoredFolder>(config.MonitoredFolders);
+            CanonicalizeFolders(rule);
         }
 
         if (config.Actions is not null)
@@ -143,6 +184,8 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
 
     private RuleEntity ModelToEntity(Rule rule)
     {
+        CanonicalizeFolders(rule);
+
         var config = new RuleConfig
         {
             MonitoredFolders = new List<MonitoredFolder>(rule.MonitoredFolders),

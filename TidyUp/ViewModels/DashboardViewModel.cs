@@ -8,7 +8,9 @@ using TidyUp.Data.Entities;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
+using TidyUp.Models.Folders;
 using TidyUp.Services;
+using TidyUp.Services.Folders;
 using TidyUp.Services.Monitoring;
 using TidyUp.Services.Watcher;
 
@@ -166,6 +168,8 @@ public partial class DashboardViewModel : ObservableObject
     private readonly IFileMonitorService _fileMonitorService;
     private readonly IWatcherReconciler? _watcherReconciler;
     private readonly IWatcherHealthMonitor? _watcherHealthMonitor;
+    private readonly IMonitoredFolderCatalog? _monitoredFolderCatalog;
+    private readonly IFolderPathNormalizer _pathNormalizer;
 
     public event Action<NavigationView>? RequestNavigate;
 
@@ -210,25 +214,72 @@ public partial class DashboardViewModel : ObservableObject
         IActionLogRepository actionLogRepository,
         IFileMonitorService fileMonitorService,
         IWatcherReconciler? watcherReconciler = null,
-        IWatcherHealthMonitor? watcherHealthMonitor = null)
+        IWatcherHealthMonitor? watcherHealthMonitor = null,
+        IMonitoredFolderCatalog? monitoredFolderCatalog = null,
+        IFolderPathNormalizer? pathNormalizer = null)
     {
         _ruleRepository = ruleRepository;
         _actionLogRepository = actionLogRepository;
         _fileMonitorService = fileMonitorService;
         _watcherReconciler = watcherReconciler;
         _watcherHealthMonitor = watcherHealthMonitor;
+        _monitoredFolderCatalog = monitoredFolderCatalog;
+        _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
 
-        if (_watcherHealthMonitor != null)
+        if (_monitoredFolderCatalog != null)
+        {
+            _monitoredFolderCatalog.CatalogChanged += OnCatalogChanged;
+        }
+        else if (_watcherHealthMonitor != null)
         {
             _watcherHealthMonitor.FolderHealthChanged += OnFolderHealthChanged;
         }
+    }
+
+    private void OnCatalogChanged(object? sender, FolderCatalogChangedEventArgs e)
+    {
+        void Update()
+        {
+            SyncFoldersFromCatalog(e.Folders);
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
+        }
+    }
+
+    private void SyncFoldersFromCatalog(IEnumerable<MonitoredFolderState> catalogFolders)
+    {
+        MonitoredFolders.Clear();
+        foreach (var state in catalogFolders)
+        {
+            var folderItem = new MonitoredFolderItem
+            {
+                Path = state.NormalizedPath,
+                IncludeSubfolders = state.IncludeSubfolders,
+                RuleCount = state.TotalRuleCount,
+                AssociatedRules = state.AssociatedRulesSummary,
+                ExclusionPatterns = state.ExclusionPatterns.ToList()
+            };
+
+            folderItem.UpdateHealth(state.WatcherHealth, state.StatusDetail);
+            MonitoredFolders.Add(folderItem);
+        }
+
+        MonitoredFolderCount = MonitoredFolders.Count;
     }
 
     private void OnFolderHealthChanged(object? sender, FolderHealthReport e)
     {
         void Update()
         {
-            var match = MonitoredFolders.FirstOrDefault(f => string.Equals(f.Path, e.Path, StringComparison.OrdinalIgnoreCase));
+            var normalized = _pathNormalizer.TryNormalize(e.Path, out var norm, out _) ? norm : e.Path;
+            var match = MonitoredFolders.FirstOrDefault(f => string.Equals(f.Path, normalized, StringComparison.OrdinalIgnoreCase));
             if (match != null)
             {
                 match.UpdateHealth(e);
@@ -278,55 +329,96 @@ public partial class DashboardViewModel : ObservableObject
                 SuccessRateFormatted = "100%";
             }
 
-            // 3. Extract distinct monitored folders across enabled rules
-            var folderDict = new Dictionary<string, (bool Subfolders, List<string> Rules, List<string> Exclusions)>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var rule in rules)
+            // 3. Synchronize monitored folders from single-source-of-truth catalog (or normalized fallback)
+            if (_monitoredFolderCatalog != null)
             {
-                foreach (var folder in rule.MonitoredFolders)
-                {
-                    if (string.IsNullOrWhiteSpace(folder.Path))
-                        continue;
+                await _monitoredFolderCatalog.RefreshAsync();
+                SyncFoldersFromCatalog(_monitoredFolderCatalog.Folders);
+            }
+            else
+            {
+                var folderDict = new Dictionary<string, (bool Subfolders, List<string> Rules, HashSet<string> Exclusions, int EnabledCount)>(StringComparer.OrdinalIgnoreCase);
 
-                    if (!folderDict.TryGetValue(folder.Path, out var item))
+                foreach (var rule in rules)
+                {
+                    foreach (var folder in rule.MonitoredFolders)
                     {
-                        item = (folder.IncludeSubfolders, new List<string>(), folder.ExclusionPatterns.ToList());
-                        folderDict[folder.Path] = item;
+                        if (string.IsNullOrWhiteSpace(folder.Path))
+                            continue;
+
+                        var canonicalPath = _pathNormalizer.TryNormalize(folder.Path, out var norm, out _)
+                            ? norm
+                            : folder.Path.Trim();
+
+                        if (!folderDict.TryGetValue(canonicalPath, out var item))
+                        {
+                            item = (false, new List<string>(), new HashSet<string>(StringComparer.OrdinalIgnoreCase), 0);
+                            folderDict[canonicalPath] = item;
+                        }
+
+                        if (folder.IncludeSubfolders)
+                        {
+                            item.Subfolders = true;
+                        }
+
+                        if (!item.Rules.Contains(rule.Name))
+                        {
+                            item.Rules.Add(rule.Name);
+                        }
+
+                        if (rule.IsEnabled)
+                        {
+                            item.EnabledCount++;
+                        }
+
+                        foreach (var excl in folder.ExclusionPatterns)
+                        {
+                            if (!string.IsNullOrWhiteSpace(excl))
+                            {
+                                item.Exclusions.Add(excl.Trim());
+                            }
+                        }
+
+                        folderDict[canonicalPath] = item;
+                    }
+                }
+
+                MonitoredFolders.Clear();
+                foreach (var kvp in folderDict.OrderBy(k => k.Key))
+                {
+                    var folderItem = new MonitoredFolderItem
+                    {
+                        Path = kvp.Key,
+                        IncludeSubfolders = kvp.Value.Subfolders,
+                        RuleCount = kvp.Value.Rules.Count,
+                        AssociatedRules = string.Join(", ", kvp.Value.Rules),
+                        ExclusionPatterns = kvp.Value.Exclusions.OrderBy(x => x).ToList()
+                    };
+
+                    if (Directory.Exists(kvp.Key))
+                    {
+                        _watcherHealthMonitor?.RegisterFolder(kvp.Key, isPaused: kvp.Value.EnabledCount == 0);
+                        var health = _watcherHealthMonitor?.GetFolderHealth(kvp.Key);
+                        if (health != null)
+                        {
+                            folderItem.UpdateHealth(health);
+                        }
+                        else if (kvp.Value.EnabledCount == 0)
+                        {
+                            folderItem.UpdateHealth(WatcherHealthStatus.Paused, "Monitoring paused (all linked rules disabled)");
+                        }
+                    }
+                    else
+                    {
+                        _watcherHealthMonitor?.UnregisterFolder(kvp.Key);
+                        folderItem.UpdateHealth(WatcherHealthStatus.Disconnected, "Directory does not exist or share is unreachable");
                     }
 
-                    if (!item.Rules.Contains(rule.Name))
-                    {
-                        item.Rules.Add(rule.Name);
-                    }
+                    MonitoredFolders.Add(folderItem);
                 }
+
+                MonitoredFolderCount = MonitoredFolders.Count;
             }
-
-            MonitoredFolders.Clear();
-            foreach (var kvp in folderDict)
-            {
-                var folderItem = new MonitoredFolderItem
-                {
-                    Path = kvp.Key,
-                    IncludeSubfolders = kvp.Value.Subfolders,
-                    RuleCount = kvp.Value.Rules.Count,
-                    AssociatedRules = string.Join(", ", kvp.Value.Rules),
-                    ExclusionPatterns = kvp.Value.Exclusions
-                };
-
-                _watcherHealthMonitor?.RegisterFolder(kvp.Key);
-                var health = _watcherHealthMonitor?.GetFolderHealth(kvp.Key);
-                if (health != null)
-                {
-                    folderItem.UpdateHealth(health);
-                }
-                else if (!Directory.Exists(kvp.Key))
-                {
-                    folderItem.UpdateHealth(WatcherHealthStatus.Disconnected, "Directory does not exist or share is unreachable");
-                }
-
-                MonitoredFolders.Add(folderItem);
-            }
-            MonitoredFolderCount = MonitoredFolders.Count;
 
             // 4. Fetch recent 20 activity records
             var recentLogs = await _actionLogRepository.GetFilteredAsync(maxResults: 20);
