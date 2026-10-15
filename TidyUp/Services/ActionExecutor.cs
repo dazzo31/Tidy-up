@@ -3,6 +3,7 @@ using System.IO;
 using Microsoft.VisualBasic.FileIO;
 using SharpCompress.Archives;
 using SharpCompress.Common;
+using SharpCompress.Readers;
 using TidyUp.Data.Entities;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
@@ -448,7 +449,7 @@ public class ActionExecutor(
 
             await Task.Run(() =>
             {
-                using var archive = ArchiveFactory.Open(fileInfo.FullName);
+                using var archive = ArchiveFactory.OpenArchive(fileInfo.FullName, new ReaderOptions());
                 var options = new ExtractionOptions
                 {
                     ExtractFullPath = true,
