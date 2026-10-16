@@ -131,7 +131,7 @@
                      materialDesign:HintAssist.Hint="Filter by path, rule name, or access status..."
                      materialDesign:TextFieldAssist.HasClearButton="True"
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                     Height="32"
+                     materialDesign:HintAssist.IsFloating="False"
                      Margin="0,0,12,0"
                      AutomationProperties.Name="Filter folders"/>
         </DockPanel>

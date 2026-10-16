@@ -167,7 +167,7 @@
                             <!-- Technical Diagnostic Drawer Toggle -->
                             <Expander Header="Technical Diagnostics &amp; Telemetry" Margin="24,6,0,0" FontSize="10" Foreground="{DynamicResource Win11TextSecondaryBrush}">
                                 <Border Background="{DynamicResource Win11CodeSurfaceBrush}" CornerRadius="4" Padding="8" Margin="0,4,0,0">
-                                    <TextBox Text="{Binding TechnicalDiagnostics}" IsReadOnly="True" TextWrapping="Wrap"
+                                    <TextBox Text="{Binding TechnicalDiagnostics}" IsReadOnly="True" TextWrapping="Wrap" AutomationProperties.Name="Technical diagnostics"
                                              Foreground="{DynamicResource Win11CodeTextBrush}" FontFamily="Consolas" FontSize="10" BorderThickness="0" Background="Transparent"/>
                                 </Border>
                             </Expander>

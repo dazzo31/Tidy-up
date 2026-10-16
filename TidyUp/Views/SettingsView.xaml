@@ -93,6 +93,7 @@
 
                             <TextBlock Text="Active UI Theme" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AvailableThemes}"
+                                      AutomationProperties.Name="Active UI theme"
                                       SelectedItem="{Binding Settings.Theme}"
                                       Width="200" HorizontalAlignment="Left" Margin="0,0,0,6"/>
                         </StackPanel>
@@ -160,6 +161,7 @@
                             <TextBlock Text="Determines what happens when a moved or copied file shares the same name as an existing destination file." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 
                             <ComboBox ItemsSource="{Binding AvailableConflictStrategies}"
+                                      AutomationProperties.Name="Default conflict resolution policy"
                                       SelectedItem="{Binding Settings.DefaultConflictResolution}"
                                       Width="240" HorizontalAlignment="Left" Margin="0,0,0,6"/>
 
@@ -199,11 +201,11 @@
                             <TextBlock Text="Tune execution pipeline thread pool limits and file scanning batch sizes." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Max Concurrent Worker Operations" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.MaxConcurrentOperations, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.MaxConcurrentOperations, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Max concurrent worker operations" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Number of parallel worker tasks for bulk moves/copies. Default: 4." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Scan Batch Pagination Size" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.ScanBatchSize, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.ScanBatchSize, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Scan batch pagination size" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Max records processed per pagination chunk during disk discovery. Default: 500." FontSize="10" Opacity="0.6" Margin="0,0,0,0"/>
                         </StackPanel>
                     </materialDesign:Card>
@@ -214,19 +216,19 @@
                             <TextBlock Text="Stabilize file detection during downloads, stream writes, or network share latency." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 
                             <TextBlock Text="File Event Debounce Delay (ms)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.DebounceDelayMs, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.DebounceDelayMs, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="File event debounce delay in milliseconds" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Throttles rapid multi-write events from applications. Default: 500ms." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Network Share Polling Interval (seconds)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.NetworkFolderPollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.NetworkFolderPollingIntervalSeconds, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Network share polling interval in seconds" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Polling frequency for remote UNC/SMB shares. Default: 30s." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Locked File Max Retries" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.FileLockRetryCount, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.FileLockRetryCount, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Locked file max retries" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Attempts to re-open files currently locked by other apps. Default: 3." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Locked File Retry Delay (ms)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.FileLockRetryDelayMs, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.FileLockRetryDelayMs, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Locked file retry delay in milliseconds" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Time between lock polling attempts. Default: 1000ms." FontSize="10" Opacity="0.6" Margin="0,0,0,0"/>
                         </StackPanel>
                     </materialDesign:Card>
@@ -240,7 +242,7 @@
                             <TextBlock Text="Prune historical execution journals and diagnostic logs to conserve disk capacity." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Audit Retention Period (days)" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding Settings.LogRetentionDays, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Audit retention period in days" Width="160" HorizontalAlignment="Left" Margin="0,0,0,4"/>
                             <TextBlock Text="Journal entries older than this will be pruned. Default: 30 days." FontSize="10" Opacity="0.6" Margin="0,0,0,12"/>
 
                             <CheckBox IsChecked="{Binding Settings.AutoCleanupLogs}"
@@ -255,7 +257,7 @@
                             <TextBlock Text="Manage SQLite database snapshots to protect rules, journals, and configuration." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 
                             <TextBlock Text="Backup Storage Directory:" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,2"/>
-                            <TextBox Text="{Binding Settings.DatabaseBackupPath, UpdateSourceTrigger=PropertyChanged}" IsReadOnly="True" Margin="0,0,0,6"/>
+                            <TextBox Text="{Binding Settings.DatabaseBackupPath, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Backup storage directory" IsReadOnly="True" Margin="0,0,0,6"/>
 
                             <Button Content="Create Database Backup Now"
                                     Command="{Binding BackupDatabaseCommand}"

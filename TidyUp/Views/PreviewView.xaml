@@ -63,19 +63,26 @@
                              materialDesign:HintAssist.Hint="Search paths..."
                              materialDesign:TextFieldAssist.HasClearButton="True"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
-                             Width="220" Height="32" Margin="0,0,10,0"
+                             Width="220" Margin="0,0,10,0"
+                             materialDesign:HintAssist.IsFloating="False"
                              AutomationProperties.Name="Search preview items"/>
 
                     <ComboBox ItemsSource="{Binding RuleFilterOptions}"
                               SelectedItem="{Binding SelectedRuleFilter}"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                              Width="150" Height="32" Margin="0,0,8,0"
+                              Width="150" Margin="0,0,8,0"
+                              materialDesign:HintAssist.Hint="Rule"
+                              materialDesign:HintAssist.IsFloating="False"
+                              AutomationProperties.HelpText="Show only operations from one rule"
                               AutomationProperties.Name="Filter by rule"/>
 
                     <ComboBox ItemsSource="{Binding ActionTypeFilterOptions}"
                               SelectedItem="{Binding SelectedActionTypeFilter}"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                              Width="130" Height="32" Margin="0,0,12,0"
+                              Width="130" Margin="0,0,12,0"
+                              materialDesign:HintAssist.Hint="Action type"
+                              materialDesign:HintAssist.IsFloating="False"
+                              AutomationProperties.HelpText="Show only one kind of operation"
                               AutomationProperties.Name="Filter by action type"/>
 
                     <CheckBox Content="Conflicts Only"

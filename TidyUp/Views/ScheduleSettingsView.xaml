@@ -53,9 +53,9 @@
                             <StackPanel Grid.Column="0" Margin="0,0,8,0">
                                 <TextBlock Text="Start Time (Hour / Minute):" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox Text="{Binding StartHour, UpdateSourceTrigger=PropertyChanged}" Width="50" HorizontalContentAlignment="Center"/>
+                                    <TextBox Text="{Binding StartHour, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quiet hours start hour" Width="50" HorizontalContentAlignment="Center"/>
                                     <TextBlock Text=":" VerticalAlignment="Center" Margin="4,0"/>
-                                    <TextBox Text="{Binding StartMinute, UpdateSourceTrigger=PropertyChanged}" Width="50" HorizontalContentAlignment="Center"/>
+                                    <TextBox Text="{Binding StartMinute, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quiet hours start minute" Width="50" HorizontalContentAlignment="Center"/>
                                     <TextBlock Text="(24h)" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Margin="6,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
@@ -64,9 +64,9 @@
                             <StackPanel Grid.Column="1" Margin="8,0,0,0">
                                 <TextBlock Text="End Time (Hour / Minute):" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,4"/>
                                 <StackPanel Orientation="Horizontal">
-                                    <TextBox Text="{Binding EndHour, UpdateSourceTrigger=PropertyChanged}" Width="50" HorizontalContentAlignment="Center"/>
+                                    <TextBox Text="{Binding EndHour, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quiet hours end hour" Width="50" HorizontalContentAlignment="Center"/>
                                     <TextBlock Text=":" VerticalAlignment="Center" Margin="4,0"/>
-                                    <TextBox Text="{Binding EndMinute, UpdateSourceTrigger=PropertyChanged}" Width="50" HorizontalContentAlignment="Center"/>
+                                    <TextBox Text="{Binding EndMinute, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Quiet hours end minute" Width="50" HorizontalContentAlignment="Center"/>
                                     <TextBlock Text="(24h)" VerticalAlignment="Center" FontSize="11" Opacity="0.6" Margin="6,0,0,0"/>
                                 </StackPanel>
                             </StackPanel>
@@ -89,7 +89,7 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
                             <TextBlock Text="Low Battery Threshold (%):" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" Margin="0,0,10,0"/>
-                            <TextBox Text="{Binding LowBatteryThresholdPercent, UpdateSourceTrigger=PropertyChanged}" Width="60" HorizontalContentAlignment="Center"/>
+                            <TextBox Text="{Binding LowBatteryThresholdPercent, UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Low battery threshold percent" Width="60" HorizontalContentAlignment="Center"/>
                             <TextBlock Text="%" VerticalAlignment="Center" FontSize="12" Margin="6,0,0,0"/>
                         </StackPanel>
                     </StackPanel>

@@ -101,6 +101,7 @@
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="Records per page:" VerticalAlignment="Center" FontSize="11" Opacity="0.7" Margin="0,0,6,0"/>
                     <ComboBox ItemsSource="{Binding PageSizeOptions}"
+                              AutomationProperties.Name="Records per page"
                               SelectedItem="{Binding PageSize}"
                               Width="60" Height="26" VerticalAlignment="Center" FontSize="11"/>
                 </StackPanel>

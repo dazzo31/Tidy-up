@@ -187,6 +187,7 @@
                         <StackPanel>
                             <TextBlock Text="Default Conflict Resolution" Margin="0,0,0,8" FontWeight="SemiBold"/>
                             <ComboBox ItemsSource="{Binding AvailableConflictStrategies}"
+                                     AutomationProperties.Name="Default conflict resolution"
                                      SelectedItem="{Binding SelectedConflictStrategy}"
                                      Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
                             <TextBlock Text="What to do when a file already exists at the destination" 

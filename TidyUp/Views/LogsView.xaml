@@ -71,6 +71,7 @@
                 <StackPanel Grid.Column="1" Margin="8,0">
                     <TextBlock Text="Status" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
                     <ComboBox ItemsSource="{Binding AvailableStatuses}"
+                              AutomationProperties.Name="Filter by status"
                               SelectedItem="{Binding SelectedStatus}"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
                 </StackPanel>
@@ -78,6 +79,7 @@
                 <StackPanel Grid.Column="2" Margin="8,0">
                     <TextBlock Text="Rule" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
                     <ComboBox ItemsSource="{Binding AvailableRules}"
+                              AutomationProperties.Name="Filter by rule"
                               SelectedItem="{Binding SelectedRule}"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
                 </StackPanel>
@@ -85,9 +87,11 @@
                 <StackPanel Grid.Column="3" Margin="8,0,0,0">
                     <TextBlock Text="Date Range" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
                     <StackPanel Orientation="Horizontal">
-                        <DatePicker SelectedDate="{Binding StartDate}" Width="100" Margin="0,0,4,0"/>
+                        <DatePicker SelectedDate="{Binding StartDate}" Width="100" Margin="0,0,4,0"
+                                    materialDesign:HintAssist.Hint="From" AutomationProperties.Name="From date"/>
                         <TextBlock Text="to" VerticalAlignment="Center" Margin="4,0"/>
-                        <DatePicker SelectedDate="{Binding EndDate}" Width="100" Margin="4,0,0,0"/>
+                        <DatePicker SelectedDate="{Binding EndDate}" Width="100" Margin="4,0,0,0"
+                                    materialDesign:HintAssist.Hint="To" AutomationProperties.Name="To date"/>
                     </StackPanel>
                 </StackPanel>
 
