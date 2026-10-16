@@ -1,4 +1,5 @@
 using System.IO;
+using TidyUp.Configuration;
 
 namespace TidyUp.Data.Recovery;
 
@@ -10,11 +11,14 @@ public class DatabaseBackupManager : IDatabaseBackupManager
     public string DefaultDatabasePath => _defaultDatabasePath;
     public string BackupsDirectory => _backupsDirectory;
 
-    public DatabaseBackupManager(string? databasePath = null, string? backupsDirectory = null)
+    public DatabaseBackupManager(string databasePath, string backupsDirectory)
     {
-        var appData = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TidyUp");
-        _defaultDatabasePath = databasePath ?? Path.Combine(appData, "tidyup.db");
-        _backupsDirectory = backupsDirectory ?? Path.Combine(appData, "Backups");
+        _defaultDatabasePath = databasePath;
+        _backupsDirectory = backupsDirectory;
+    }
+
+    public DatabaseBackupManager(TidyUpPaths paths) : this(paths.DatabasePath, paths.BackupsDirectory)
+    {
     }
 
     public async Task<string?> CreateBackupAsync(string? sourceDbPath = null, string? destinationPath = null, string? tag = null)

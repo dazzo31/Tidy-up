@@ -77,7 +77,7 @@ public partial class AppSettings : ObservableObject
     private bool _debugLoggingEnabled = false;
 
     [ObservableProperty]
-    private string _databaseBackupPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "TidyUp", "Backups");
+    private string _databaseBackupPath = string.Empty;
 
     // Window Geometry Persistence (TASK-GUI-08)
     [ObservableProperty]

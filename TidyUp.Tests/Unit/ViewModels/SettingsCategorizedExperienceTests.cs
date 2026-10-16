@@ -21,7 +21,7 @@ public class SettingsCategorizedExperienceTests : IDisposable
         _tempTestDir = Path.Combine(Path.GetTempPath(), $"TidyUp_SettingsTest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(_tempTestDir);
 
-        _settingsRepo = new SettingsRepository();
+        _settingsRepo = new SettingsRepository(new TidyUp.Configuration.TidyUpPaths(_tempTestDir));
         _backupManagerMock = new Mock<IDatabaseBackupManager>();
     }
 

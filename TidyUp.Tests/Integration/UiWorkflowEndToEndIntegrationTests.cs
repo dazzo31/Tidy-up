@@ -78,6 +78,7 @@ public class UiWorkflowEndToEndIntegrationTests : IDisposable
         var services = new ServiceCollection();
         var dbPath = Path.Combine(_tempTestDir, "integration.db");
 
+        services.AddSingleton(new TidyUp.Configuration.TidyUpPaths(_tempTestDir));
         services.AddDbContext<TidyUpDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
         services.AddDbContextFactory<TidyUpDbContext>(options => options.UseSqlite($"Data Source={dbPath}"));
 

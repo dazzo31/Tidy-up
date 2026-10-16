@@ -3,20 +3,28 @@ using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services.State;
+using TidyUp.Tests.TestInfrastructure;
 using TidyUp.ViewModels;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.ViewModels;
 
-public class MainWindowDirtyStateTests
+public class MainWindowDirtyStateTests : IDisposable
 {
+    private readonly IsolatedAppData _appData = new();
     private readonly IServiceProvider _serviceProvider;
     private readonly MainWindowViewModel _viewModel;
 
     public MainWindowDirtyStateTests()
     {
-        _serviceProvider = ServiceConfiguration.ConfigureServices();
+        _serviceProvider = TestServices.Create(_appData);
         _viewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+    }
+
+    public void Dispose()
+    {
+        (_serviceProvider as IDisposable)?.Dispose();
+        _appData.Dispose();
     }
 
     [Fact]

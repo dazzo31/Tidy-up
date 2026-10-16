@@ -7,23 +7,31 @@ using TidyUp.Models.Enums;
 using TidyUp.Services.Rules;
 using TidyUp.Services.Simulation;
 using TidyUp.Services.Validation;
+using TidyUp.Tests.TestInfrastructure;
 using TidyUp.ViewModels;
 using TidyUp.ViewModels.RuleEditor;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.ViewModels;
 
-public class RuleWizardModeSynchronizationTests
+public class RuleWizardModeSynchronizationTests : IDisposable
 {
+    private readonly IsolatedAppData _appData = new();
     private readonly IServiceProvider _serviceProvider;
     private readonly MainWindowViewModel _mainViewModel;
     private readonly RuleWizardViewModel _wizardViewModel;
 
     public RuleWizardModeSynchronizationTests()
     {
-        _serviceProvider = ServiceConfiguration.ConfigureServices();
+        _serviceProvider = TestServices.Create(_appData);
         _mainViewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
         _wizardViewModel = _serviceProvider.GetRequiredService<RuleWizardViewModel>();
+    }
+
+    public void Dispose()
+    {
+        (_serviceProvider as IDisposable)?.Dispose();
+        _appData.Dispose();
     }
 
     [Fact]

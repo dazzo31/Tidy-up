@@ -7,22 +7,30 @@ using TidyUp.Models.Enums;
 using TidyUp.Services;
 using TidyUp.Services.Monitoring;
 using TidyUp.Services.State;
+using TidyUp.Tests.TestInfrastructure;
 using TidyUp.ViewModels;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.ViewModels;
 
-public class MainWindowStatusAndHealthTests
+public class MainWindowStatusAndHealthTests : IDisposable
 {
     private readonly Mock<IRuleRepository> _ruleRepoMock = new();
     private readonly Mock<IImportExportService> _importExportMock = new();
     private readonly Mock<IWatcherHealthMonitor> _healthMonitorMock = new();
     private readonly IApplicationStateManager _stateManager = new ApplicationStateManager();
+    private readonly IsolatedAppData _appData = new();
     private readonly IServiceProvider _serviceProvider;
 
     public MainWindowStatusAndHealthTests()
     {
-        _serviceProvider = ServiceConfiguration.ConfigureServices();
+        _serviceProvider = TestServices.Create(_appData);
+    }
+
+    public void Dispose()
+    {
+        (_serviceProvider as IDisposable)?.Dispose();
+        _appData.Dispose();
     }
 
     private MainWindowViewModel CreateViewModel()

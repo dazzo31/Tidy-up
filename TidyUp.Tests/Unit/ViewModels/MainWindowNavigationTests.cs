@@ -2,20 +2,28 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
+using TidyUp.Tests.TestInfrastructure;
 using TidyUp.ViewModels;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.ViewModels;
 
-public class MainWindowNavigationTests
+public class MainWindowNavigationTests : IDisposable
 {
+    private readonly IsolatedAppData _appData = new();
     private readonly IServiceProvider _serviceProvider;
     private readonly MainWindowViewModel _viewModel;
 
     public MainWindowNavigationTests()
     {
-        _serviceProvider = ServiceConfiguration.ConfigureServices();
+        _serviceProvider = TestServices.Create(_appData);
         _viewModel = _serviceProvider.GetRequiredService<MainWindowViewModel>();
+    }
+
+    public void Dispose()
+    {
+        (_serviceProvider as IDisposable)?.Dispose();
+        _appData.Dispose();
     }
 
     [Fact]

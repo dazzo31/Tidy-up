@@ -1,7 +1,9 @@
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using TidyUp.Configuration;
 using TidyUp.Data;
+using TidyUp.Data.Recovery;
 using TidyUp.Data.Repositories;
 using TidyUp.Models;
 using TidyUp.Services;
@@ -26,33 +28,21 @@ namespace TidyUp;
 /// </summary>
 public static class ServiceConfiguration
 {
-    public static IServiceProvider ConfigureServices()
+    public static IServiceProvider ConfigureServices(TidyUpPaths? paths = null)
     {
+        paths ??= TidyUpPaths.FromEnvironmentOrDefault();
+        Directory.CreateDirectory(paths.AppDataRoot);
+
         var services = new ServiceCollection();
+        services.AddSingleton(paths);
 
-        // Database � use a factory so each scope gets a fresh context
-        services.AddDbContextFactory<TidyUpDbContext>(options =>
-        {
-            var appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "TidyUp");
-            Directory.CreateDirectory(appDataPath);
-
-            var dbPath = Path.Combine(appDataPath, "tidyup.db");
-            options.UseSqlite($"Data Source={dbPath}");
-        });
+        // Database: use a factory so each scope gets a fresh context
+        services.AddDbContextFactory<TidyUpDbContext>(options => options.UseSqlite(paths.ConnectionString));
 
         // Also register DbContext directly for simple transient use
-        services.AddDbContext<TidyUpDbContext>(options =>
-        {
-            var appDataPath = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-                "TidyUp");
-            Directory.CreateDirectory(appDataPath);
+        services.AddDbContext<TidyUpDbContext>(options => options.UseSqlite(paths.ConnectionString));
 
-            var dbPath = Path.Combine(appDataPath, "tidyup.db");
-            options.UseSqlite($"Data Source={dbPath}");
-        });
+        services.AddSingleton<IDatabaseBackupManager>(sp => new DatabaseBackupManager(sp.GetRequiredService<TidyUpPaths>()));
 
         // Repositories � scoped so they share a DbContext within a logical operation
         services.AddTransient<IRuleRepository, RuleRepository>();
