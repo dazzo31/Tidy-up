@@ -160,19 +160,10 @@
                           Visibility="{Binding FilteredFolders.Count, Converter={StaticResource CountToVisibilityConverter}}">
                     <DataGrid.Columns>
                         <!-- Status Badge -->
-                        <DataGridTemplateColumn Header="Status" Width="130">
+                        <DataGridTemplateColumn Header="Status" Width="Auto" MinWidth="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Border styles:ThemeBrush.Background="{Binding StatusBadgeFill}"
-                                            CornerRadius="4"
-                                            Padding="8,3"
-                                            HorizontalAlignment="Left"
-                                            Margin="4">
-                                        <TextBlock Text="{Binding StatusBadgeText}"
-                                                   Foreground="{DynamicResource Win11OnSolidBrush}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="11"/>
-                                    </Border>
+                                    <controls:StatusBadge Margin="4" Status="{Binding Status}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

@@ -215,17 +215,16 @@ public class WatcherHealthMonitorTests : IDisposable
         // Act & Assert Healthy
         item.UpdateHealth(WatcherHealthStatus.Healthy, "Operating normally");
         item.HealthStatusText.Should().Be("Healthy");
-        item.HealthBadgeBackground.Should().NotBeNull();
-        item.HealthBadgeForeground.Should().NotBeNull();
+        item.Status.Should().Be(TidyUp.Models.Enums.FolderStatus.Healthy);
 
         // Act & Assert Degraded
         item.UpdateHealth(WatcherHealthStatus.Degraded, "Buffer overflow");
         item.HealthStatusText.Should().Be("Degraded");
         item.HealthTooltip.Should().Contain("Buffer overflow");
 
-        // Act & Assert Disconnected
+        // Act & Assert Disconnected: one vocabulary, so a vanished folder reads "Missing" on every screen
         item.UpdateHealth(WatcherHealthStatus.Disconnected, "Unreachable");
-        item.HealthStatusText.Should().Be("Disconnected");
+        item.HealthStatusText.Should().Be("Missing");
         item.HealthTooltip.Should().Contain("Unreachable");
     }
 

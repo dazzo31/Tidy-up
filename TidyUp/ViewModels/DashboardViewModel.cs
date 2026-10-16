@@ -41,12 +41,45 @@ public class MonitoredFolderItem : ObservableObject
         {
             if (SetProperty(ref _healthStatus, value))
             {
-                OnPropertyChanged(nameof(HealthStatusText));
-                OnPropertyChanged(nameof(HealthTooltip));
-                OnPropertyChanged(nameof(HealthBadgeBackground));
-                OnPropertyChanged(nameof(HealthBadgeForeground));
+                NotifyStatusChanged();
             }
         }
+    }
+
+    private FolderValidationStatus _validationStatus = FolderValidationStatus.Accessible;
+    public FolderValidationStatus ValidationStatus
+    {
+        get => _validationStatus;
+        set
+        {
+            if (SetProperty(ref _validationStatus, value))
+            {
+                NotifyStatusChanged();
+            }
+        }
+    }
+
+    private bool _isSystemProtected;
+    public bool IsSystemProtected
+    {
+        get => _isSystemProtected;
+        set
+        {
+            if (SetProperty(ref _isSystemProtected, value))
+            {
+                NotifyStatusChanged();
+            }
+        }
+    }
+
+    /// <summary>The same status the Folders hub shows for this folder.</summary>
+    public FolderStatus Status => FolderStatusResolver.Resolve(ValidationStatus, HealthStatus, IsSystemProtected);
+
+    private void NotifyStatusChanged()
+    {
+        OnPropertyChanged(nameof(Status));
+        OnPropertyChanged(nameof(HealthStatusText));
+        OnPropertyChanged(nameof(HealthTooltip));
     }
 
     private string? _healthStatusDetail;
@@ -62,47 +95,11 @@ public class MonitoredFolderItem : ObservableObject
         }
     }
 
-    public string HealthStatusText => HealthStatus switch
-    {
-        WatcherHealthStatus.Healthy => "Healthy",
-        WatcherHealthStatus.Paused => "Paused",
-        WatcherHealthStatus.Degraded => "Degraded",
-        WatcherHealthStatus.Disconnected => "Disconnected",
-        WatcherHealthStatus.Error => "Error",
-        _ => "Unknown"
-    };
+    public string HealthStatusText => FolderStatusPresentation.Text(Status);
 
     public string HealthTooltip => !string.IsNullOrWhiteSpace(HealthStatusDetail)
         ? $"{HealthStatusText}: {HealthStatusDetail}"
-        : HealthStatus switch
-        {
-            WatcherHealthStatus.Healthy => "Folder is accessible, operational, and actively watched.",
-            WatcherHealthStatus.Paused => "Folder monitoring is currently paused.",
-            WatcherHealthStatus.Degraded => "Watcher internal buffer experienced overflow; automatic reconciliation triggered.",
-            WatcherHealthStatus.Disconnected => "Folder is unreachable, removed, or network share is disconnected.",
-            WatcherHealthStatus.Error => "Folder encountered permission or I/O failure.",
-            _ => "Unknown health status"
-        };
-
-    public string HealthBadgeBackground => HealthStatus switch
-    {
-        WatcherHealthStatus.Healthy => TidyUp.Styles.ThemeTokens.SuccessBackground,
-        WatcherHealthStatus.Paused => TidyUp.Styles.ThemeTokens.NeutralBackground,
-        WatcherHealthStatus.Degraded => TidyUp.Styles.ThemeTokens.WarningBackground,
-        WatcherHealthStatus.Disconnected => TidyUp.Styles.ThemeTokens.ErrorBackground,
-        WatcherHealthStatus.Error => TidyUp.Styles.ThemeTokens.ErrorBackground,
-        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
-    };
-
-    public string HealthBadgeForeground => HealthStatus switch
-    {
-        WatcherHealthStatus.Healthy => TidyUp.Styles.ThemeTokens.Success,
-        WatcherHealthStatus.Paused => TidyUp.Styles.ThemeTokens.Neutral,
-        WatcherHealthStatus.Degraded => TidyUp.Styles.ThemeTokens.Warning,
-        WatcherHealthStatus.Disconnected => TidyUp.Styles.ThemeTokens.Error,
-        WatcherHealthStatus.Error => TidyUp.Styles.ThemeTokens.Error,
-        _ => TidyUp.Styles.ThemeTokens.TextPrimary
-    };
+        : FolderStatusPresentation.Description(Status);
 
     public void UpdateHealth(FolderHealthReport report)
     {
@@ -264,7 +261,9 @@ public partial class DashboardViewModel : ObservableObject
                 IncludeSubfolders = state.IncludeSubfolders,
                 RuleCount = state.TotalRuleCount,
                 AssociatedRules = state.AssociatedRulesSummary,
-                ExclusionPatterns = state.ExclusionPatterns.ToList()
+                ExclusionPatterns = state.ExclusionPatterns.ToList(),
+                ValidationStatus = state.ValidationStatus,
+                IsSystemProtected = state.IsSystemProtected
             };
 
             folderItem.UpdateHealth(state.WatcherHealth, state.StatusDetail);

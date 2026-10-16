@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
+using TidyUp.Models.Enums;
 using TidyUp.Models.Folders;
 using TidyUp.Services.Folders;
 using TidyUp.Services.Monitoring;
@@ -67,11 +68,19 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
 
     public bool IsHealthy => Exists && HasReadPermission && HasWritePermission && !IsSystemProtected;
 
-    public string StatusBadgeFill => !Exists
-        ? TidyUp.Styles.ThemeTokens.ErrorSolid
-        : (IsSystemProtected ? TidyUp.Styles.ThemeTokens.WarningSolid : (IsHealthy ? TidyUp.Styles.ThemeTokens.SuccessSolid : TidyUp.Styles.ThemeTokens.WarningSolid));
+    /// <summary>The same status the Dashboard shows for this folder.</summary>
+    [ObservableProperty]
+    private FolderStatus _status = FolderStatus.Healthy;
 
-    public string StatusBadgeText => !Exists ? "Missing" : (IsSystemProtected ? "Protected System Path" : (IsHealthy ? "Accessible" : "Restricted"));
+    /// <summary>Recomputes <see cref="Status"/> from the inspected flags (used when there is no catalog state).</summary>
+    public void RefreshStatus()
+    {
+        Status = !Exists ? FolderStatus.Missing
+            : IsSystemProtected ? FolderStatus.Protected
+            : (!HasReadPermission || !HasWritePermission) ? FolderStatus.AccessDenied
+            : IsPaused ? FolderStatus.Paused
+            : FolderStatus.Healthy;
+    }
 }
 
 /// <summary>
@@ -217,7 +226,8 @@ public partial class FoldersViewModel : ObservableObject
                 LinkedRuleIds = state.LinkedRuleIds.ToList(),
                 LinkedRulesSummary = state.AssociatedRulesSummary,
                 WatcherStatus = watcherStatusText,
-                IsPaused = isPaused
+                IsPaused = isPaused,
+                Status = state.Status
             };
 
             MonitoredFolders.Add(item);
@@ -325,6 +335,7 @@ public partial class FoldersViewModel : ObservableObject
         {
             item.Exists = false;
             item.PermissionStatus = "Empty path";
+            item.RefreshStatus();
             return;
         }
 
@@ -339,6 +350,7 @@ public partial class FoldersViewModel : ObservableObject
                 item.HasWritePermission = false;
                 item.PermissionStatus = "Directory does not exist";
                 item.WatcherStatus = "Error (Missing)";
+                item.RefreshStatus();
                 return;
             }
 
@@ -377,12 +389,14 @@ public partial class FoldersViewModel : ObservableObject
             };
 
             item.WatcherStatus = item.IsHealthy ? "Watching" : "Degraded";
+            item.RefreshStatus();
         }
         catch (Exception ex)
         {
             item.Exists = false;
             item.PermissionStatus = $"Inspection failed: {ex.Message}";
             item.WatcherStatus = "Error";
+            item.RefreshStatus();
         }
     }
 
@@ -577,6 +591,7 @@ public partial class FoldersViewModel : ObservableObject
         if (folder == null) return;
         folder.IsPaused = !folder.IsPaused;
         folder.WatcherStatus = folder.IsPaused ? "Paused" : (folder.IsHealthy ? "Watching" : "Degraded");
+        folder.RefreshStatus();
         StatusMessage = $"Watcher for '{folder.Path}' is now {folder.WatcherStatus}.";
     }
 

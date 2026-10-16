@@ -3,6 +3,7 @@ using FluentAssertions;
 using Moq;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
+using TidyUp.Models.Enums;
 using TidyUp.ViewModels;
 using Xunit;
 
@@ -72,7 +73,7 @@ public class FoldersViewModelTests : IDisposable
         var missingItem = _viewModel.MonitoredFolders.FirstOrDefault(f => f.Path.Contains("NonExistent"));
         missingItem.Should().NotBeNull();
         missingItem!.Exists.Should().BeFalse();
-        missingItem.StatusBadgeText.Should().Be("Missing");
+        missingItem.Status.Should().Be(FolderStatus.Missing);
     }
 
     [Fact]
@@ -84,7 +85,7 @@ public class FoldersViewModelTests : IDisposable
         FoldersViewModel.InspectPath(item);
 
         item.IsSystemProtected.Should().BeTrue();
-        item.StatusBadgeText.Should().Be("Protected System Path");
+        item.Status.Should().Be(FolderStatus.Protected);
     }
 
     [Fact]

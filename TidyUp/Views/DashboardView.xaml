@@ -160,11 +160,9 @@
                                                     <TextBlock Text="{Binding DisplayName}"
                                                                FontWeight="SemiBold"
                                                                FontSize="14"/>
-                                                    <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="4"
-                                                            styles:ThemeBrush.Background="{Binding HealthBadgeBackground}" VerticalAlignment="Center"
-                                                            ToolTip="{Binding HealthTooltip}">
-                                                        <TextBlock Text="{Binding HealthStatusText}" FontSize="10" styles:ThemeBrush.Foreground="{Binding HealthBadgeForeground}" FontWeight="SemiBold"/>
-                                                    </Border>
+                                                    <controls:StatusBadge Margin="8,0,0,0"
+                                                                          Status="{Binding Status}"
+                                                                          Detail="{Binding HealthStatusDetail}"/>
                                                     <Border Margin="6,0,0,0" Padding="6,1" CornerRadius="4"
                                                             Background="{DynamicResource Win11SuccessBackgroundBrush}" VerticalAlignment="Center"
                                                             Visibility="{Binding IncludeSubfolders, Converter={StaticResource BooleanToVisibilityConverter}}">

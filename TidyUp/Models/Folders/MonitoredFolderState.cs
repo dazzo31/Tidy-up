@@ -1,3 +1,4 @@
+using TidyUp.Models.Enums;
 using TidyUp.Services.Folders;
 using TidyUp.Services.Monitoring;
 
@@ -35,19 +36,18 @@ public class MonitoredFolderState
         ? string.Join(", ", LinkedRuleNames)
         : "None";
 
-    public string HealthSummary => ValidationStatus switch
+    /// <summary>The single status every screen shows for this folder.</summary>
+    public FolderStatus Status => FolderStatusResolver.Resolve(ValidationStatus, WatcherHealth, IsSystemProtected);
+
+    public string HealthSummary => Status switch
     {
-        FolderValidationStatus.Missing => "Directory does not exist",
-        FolderValidationStatus.AccessDenied => "Access denied",
-        FolderValidationStatus.InvalidPath => "Invalid path",
-        _ => WatcherHealth switch
-        {
-            WatcherHealthStatus.Paused => "Monitoring paused",
-            WatcherHealthStatus.Degraded => "Performance degraded",
-            WatcherHealthStatus.Disconnected => "Folder disconnected",
-            WatcherHealthStatus.Error => "Watcher error",
-            _ => "Operational"
-        }
+        FolderStatus.Missing => "Directory does not exist",
+        FolderStatus.AccessDenied => "Access denied",
+        FolderStatus.Protected => "Protected system path",
+        FolderStatus.Paused => "Monitoring paused",
+        FolderStatus.Degraded => "Performance degraded",
+        FolderStatus.Error => ValidationStatus == FolderValidationStatus.InvalidPath ? "Invalid path" : "Watcher error",
+        _ => "Operational"
     };
 
     public bool HasAlert => ValidationStatus != FolderValidationStatus.Accessible ||
