@@ -1,3 +1,4 @@
+using System.Reflection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TidyUp.Models.Enums;
 
@@ -8,6 +9,13 @@ namespace TidyUp.Models;
 /// </summary>
 public partial class AppSettings : ObservableObject
 {
+    /// <summary>Bumped when a persisted value needs migrating. 2: Theme is now actually applied.</summary>
+    public const int CurrentSchemaVersion = 2;
+
+    // Absent from files written before versioning, which therefore load as 0.
+    [ObservableProperty]
+    private int _schemaVersion;
+
     // General Settings
     [ObservableProperty]
     private ConflictResolution _defaultConflictResolution = ConflictResolution.RenameNew;
@@ -55,8 +63,9 @@ public partial class AppSettings : ObservableObject
     [ObservableProperty]
     private bool _showFirstRunWizard = true;
 
+    // "System", "Light" or "Dark". Kept as text so an unrecognised value in settings.json can never fail deserialization.
     [ObservableProperty]
-    private string _theme = "Dark";
+    private string _theme = "System";
 
     // Safety Settings
     [ObservableProperty]
@@ -100,6 +109,18 @@ public partial class AppSettings : ObservableObject
     /// </summary>
     public static AppSettings CreateDefault()
     {
-        return new AppSettings();
+        return new AppSettings { SchemaVersion = CurrentSchemaVersion };
+    }
+
+    /// <summary>Copies every setting from <paramref name="other"/>, raising change notifications.</summary>
+    public void CopyFrom(AppSettings other)
+    {
+        foreach (var property in typeof(AppSettings).GetProperties(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (property.CanRead && property.CanWrite && property.GetIndexParameters().Length == 0)
+            {
+                property.SetValue(this, property.GetValue(other));
+            }
+        }
     }
 }

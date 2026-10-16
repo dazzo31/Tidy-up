@@ -1,4 +1,5 @@
 using System.IO;
+using System.Windows;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Configuration;
@@ -19,6 +20,7 @@ using TidyUp.Services.Validation;
 using TidyUp.Services.Watcher;
 using TidyUp.Services.State;
 using TidyUp.Services.Folders;
+using TidyUp.Services.Theming;
 using TidyUp.ViewModels;
 using TidyUp.ViewModels.RuleEditor;
 
@@ -46,6 +48,11 @@ public static class ServiceConfiguration
         services.AddSingleton<IDatabaseBackupManager>(sp => new DatabaseBackupManager(sp.GetRequiredService<TidyUpPaths>()));
         services.AddSingleton<IDbIntegrityChecker, DbIntegrityChecker>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
+        services.AddSingleton<IThemeService>(_ => new ThemeService(
+            Application.Current.Resources,
+            () => new ResourceDictionary { Source = new Uri("pack://application:,,,/TidyUp;component/Styles/Colors.Dark.xaml", UriKind.Absolute) },
+            marshal: action => Application.Current.Dispatcher.BeginInvoke(action),
+            watchSystemChanges: true));
 
         // Repositories � scoped so they share a DbContext within a logical operation
         services.AddTransient<IRuleRepository, RuleRepository>();
@@ -142,7 +149,7 @@ public static class ServiceConfiguration
     public static async Task<AppSettings> LoadSettingsAsync(IServiceProvider serviceProvider)
     {
         var settingsRepo = serviceProvider.GetRequiredService<SettingsRepository>();
-        var settings = await settingsRepo.LoadAsync();
+        var settings = await settingsRepo.LoadSharedAsync();
         return settings;
     }
 }

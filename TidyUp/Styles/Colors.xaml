@@ -23,7 +23,7 @@
     <SolidColorBrush x:Key="Win11SuccessBrush" Color="{StaticResource Win11SuccessColor}"/>
     <SolidColorBrush x:Key="Win11SuccessBackgroundBrush" Color="#DFF6DD"/>
 
-    <Color x:Key="Win11WarningColor">#D83B01</Color>
+    <Color x:Key="Win11WarningColor">#CC3600</Color>
     <SolidColorBrush x:Key="Win11WarningBrush" Color="{StaticResource Win11WarningColor}"/>
     <SolidColorBrush x:Key="Win11WarningBackgroundBrush" Color="#FFF4CE"/>
 

@@ -10,6 +10,7 @@ namespace TidyUp.Data;
 public class SettingsRepository
 {
     private readonly TidyUpPaths _paths;
+    private AppSettings? _shared;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -32,7 +33,29 @@ public class SettingsRepository
             settings.DatabaseBackupPath = _paths.BackupsDirectory;
         }
 
+        if (settings.SchemaVersion < 2)
+        {
+            // Theme was persisted but never applied before v2, so a stored "Dark" is just the old default,
+            // not a choice anyone saw take effect. Don't flip existing installs to dark on upgrade.
+            if (string.Equals(settings.Theme, AppThemes.Dark, StringComparison.OrdinalIgnoreCase))
+            {
+                settings.Theme = AppThemes.System;
+            }
+
+            settings.SchemaVersion = AppSettings.CurrentSchemaVersion;
+        }
+
+        settings.Theme = AppThemes.Normalize(settings.Theme);
         return settings;
+    }
+
+    /// <summary>
+    /// The single app-wide settings instance. Every <see cref="SaveAsync"/> is mirrored into it, so code that
+    /// reads or re-saves it (window geometry, tray, theme) never works from a stale startup copy.
+    /// </summary>
+    public async Task<AppSettings> LoadSharedAsync()
+    {
+        return _shared ??= await LoadAsync();
     }
 
     /// <summary>
@@ -71,6 +94,11 @@ public class SettingsRepository
 
             var json = JsonSerializer.Serialize(settings, JsonOptions);
             await File.WriteAllTextAsync(SettingsFilePath, json);
+
+            if (_shared != null && !ReferenceEquals(_shared, settings))
+            {
+                _shared.CopyFrom(settings);
+            }
         }
         catch (Exception ex)
         {

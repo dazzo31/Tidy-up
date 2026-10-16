@@ -18,6 +18,7 @@ public partial class App : Application
     private ITrayIconService? _trayIconService;
     private IToastNotificationService? _toastService;
     private MainWindow? _mainWindow;
+    private bool _isExiting;
     public static AppSettings? AppSettings { get; private set; }
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -70,6 +71,16 @@ public partial class App : Application
                 MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
                     "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 AppSettings = AppSettings.CreateDefault();
+            }
+
+            // Apply the saved theme (and follow later changes) before any window is created
+            try
+            {
+                _serviceProvider.GetRequiredService<TidyUp.Services.Theming.IThemeService>().Attach(AppSettings);
+            }
+            catch
+            {
+                // A theming failure must never stop the app from starting; it keeps the default light theme.
             }
 
             // Initialize tray icon and notification service
@@ -127,7 +138,7 @@ public partial class App : Application
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         // Check if we should minimize to tray instead of closing
-        if (AppSettings?.MinimizeToTray == true)
+        if (AppSettings?.MinimizeToTray == true && !_isExiting)
         {
             e.Cancel = true;
             _mainWindow?.Hide();
@@ -204,11 +215,8 @@ public partial class App : Application
 
     private void ExitApplication_Click(object sender, RoutedEventArgs e)
     {
-        // Set flag to allow real exit
-        if (AppSettings != null)
-        {
-            AppSettings.MinimizeToTray = false;
-        }
+        // Transient: persisting MinimizeToTray=false here would silently turn the user's setting off for good.
+        _isExiting = true;
         Shutdown();
     }
 

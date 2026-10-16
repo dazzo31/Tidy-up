@@ -72,11 +72,7 @@ public partial class SettingsViewModel : ObservableObject
             Enum.GetValues<ConflictResolution>()
         );
 
-        _availableThemes =
-        [
-            "Dark",
-            "Light"
-        ];
+        _availableThemes = new ObservableCollection<string>(AppThemes.All);
 
         // Load settings asynchronously; UI starts with defaults until loaded
         _ = LoadSettingsAsync();
