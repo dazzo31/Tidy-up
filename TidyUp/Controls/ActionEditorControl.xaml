@@ -350,9 +350,9 @@
                                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                                     <materialDesign:PackIcon Kind="AlertOutline" Width="14" Height="14" 
                                                                             VerticalAlignment="Center" Margin="0,0,4,0" 
-                                                                            Foreground="Orange"/>
+                                                                            Foreground="{DynamicResource Win11WarningBrush}"/>
                                                     <TextBlock Text="Be careful with command execution — test thoroughly first!"
-                                                              Foreground="Orange"
+                                                              Foreground="{DynamicResource Win11WarningBrush}"
                                                               FontSize="11"/>
                                                 </StackPanel>
                                             </StackPanel>

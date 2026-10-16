@@ -74,26 +74,26 @@ public partial class PlannedActionItemViewModel : ObservableObject
 
     public string ActionBadgeBackground => ActionType switch
     {
-        ActionType.Move => "#E3F2FD",
-        ActionType.Copy => "#E0F2F1",
-        ActionType.Rename => "#F3E5F5",
-        ActionType.ChangeExtension => "#EDE7F6",
-        ActionType.Delete => "#FFEBEE",
-        ActionType.ExtractArchive => "#EFEBE9",
-        ActionType.RunCommand => "#ECEFF1",
-        _ => "#EEEEEE"
+        ActionType.Move => TidyUp.Styles.ThemeTokens.InfoBackground,
+        ActionType.Copy => TidyUp.Styles.ThemeTokens.TealBackground,
+        ActionType.Rename => TidyUp.Styles.ThemeTokens.PurpleBackground,
+        ActionType.ChangeExtension => TidyUp.Styles.ThemeTokens.PurpleBackground,
+        ActionType.Delete => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        ActionType.ExtractArchive => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        ActionType.RunCommand => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
     };
 
     public string ActionBadgeForeground => ActionType switch
     {
-        ActionType.Move => "#1976D2",
-        ActionType.Copy => "#00796B",
-        ActionType.Rename => "#7B1FA2",
-        ActionType.ChangeExtension => "#512DA8",
-        ActionType.Delete => "#D32F2F",
-        ActionType.ExtractArchive => "#4E342E",
-        ActionType.RunCommand => "#37474F",
-        _ => "#424242"
+        ActionType.Move => TidyUp.Styles.ThemeTokens.Info,
+        ActionType.Copy => TidyUp.Styles.ThemeTokens.Teal,
+        ActionType.Rename => TidyUp.Styles.ThemeTokens.Purple,
+        ActionType.ChangeExtension => TidyUp.Styles.ThemeTokens.Purple,
+        ActionType.Delete => TidyUp.Styles.ThemeTokens.Error,
+        ActionType.ExtractArchive => TidyUp.Styles.ThemeTokens.Neutral,
+        ActionType.RunCommand => TidyUp.Styles.ThemeTokens.Neutral,
+        _ => TidyUp.Styles.ThemeTokens.Neutral
     };
 
     public string StatusBadgeText
@@ -110,9 +110,9 @@ public partial class PlannedActionItemViewModel : ObservableObject
     {
         get
         {
-            if (IsExecuted) return ExecutionFailed ? "#FFEBEE" : "#E8F5E9";
-            if (HasConflict) return "#FFF3E0";
-            return "#E8F5E9";
+            if (IsExecuted) return ExecutionFailed ? TidyUp.Styles.ThemeTokens.ErrorBackground : TidyUp.Styles.ThemeTokens.SuccessBackground;
+            if (HasConflict) return TidyUp.Styles.ThemeTokens.WarningBackground;
+            return TidyUp.Styles.ThemeTokens.SuccessBackground;
         }
     }
 
@@ -120,9 +120,9 @@ public partial class PlannedActionItemViewModel : ObservableObject
     {
         get
         {
-            if (IsExecuted) return ExecutionFailed ? "#C62828" : "#2E7D32";
-            if (HasConflict) return "#E65100";
-            return "#2E7D32";
+            if (IsExecuted) return ExecutionFailed ? TidyUp.Styles.ThemeTokens.Error : TidyUp.Styles.ThemeTokens.Success;
+            if (HasConflict) return TidyUp.Styles.ThemeTokens.Warning;
+            return TidyUp.Styles.ThemeTokens.Success;
         }
     }
 

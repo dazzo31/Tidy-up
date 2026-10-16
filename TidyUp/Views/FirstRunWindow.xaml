@@ -50,23 +50,23 @@
                     
                     <StackPanel Margin="48,0">
                         <StackPanel Orientation="Horizontal" Margin="0,8">
-                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="{DynamicResource Win11SuccessBrush}"/>
                             <TextBlock Text="Monitor folders for new files" FontSize="14" TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8">
-                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="{DynamicResource Win11SuccessBrush}"/>
                             <TextBlock Text="Match files by name, extension, size, or date" FontSize="14" TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8">
-                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="{DynamicResource Win11SuccessBrush}"/>
                             <TextBlock Text="Move, copy, rename, or delete files automatically" FontSize="14" TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8">
-                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="{DynamicResource Win11SuccessBrush}"/>
                             <TextBlock Text="Use variables for dynamic file names" FontSize="14" TextWrapping="Wrap"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Margin="0,8">
-                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="Green"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" VerticalAlignment="Top" Margin="0,2,8,0" Foreground="{DynamicResource Win11SuccessBrush}"/>
                             <TextBlock Text="Preview changes before applying them" FontSize="14" TextWrapping="Wrap"/>
                         </StackPanel>
                     </StackPanel>
@@ -115,7 +115,7 @@
                     </materialDesign:Card>
                     
                     <TextBlock Text="Result: PDFs and Word documents are automatically moved to dated folders!"
-                              FontSize="14" FontStyle="Italic" Foreground="Green" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                              FontSize="14" FontStyle="Italic" Foreground="{DynamicResource Win11SuccessBrush}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                 </StackPanel>
             </ScrollViewer>
 
@@ -153,7 +153,7 @@
                                 <TextBlock Text="• Monitor your Downloads folder" Opacity="0.7" Margin="0,4"/>
                                 <TextBlock Text="• Match PDF, Word, and Excel files" Opacity="0.7" Margin="0,4"/>
                                 <TextBlock Text="• Move them to Documents with organized subfolders" Opacity="0.7" Margin="0,4"/>
-                                <TextBlock Text="• Be DISABLED by default (safe to explore)" Opacity="0.7" Margin="0,4" Foreground="Orange" FontWeight="SemiBold"/>
+                                <TextBlock Text="• Be DISABLED by default (safe to explore)" Opacity="0.7" Margin="0,4" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                             
                             <TextBlock Text="You can enable it after reviewing, or use it as a template!" 
@@ -237,7 +237,7 @@
                 </ScrollViewer.Style>
                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="CheckCircleOutline" Width="80" Height="80" 
-                                            HorizontalAlignment="Center" Foreground="Green" Margin="0,0,0,24"/>
+                                            HorizontalAlignment="Center" Foreground="{DynamicResource Win11SuccessBrush}" Margin="0,0,0,24"/>
                     
                     <TextBlock Text="You're All Set!" 
                               FontSize="24" FontWeight="Bold" 

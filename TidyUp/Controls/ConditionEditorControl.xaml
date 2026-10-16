@@ -35,7 +35,7 @@
                                 Padding="8,4"
                                 Margin="0,0,8,0">
                             <TextBlock Text="GROUP"
-                                       Foreground="White"
+                                       Foreground="{DynamicResource PrimaryHueMidForegroundBrush}"
                                        FontWeight="Bold"
                                        FontSize="11"/>
                         </Border>
@@ -482,7 +482,7 @@
                         <Style TargetType="DataGridRow">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Matches}" Value="True">
-                                    <Setter Property="Background" Value="#E8F5E9"/>
+                                    <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -497,12 +497,12 @@
                                         <materialDesign:PackIcon.Style>
                                             <Style TargetType="materialDesign:PackIcon">
                                                 <Setter Property="Kind" Value="Close"/>
-                                                <Setter Property="Foreground" Value="Gray"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Win11TextSecondaryBrush}"/>
                                                 <Setter Property="Opacity" Value="0.3"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Matches}" Value="True">
                                                         <Setter Property="Kind" Value="Check"/>
-                                                        <Setter Property="Foreground" Value="Green"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                                         <Setter Property="Opacity" Value="1"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>

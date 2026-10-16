@@ -67,7 +67,9 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
 
     public bool IsHealthy => Exists && HasReadPermission && HasWritePermission && !IsSystemProtected;
 
-    public string StatusBadgeColor => !Exists ? "#D32F2F" : (IsSystemProtected ? "#F57C00" : (IsHealthy ? "#388E3C" : "#FFA000"));
+    public string StatusBadgeFill => !Exists
+        ? TidyUp.Styles.ThemeTokens.ErrorSolid
+        : (IsSystemProtected ? TidyUp.Styles.ThemeTokens.WarningSolid : (IsHealthy ? TidyUp.Styles.ThemeTokens.SuccessSolid : TidyUp.Styles.ThemeTokens.WarningSolid));
 
     public string StatusBadgeText => !Exists ? "Missing" : (IsSystemProtected ? "Protected System Path" : (IsHealthy ? "Accessible" : "Restricted"));
 }

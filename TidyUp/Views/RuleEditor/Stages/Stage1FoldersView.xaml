@@ -146,7 +146,7 @@
                                                 Command="{Binding DataContext.RemoveFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 Style="{StaticResource MaterialDesignIconButton}"
-                                                Foreground="Red" ToolTip="Remove Folder">
+                                                Foreground="{DynamicResource Win11ErrorBrush}" ToolTip="Remove Folder">
                                             <materialDesign:PackIcon Kind="TrashCanOutline"/>
                                         </Button>
                                     </Grid>

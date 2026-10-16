@@ -41,16 +41,16 @@
                     <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
                     <Style.Triggers>
                         <DataTrigger Binding="{Binding HasDiscrepancies}" Value="True">
-                            <Setter Property="Background" Value="#C62828"/>
+                            <Setter Property="Background" Value="{DynamicResource Win11ErrorSolidBrush}"/>
                         </DataTrigger>
                     </Style.Triggers>
                 </Style>
             </materialDesign:ColorZone.Style>
             <StackPanel Orientation="Horizontal">
-                <materialDesign:PackIcon Kind="ClipboardCheckOutline" Width="30" Height="30" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <materialDesign:PackIcon Kind="ClipboardCheckOutline" Width="30" Height="30" Foreground="{DynamicResource Win11OnSolidBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <StackPanel>
-                    <TextBlock Text="Post-Execution Discrepancy Analyzer" FontSize="18" FontWeight="Bold" Foreground="White"/>
-                    <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="White" Opacity="0.9"/>
+                    <TextBlock Text="Post-Execution Discrepancy Analyzer" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Win11OnSolidBrush}"/>
+                    <TextBlock Text="{Binding SummaryText}" FontSize="12" Foreground="{DynamicResource Win11OnSolidBrush}" Opacity="0.9"/>
                 </StackPanel>
             </StackPanel>
         </materialDesign:ColorZone>
@@ -76,7 +76,7 @@
             <materialDesign:Card Grid.Column="1" Margin="4,0,4,0" Padding="12,10" UniformCornerRadius="6">
                 <StackPanel>
                     <TextBlock Text="Executed As Planned" FontSize="11" Opacity="0.6"/>
-                    <TextBlock Text="{Binding ExecutedAsPlannedCount}" FontSize="22" FontWeight="Bold" Foreground="#2E7D32"/>
+                    <TextBlock Text="{Binding ExecutedAsPlannedCount}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Win11SuccessBrush}"/>
                     <TextBlock Text="Zero divergence" FontSize="10" Opacity="0.5"/>
                 </StackPanel>
             </materialDesign:Card>
@@ -85,7 +85,7 @@
             <materialDesign:Card Grid.Column="2" Margin="8,0,0,0" Padding="12,10" UniformCornerRadius="6">
                 <StackPanel>
                     <TextBlock Text="Discrepancies Detected" FontSize="11" Opacity="0.6"/>
-                    <TextBlock Text="{Binding DiscrepancyCount}" FontSize="22" FontWeight="Bold" Foreground="#C62828"/>
+                    <TextBlock Text="{Binding DiscrepancyCount}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Win11ErrorBrush}"/>
                     <TextBlock Text="Locks, missing, or changed" FontSize="10" Opacity="0.5"/>
                 </StackPanel>
             </materialDesign:Card>
@@ -120,25 +120,25 @@
                                 <Border Padding="8,2" CornerRadius="4" HorizontalAlignment="Left">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="#E8F5E9"/>
+                                            <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.ModifiedSincePreview}">
-                                                    <Setter Property="Background" Value="#FFF3E0"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11WarningBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.SkippedDueToLock}">
-                                                    <Setter Property="Background" Value="#FFF8E1"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11WarningBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FailedDueToPermission}">
-                                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11ErrorBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FileDisappeared}">
-                                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11ErrorBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FailedGeneralError}">
-                                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11ErrorBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.NotExecuted}">
-                                                    <Setter Property="Background" Value="#F5F5F5"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11NeutralBackgroundBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -146,25 +146,25 @@
                                     <TextBlock Text="{Binding Outcome}" FontSize="11" FontWeight="SemiBold">
                                         <TextBlock.Style>
                                             <Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#2E7D32"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.ModifiedSincePreview}">
-                                                        <Setter Property="Foreground" Value="#E65100"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11WarningBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.SkippedDueToLock}">
-                                                        <Setter Property="Foreground" Value="#F57F17"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11WarningBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FailedDueToPermission}">
-                                                        <Setter Property="Foreground" Value="#C62828"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FileDisappeared}">
-                                                        <Setter Property="Foreground" Value="#C62828"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.FailedGeneralError}">
-                                                        <Setter Property="Foreground" Value="#C62828"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                                     </DataTrigger>
                                                     <DataTrigger Binding="{Binding Outcome}" Value="{x:Static diagnostics:DiscrepancyOutcome.NotExecuted}">
-                                                        <Setter Property="Foreground" Value="#757575"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11NeutralBrush}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>

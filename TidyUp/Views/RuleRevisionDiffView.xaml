@@ -23,12 +23,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <materialDesign:Card Grid.Row="0" Padding="14" Margin="0,0,0,12" Background="#E0F2F1">
+        <materialDesign:Card Grid.Row="0" Padding="14" Margin="0,0,0,12" Background="{DynamicResource Win11TealBackgroundBrush}">
             <DockPanel LastChildFill="True">
-                <materialDesign:PackIcon Kind="History" Width="28" Height="28" Foreground="#00695C" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                <materialDesign:PackIcon Kind="History" Width="28" Height="28" Foreground="{DynamicResource Win11TealBrush}" VerticalAlignment="Center" Margin="0,0,10,0"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Rule Revision History &amp; Visual Configuration Diff" FontSize="18" FontWeight="Bold" Foreground="#004D40"/>
-                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#00695C" Margin="0,2,0,0"/>
+                    <TextBlock Text="Rule Revision History &amp; Visual Configuration Diff" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Win11TealBrush}"/>
+                    <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="{DynamicResource Win11TealBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
             </DockPanel>
         </materialDesign:Card>
@@ -49,8 +49,8 @@
                             <DataTemplate>
                                 <StackPanel Margin="0,4">
                                     <StackPanel Orientation="Horizontal">
-                                        <Border Background="#00897B" CornerRadius="3" Padding="4,1" Margin="0,0,6,0">
-                                            <TextBlock Text="{Binding VersionNumber, StringFormat='v{0}'}" Foreground="White" FontSize="10" FontWeight="Bold"/>
+                                        <Border Background="{DynamicResource Win11TealSolidBrush}" CornerRadius="3" Padding="4,1" Margin="0,0,6,0">
+                                            <TextBlock Text="{Binding VersionNumber, StringFormat='v{0}'}" Foreground="{DynamicResource Win11OnSolidBrush}" FontSize="10" FontWeight="Bold"/>
                                         </Border>
                                         <TextBlock Text="{Binding RuleName}" FontWeight="SemiBold" FontSize="12"/>
                                     </StackPanel>
@@ -70,20 +70,20 @@
                         <TextBlock Text="CONFIGURATION CHANGES" FontSize="12" FontWeight="Bold" Opacity="0.7" Margin="0,0,0,12"/>
 
                         <!-- Folders Diff -->
-                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="#F5F5F5">
+                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="{DynamicResource Win11SubtleSurfaceBrush}">
                             <StackPanel>
                                 <TextBlock Text="Monitored Folders" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
                                 <ItemsControl ItemsSource="{Binding CurrentDiff.AddedFolders}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='+ Added: {0}'}" Foreground="#2E7D32" FontSize="12" Margin="0,1"/>
+                                            <TextBlock Text="{Binding StringFormat='+ Added: {0}'}" Foreground="{DynamicResource Win11SuccessBrush}" FontSize="12" Margin="0,1"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <ItemsControl ItemsSource="{Binding CurrentDiff.RemovedFolders}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='- Removed: {0}'}" Foreground="#C62828" FontSize="12" Margin="0,1"/>
+                                            <TextBlock Text="{Binding StringFormat='- Removed: {0}'}" Foreground="{DynamicResource Win11ErrorBrush}" FontSize="12" Margin="0,1"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -91,31 +91,31 @@
                         </materialDesign:Card>
 
                         <!-- Conditions Diff -->
-                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="#F5F5F5">
+                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="{DynamicResource Win11SubtleSurfaceBrush}">
                             <StackPanel>
                                 <TextBlock Text="Rule Conditions" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
                                 <TextBlock Text="From:" FontSize="11" Opacity="0.6"/>
                                 <TextBlock Text="{Binding CurrentDiff.OldConditionsSummary, TargetNullValue='(no conditions)'}" FontSize="12" Margin="0,1,0,6"/>
                                 <TextBlock Text="To:" FontSize="11" Opacity="0.6"/>
-                                <TextBlock Text="{Binding CurrentDiff.NewConditionsSummary, TargetNullValue='(no conditions)'}" FontSize="12" FontWeight="Medium" Foreground="#00796B"/>
+                                <TextBlock Text="{Binding CurrentDiff.NewConditionsSummary, TargetNullValue='(no conditions)'}" FontSize="12" FontWeight="Medium" Foreground="{DynamicResource Win11TealBrush}"/>
                             </StackPanel>
                         </materialDesign:Card>
 
                         <!-- Actions Diff -->
-                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="#F5F5F5">
+                        <materialDesign:Card Padding="10" Margin="0,0,0,10" Background="{DynamicResource Win11SubtleSurfaceBrush}">
                             <StackPanel>
                                 <TextBlock Text="File Actions" FontWeight="Bold" FontSize="13" Margin="0,0,0,6"/>
                                 <ItemsControl ItemsSource="{Binding CurrentDiff.AddedActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='+ Added Action: {0}'}" Foreground="#2E7D32" FontSize="12" Margin="0,1"/>
+                                            <TextBlock Text="{Binding StringFormat='+ Added Action: {0}'}" Foreground="{DynamicResource Win11SuccessBrush}" FontSize="12" Margin="0,1"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                                 <ItemsControl ItemsSource="{Binding CurrentDiff.RemovedActions}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding StringFormat='- Removed Action: {0}'}" Foreground="#C62828" FontSize="12" Margin="0,1"/>
+                                            <TextBlock Text="{Binding StringFormat='- Removed Action: {0}'}" Foreground="{DynamicResource Win11ErrorBrush}" FontSize="12" Margin="0,1"/>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
@@ -130,7 +130,8 @@
         <DockPanel Grid.Row="2" Margin="0,12,0,0" LastChildFill="False">
             <Button DockPanel.Dock="Left"
                     Style="{StaticResource MaterialDesignRaisedButton}"
-                    Background="#00695C" BorderBrush="#00695C"
+                    Background="{DynamicResource Win11TealSolidBrush}" BorderBrush="{DynamicResource Win11TealSolidBrush}"
+                    Foreground="{DynamicResource Win11OnSolidBrush}"
                     Content="_Restore This Revision"
                     Command="{Binding RestoreRevisionCommand}"
                     IsEnabled="{Binding CanRestore}"/>

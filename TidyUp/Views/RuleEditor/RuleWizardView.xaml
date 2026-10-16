@@ -37,11 +37,11 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="Rule Enabled:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="White" FontSize="12"/>
+                    <TextBlock Text="Rule Enabled:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontSize="12"/>
                     <CheckBox IsChecked="{Binding IsRuleEnabled}"
                               Style="{StaticResource MaterialDesignCheckBox}"
                               ToolTip="Toggle Rule Enabled state separately from saving"
-                              Foreground="White"/>
+                              Foreground="{DynamicResource PrimaryHueMidForegroundBrush}"/>
                 </StackPanel>
             </Grid>
         </materialDesign:ColorZone>
@@ -62,7 +62,7 @@
                 <!-- Step 1 -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
                     <Border Width="24" Height="24" CornerRadius="12" Background="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,6,0">
-                        <TextBlock Text="1" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="1" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Folders" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
@@ -88,7 +88,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBlock Text="2" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="2" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Conditions" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
@@ -111,7 +111,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBlock Text="3" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="3" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Actions" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
@@ -131,7 +131,7 @@
                                 </Style.Triggers>
                             </Style>
                         </Border.Style>
-                        <TextBlock Text="4" Foreground="White" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="4" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontWeight="Bold" FontSize="11" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <TextBlock Text="Review &amp; Dry Run" VerticalAlignment="Center" FontWeight="SemiBold"/>
                 </StackPanel>
@@ -215,7 +215,7 @@
                 </Button>
 
                 <!-- Error Message -->
-                <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="Red" FontWeight="SemiBold"
+                <TextBlock Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{DynamicResource Win11ErrorBrush}" FontWeight="SemiBold"
                            VerticalAlignment="Center" Margin="16,0" TextTrimming="CharacterEllipsis"/>
 
                 <!-- Previous Button -->
@@ -242,7 +242,9 @@
                 <Button Grid.Column="4" Command="{Binding SaveRuleCommand}"
                         Visibility="{Binding IsReviewStage, Converter={StaticResource BooleanToVisibilityConverter}}"
                         Style="{StaticResource MaterialDesignRaisedButton}"
-                        Background="#2E7D32">
+                        Background="{DynamicResource Win11SuccessSolidBrush}"
+                        BorderBrush="{DynamicResource Win11SuccessSolidBrush}"
+                        Foreground="{DynamicResource Win11OnSolidBrush}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="CheckBold" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="_Save Rule" VerticalAlignment="Center"/>

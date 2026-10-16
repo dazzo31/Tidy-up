@@ -50,21 +50,6 @@ public class MonitoredFolderState
         }
     };
 
-    public string StatusColor => ValidationStatus switch
-    {
-        FolderValidationStatus.Missing => "#E81123",
-        FolderValidationStatus.AccessDenied => "#E81123",
-        FolderValidationStatus.InvalidPath => "#E81123",
-        _ => WatcherHealth switch
-        {
-            WatcherHealthStatus.Paused => "#5C5C5C",
-            WatcherHealthStatus.Degraded => "#FFB900",
-            WatcherHealthStatus.Disconnected => "#D83B01",
-            WatcherHealthStatus.Error => "#E81123",
-            _ => "#107C41"
-        }
-    };
-
     public bool HasAlert => ValidationStatus != FolderValidationStatus.Accessible ||
                             WatcherHealth == WatcherHealthStatus.Degraded ||
                             WatcherHealth == WatcherHealthStatus.Disconnected ||

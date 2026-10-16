@@ -518,26 +518,26 @@ public partial class MainWindowViewModel : ObservableObject
 
     public string StateBadgeBackground => StateManager.CurrentState switch
     {
-        ApplicationLifecycleState.Idle => "#ECEFF1",
-        ApplicationLifecycleState.ConfiguringRule => "#FFF3E0",
-        ApplicationLifecycleState.Simulating => "#E3F2FD",
-        ApplicationLifecycleState.PreviewReady => "#E8F5E9",
-        ApplicationLifecycleState.ExecutingBatch => "#FFEBEE",
-        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "#FFF3E0" : "#E8F5E9",
-        ApplicationLifecycleState.MonitoringPaused => "#FFF8E1",
-        _ => "#EEEEEE"
+        ApplicationLifecycleState.Idle => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        ApplicationLifecycleState.ConfiguringRule => TidyUp.Styles.ThemeTokens.WarningBackground,
+        ApplicationLifecycleState.Simulating => TidyUp.Styles.ThemeTokens.InfoBackground,
+        ApplicationLifecycleState.PreviewReady => TidyUp.Styles.ThemeTokens.SuccessBackground,
+        ApplicationLifecycleState.ExecutingBatch => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? TidyUp.Styles.ThemeTokens.WarningBackground : TidyUp.Styles.ThemeTokens.SuccessBackground,
+        ApplicationLifecycleState.MonitoringPaused => TidyUp.Styles.ThemeTokens.WarningBackground,
+        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
     };
 
     public string StateBadgeForeground => StateManager.CurrentState switch
     {
-        ApplicationLifecycleState.Idle => "#455A64",
-        ApplicationLifecycleState.ConfiguringRule => "#E65100",
-        ApplicationLifecycleState.Simulating => "#1565C0",
-        ApplicationLifecycleState.PreviewReady => "#2E7D32",
-        ApplicationLifecycleState.ExecutingBatch => "#C62828",
-        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? "#E65100" : "#1B5E20",
-        ApplicationLifecycleState.MonitoringPaused => "#F57F17",
-        _ => "#424242"
+        ApplicationLifecycleState.Idle => TidyUp.Styles.ThemeTokens.Neutral,
+        ApplicationLifecycleState.ConfiguringRule => TidyUp.Styles.ThemeTokens.Warning,
+        ApplicationLifecycleState.Simulating => TidyUp.Styles.ThemeTokens.Info,
+        ApplicationLifecycleState.PreviewReady => TidyUp.Styles.ThemeTokens.Success,
+        ApplicationLifecycleState.ExecutingBatch => TidyUp.Styles.ThemeTokens.Error,
+        ApplicationLifecycleState.MonitoringRunning => AlertCount > 0 ? TidyUp.Styles.ThemeTokens.Warning : TidyUp.Styles.ThemeTokens.Success,
+        ApplicationLifecycleState.MonitoringPaused => TidyUp.Styles.ThemeTokens.Warning,
+        _ => TidyUp.Styles.ThemeTokens.Neutral
     };
 
     public string StateBadgeIcon => StateManager.CurrentState switch

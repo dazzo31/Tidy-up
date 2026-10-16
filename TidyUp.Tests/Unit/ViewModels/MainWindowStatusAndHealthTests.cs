@@ -70,7 +70,7 @@ public class MainWindowStatusAndHealthTests : IDisposable
         _stateManager.TransitionTo(ApplicationLifecycleState.MonitoringRunning);
 
         vm.StateBadgeText.Should().Be("MONITORING ACTIVE");
-        vm.StateBadgeBackground.Should().Be("#E8F5E9");
+        vm.StateBadgeBackground.Should().Be(TidyUp.Styles.ThemeTokens.SuccessBackground);
         vm.HasActiveAlerts.Should().BeFalse();
         vm.StateBadgeTooltip.Should().Contain("File system monitoring is active and healthy");
     }
@@ -101,8 +101,8 @@ public class MainWindowStatusAndHealthTests : IDisposable
         vm.AlertBadgeText.Should().Be("1 Alert");
         vm.AlertBadgeTooltip.Should().Contain("Buffer overflow occurred");
         vm.StateBadgeText.Should().Be("MONITORING (DEGRADED)");
-        vm.StateBadgeBackground.Should().Be("#FFF3E0");
-        vm.StateBadgeForeground.Should().Be("#E65100");
+        vm.StateBadgeBackground.Should().Be(TidyUp.Styles.ThemeTokens.WarningBackground);
+        vm.StateBadgeForeground.Should().Be(TidyUp.Styles.ThemeTokens.Warning);
         vm.StateBadgeIcon.Should().Be("AlertCircle");
         vm.StateBadgeTooltip.Should().Contain("Buffer overflow occurred");
     }
@@ -140,7 +140,7 @@ public class MainWindowStatusAndHealthTests : IDisposable
         vm.AlertCount.Should().Be(0);
         vm.HasActiveAlerts.Should().BeFalse();
         vm.StateBadgeText.Should().Be("MONITORING ACTIVE");
-        vm.StateBadgeBackground.Should().Be("#E8F5E9");
+        vm.StateBadgeBackground.Should().Be(TidyUp.Styles.ThemeTokens.SuccessBackground);
     }
 }
 

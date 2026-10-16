@@ -97,11 +97,11 @@
                     </Grid>
 
                     <!-- Default Disabled Notice -->
-                    <Border Grid.Row="2" Margin="0,12,0,0" Padding="8,6" CornerRadius="4" Background="#FFF8E1">
+                    <Border Grid.Row="2" Margin="0,12,0,0" Padding="8,6" CornerRadius="4" Background="{DynamicResource Win11WarningBackgroundBrush}">
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="InformationOutline" Foreground="#F57F17" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <materialDesign:PackIcon Kind="InformationOutline" Foreground="{DynamicResource Win11WarningBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                             <TextBlock Text="Safety Notice: This rule will be created in Disabled state by default to prevent premature execution."
-                                       FontSize="11" Foreground="#F57F17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                       FontSize="11" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -115,27 +115,27 @@
                                FontWeight="SemiBold" Margin="0,0,0,8"/>
 
                     <!-- Success State -->
-                    <Border Padding="12" CornerRadius="6" Background="#E8F5E9"
+                    <Border Padding="12" CornerRadius="6" Background="{DynamicResource Win11SuccessBackgroundBrush}"
                             Visibility="{Binding ValidationResult.IsValid, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="CheckCircle" Foreground="#2E7D32" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <materialDesign:PackIcon Kind="CheckCircle" Foreground="{DynamicResource Win11SuccessBrush}" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="Safety Validation Passed: No recursive moves, nesting hazards, or cycle loops detected."
-                                       Foreground="#2E7D32" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                       Foreground="{DynamicResource Win11SuccessBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 
                     <!-- Error State -->
-                    <Border Padding="12" CornerRadius="6" Background="#FFEBEE" Margin="0,4,0,0"
+                    <Border Padding="12" CornerRadius="6" Background="{DynamicResource Win11ErrorBackgroundBrush}" Margin="0,4,0,0"
                             Visibility="{Binding ValidationResult.IsValid, Converter={StaticResource InverseBooleanConverter}}">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="AlertCircle" Foreground="#C62828" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                                <TextBlock Text="Validation Issues Detected:" Foreground="#C62828" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="AlertCircle" Foreground="{DynamicResource Win11ErrorBrush}" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="Validation Issues Detected:" Foreground="{DynamicResource Win11ErrorBrush}" FontWeight="Bold" VerticalAlignment="Center"/>
                             </StackPanel>
                             <ItemsControl ItemsSource="{Binding ValidationResult.Errors}" Margin="30,4,0,0">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding ErrorMessage, StringFormat='• {0}'}" Foreground="#C62828" FontSize="12"/>
+                                        <TextBlock Text="{Binding ErrorMessage, StringFormat='• {0}'}" Foreground="{DynamicResource Win11ErrorBrush}" FontSize="12"/>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
@@ -192,16 +192,16 @@
                                 <TextBlock Text="Simulation Results: " FontWeight="Bold"/>
                                 <TextBlock Text="{Binding ExecutionPlan.TotalScanned, StringFormat='{}{0} files scanned'}" Margin="0,0,8,0"/>
                                 <TextBlock Text=" • "/>
-                                <TextBlock Text="{Binding ExecutionPlan.TotalMatched, StringFormat='{}{0} files matched'}" FontWeight="SemiBold" Foreground="#1976D2" Margin="0,0,8,0"/>
+                                <TextBlock Text="{Binding ExecutionPlan.TotalMatched, StringFormat='{}{0} files matched'}" FontWeight="SemiBold" Foreground="{DynamicResource Win11InfoBrush}" Margin="0,0,8,0"/>
                                 <TextBlock Text=" • "/>
-                                <TextBlock Text="{Binding ExecutionPlan.ConflictCount, StringFormat='{}{0} conflicts'}" Foreground="Red"/>
+                                <TextBlock Text="{Binding ExecutionPlan.ConflictCount, StringFormat='{}{0} conflicts'}" Foreground="{DynamicResource Win11ErrorBrush}"/>
                             </StackPanel>
 
                             <ItemsControl ItemsSource="{Binding ExecutionPlan.PlannedActions}" Margin="0,8,0,0">
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <TextBlock FontSize="11" Margin="0,2,0,2">
-                                            <Run Text="[Plan] " FontWeight="Bold" Foreground="#1976D2"/>
+                                            <Run Text="[Plan] " FontWeight="Bold" Foreground="{DynamicResource Win11InfoBrush}"/>
                                             <Run Text="{Binding ActionType}"/>
                                             <Run Text=": "/>
                                             <Run Text="{Binding SourcePath}"/>

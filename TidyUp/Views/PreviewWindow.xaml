@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:controls="clr-namespace:TidyUp.Controls"
+        xmlns:styles="clr-namespace:TidyUp.Styles"
         mc:Ignorable="d"
         Title="Impact Preview - Side-by-Side Execution Plan"
         Height="780" Width="1240"
@@ -68,26 +69,26 @@
             </materialDesign:Card>
 
             <!-- Matched Files -->
-            <materialDesign:Card Grid.Column="1" Padding="12" Margin="0,0,8,0" Background="#E8F5E9">
+            <materialDesign:Card Grid.Column="1" Padding="12" Margin="0,0,8,0" Background="{DynamicResource Win11SuccessBackgroundBrush}">
                 <StackPanel>
-                    <TextBlock Text="MATCHED FOR ACTION" FontSize="10" FontWeight="Bold" Foreground="#2E7D32"/>
-                    <TextBlock Text="{Binding TotalMatchedFiles}" FontSize="22" FontWeight="Bold" Foreground="#2E7D32"/>
+                    <TextBlock Text="MATCHED FOR ACTION" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Win11SuccessBrush}"/>
+                    <TextBlock Text="{Binding TotalMatchedFiles}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Win11SuccessBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
 
             <!-- Approved for Execution -->
-            <materialDesign:Card Grid.Column="2" Padding="12" Margin="0,0,8,0" Background="#E3F2FD">
+            <materialDesign:Card Grid.Column="2" Padding="12" Margin="0,0,8,0" Background="{DynamicResource Win11InfoBackgroundBrush}">
                 <StackPanel>
-                    <TextBlock Text="APPROVED ACTIONS" FontSize="10" FontWeight="Bold" Foreground="#1565C0"/>
-                    <TextBlock Text="{Binding ApprovedCount}" FontSize="22" FontWeight="Bold" Foreground="#1565C0"/>
+                    <TextBlock Text="APPROVED ACTIONS" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Win11InfoBrush}"/>
+                    <TextBlock Text="{Binding ApprovedCount}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Win11InfoBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
 
             <!-- Conflicts Card -->
-            <materialDesign:Card Grid.Column="3" Padding="12" Background="#FFF3E0">
+            <materialDesign:Card Grid.Column="3" Padding="12" Background="{DynamicResource Win11WarningBackgroundBrush}">
                 <StackPanel>
-                    <TextBlock Text="CONFLICTS DETECTED" FontSize="10" FontWeight="Bold" Foreground="#E65100"/>
-                    <TextBlock Text="{Binding ConflictCount}" FontSize="22" FontWeight="Bold" Foreground="#E65100"/>
+                    <TextBlock Text="CONFLICTS DETECTED" FontSize="10" FontWeight="Bold" Foreground="{DynamicResource Win11WarningBrush}"/>
+                    <TextBlock Text="{Binding ConflictCount}" FontSize="22" FontWeight="Bold" Foreground="{DynamicResource Win11WarningBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
         </Grid>
@@ -174,9 +175,9 @@
                 <DataGridTemplateColumn Header="Status" Width="90" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Background="{Binding StatusBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                            <Border styles:ThemeBrush.Background="{Binding StatusBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
                                 <TextBlock Text="{Binding StatusBadgeText}"
-                                           Foreground="{Binding StatusBadgeForeground}"
+                                           styles:ThemeBrush.Foreground="{Binding StatusBadgeForeground}"
                                            FontSize="10" FontWeight="Bold"/>
                             </Border>
                         </DataTemplate>
@@ -187,9 +188,9 @@
                 <DataGridTemplateColumn Header="Action" Width="95" IsReadOnly="True">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Border Background="{Binding ActionBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
+                            <Border styles:ThemeBrush.Background="{Binding ActionBadgeBackground}" CornerRadius="4" Padding="6,2" HorizontalAlignment="Center">
                                 <TextBlock Text="{Binding ActionBadgeText}"
-                                           Foreground="{Binding ActionBadgeForeground}"
+                                           styles:ThemeBrush.Foreground="{Binding ActionBadgeForeground}"
                                            FontSize="10" FontWeight="Bold"/>
                             </Border>
                         </DataTemplate>
@@ -219,7 +220,7 @@
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                <materialDesign:PackIcon Kind="Alert" Foreground="#E65100" Width="14" Height="14"
+                                <materialDesign:PackIcon Kind="Alert" Foreground="{DynamicResource Win11WarningBrush}" Width="14" Height="14"
                                                          VerticalAlignment="Center" Margin="0,0,4,0"
                                                          Visibility="{Binding HasConflict, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                 <TextBlock Text="{Binding ConflictDescription, TargetNullValue='No conflicts'}"
@@ -229,7 +230,7 @@
                                         <Style TargetType="TextBlock">
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding HasConflict}" Value="True">
-                                                    <Setter Property="Foreground" Value="#E65100"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource Win11WarningBrush}"/>
                                                     <Setter Property="FontWeight" Value="SemiBold"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
@@ -269,7 +270,7 @@
                     <!-- Stop / Cancel Button when executing -->
                     <Button DockPanel.Dock="Right"
                             Style="{StaticResource MaterialDesignRaisedButton}"
-                            Background="#C62828" BorderBrush="#C62828"
+                            Background="{DynamicResource Win11ErrorSolidBrush}" BorderBrush="{DynamicResource Win11ErrorSolidBrush}" Foreground="{DynamicResource Win11OnSolidBrush}"
                             Command="{Binding CancelExecutionCommand}"
                             Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"
                             Height="36" Padding="18,0" Margin="0,0,12,0">
@@ -282,7 +283,7 @@
                     <!-- Apply Changes Button -->
                     <Button DockPanel.Dock="Right"
                             Style="{StaticResource MaterialDesignRaisedButton}"
-                            Background="#2E7D32" BorderBrush="#2E7D32"
+                            Background="{DynamicResource Win11SuccessSolidBrush}" BorderBrush="{DynamicResource Win11SuccessSolidBrush}" Foreground="{DynamicResource Win11OnSolidBrush}"
                             Command="{Binding ApplyChangesCommand}"
                             Height="36" Padding="18,0">
                         <StackPanel Orientation="Horizontal">
@@ -300,11 +301,11 @@
                             Margin="0,0,12,0" Height="36"/>
 
                     <!-- Warning if conflicts prevent applying -->
-                    <Border DockPanel.Dock="Right" Margin="0,0,16,0" Padding="8,4" CornerRadius="4" Background="#FFF3E0"
+                    <Border DockPanel.Dock="Right" Margin="0,0,16,0" Padding="8,4" CornerRadius="4" Background="{DynamicResource Win11WarningBackgroundBrush}"
                             Visibility="{Binding ConflictCount, Converter={StaticResource StringToVisibilityConverter}}">
                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="#E65100" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Conflicts must be deselected to apply" FontSize="11" Foreground="#E65100" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="{DynamicResource Win11WarningBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="Conflicts must be deselected to apply" FontSize="11" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
                 </DockPanel>

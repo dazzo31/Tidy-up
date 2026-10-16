@@ -121,42 +121,42 @@ public partial class HistoryRowItemViewModel : ObservableObject
 
     public string ActionBadgeBackground => ActionType switch
     {
-        "Move" => "#E3F2FD",
-        "Copy" => "#E0F2F1",
-        "Rename" => "#F3E5F5",
-        "ChangeExtension" => "#EDE7F6",
-        "Delete" => "#FFEBEE",
-        "ExtractArchive" => "#EFEBE9",
-        "RunCommand" => "#ECEFF1",
-        _ => "#EEEEEE"
+        "Move" => TidyUp.Styles.ThemeTokens.InfoBackground,
+        "Copy" => TidyUp.Styles.ThemeTokens.TealBackground,
+        "Rename" => TidyUp.Styles.ThemeTokens.PurpleBackground,
+        "ChangeExtension" => TidyUp.Styles.ThemeTokens.PurpleBackground,
+        "Delete" => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        "ExtractArchive" => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        "RunCommand" => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
     };
 
     public string ActionBadgeForeground => ActionType switch
     {
-        "Move" => "#1976D2",
-        "Copy" => "#00796B",
-        "Rename" => "#7B1FA2",
-        "ChangeExtension" => "#512DA8",
-        "Delete" => "#D32F2F",
-        "ExtractArchive" => "#4E342E",
-        "RunCommand" => "#37474F",
-        _ => "#424242"
+        "Move" => TidyUp.Styles.ThemeTokens.Info,
+        "Copy" => TidyUp.Styles.ThemeTokens.Teal,
+        "Rename" => TidyUp.Styles.ThemeTokens.Purple,
+        "ChangeExtension" => TidyUp.Styles.ThemeTokens.Purple,
+        "Delete" => TidyUp.Styles.ThemeTokens.Error,
+        "ExtractArchive" => TidyUp.Styles.ThemeTokens.Neutral,
+        "RunCommand" => TidyUp.Styles.ThemeTokens.Neutral,
+        _ => TidyUp.Styles.ThemeTokens.Neutral
     };
 
     public string StatusBadgeBackground => Status switch
     {
-        "Completed" => "#E8F5E9",
-        "RolledBack" => "#FFF3E0",
-        "Failed" => "#FFEBEE",
-        _ => "#F5F5F5"
+        "Completed" => TidyUp.Styles.ThemeTokens.SuccessBackground,
+        "RolledBack" => TidyUp.Styles.ThemeTokens.WarningBackground,
+        "Failed" => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
     };
 
     public string StatusBadgeForeground => Status switch
     {
-        "Completed" => "#2E7D32",
-        "RolledBack" => "#E65100",
-        "Failed" => "#C62828",
-        _ => "#616161"
+        "Completed" => TidyUp.Styles.ThemeTokens.Success,
+        "RolledBack" => TidyUp.Styles.ThemeTokens.Warning,
+        "Failed" => TidyUp.Styles.ThemeTokens.Error,
+        _ => TidyUp.Styles.ThemeTokens.Neutral
     };
 }
 

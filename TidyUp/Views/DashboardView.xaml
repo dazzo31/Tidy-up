@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:styles="clr-namespace:TidyUp.Styles"
              xmlns:controls="clr-namespace:TidyUp.Controls"
              xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
              mc:Ignorable="d" 
@@ -74,21 +75,21 @@
                                      Value="{Binding SuccessRateFormatted}"
                                      Subtitle="{Binding TotalErrors, StringFormat='{}{0} failure(s) logged'}"
                                      Icon="CheckCircleOutline"
-                                     IconForeground="#2E7D32"/>
+                                     IconForeground="{DynamicResource Win11SuccessBrush}"/>
 
                 <controls:StatusCard Grid.Column="2" Margin="4,0,8,0"
                                      Title="Active Rules"
                                      Value="{Binding ActiveRuleCount}"
                                      Subtitle="{Binding TotalRuleCount, StringFormat='of {0} configured rules'}"
                                      Icon="FilterOutline"
-                                     IconForeground="#1976D2"/>
+                                     IconForeground="{DynamicResource Win11InfoBrush}"/>
 
                 <controls:StatusCard Grid.Column="3" Margin="8,0,0,0"
                                      Title="Monitored Folders"
                                      Value="{Binding MonitoredFolderCount}"
                                      Subtitle="{Binding LastActivityFormatted, StringFormat='Latest: {0}'}"
                                      Icon="FolderEyeOutline"
-                                     IconForeground="#7B1FA2"/>
+                                     IconForeground="{DynamicResource Win11PurpleBrush}"/>
             </Grid>
 
             <!-- Main Content Area: Monitored Folders (Left) & Recent Activity (Right) -->
@@ -170,14 +171,14 @@
                                                                FontWeight="SemiBold"
                                                                FontSize="14"/>
                                                     <Border Margin="8,0,0,0" Padding="6,1" CornerRadius="4"
-                                                            Background="{Binding HealthBadgeBackground}" VerticalAlignment="Center"
+                                                            styles:ThemeBrush.Background="{Binding HealthBadgeBackground}" VerticalAlignment="Center"
                                                             ToolTip="{Binding HealthTooltip}">
-                                                        <TextBlock Text="{Binding HealthStatusText}" FontSize="10" Foreground="{Binding HealthBadgeForeground}" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding HealthStatusText}" FontSize="10" styles:ThemeBrush.Foreground="{Binding HealthBadgeForeground}" FontWeight="SemiBold"/>
                                                     </Border>
                                                     <Border Margin="6,0,0,0" Padding="6,1" CornerRadius="4"
-                                                            Background="#E8F5E9" VerticalAlignment="Center"
+                                                            Background="{DynamicResource Win11SuccessBackgroundBrush}" VerticalAlignment="Center"
                                                             Visibility="{Binding IncludeSubfolders, Converter={StaticResource BooleanToVisibilityConverter}}">
-                                                        <TextBlock Text="Recursive" FontSize="10" Foreground="#2E7D32" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="Recursive" FontSize="10" Foreground="{DynamicResource Win11SuccessBrush}" FontWeight="SemiBold"/>
                                                     </Border>
                                                 </StackPanel>
                                                 <TextBlock Text="{Binding Path}"
@@ -274,7 +275,7 @@
 
                                                 <materialDesign:PackIcon Grid.Column="0"
                                                                         Kind="{Binding StatusIcon}"
-                                                                        Foreground="{Binding StatusColor}"
+                                                                        styles:ThemeBrush.Foreground="{Binding StatusForeground}"
                                                                         Width="20" Height="20"
                                                                         VerticalAlignment="Center"
                                                                         Margin="0,0,10,0"/>

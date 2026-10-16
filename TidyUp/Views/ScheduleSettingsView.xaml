@@ -19,12 +19,12 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <materialDesign:Card Grid.Row="0" Padding="14" Margin="0,0,0,16" Background="#EDE7F6">
+        <materialDesign:Card Grid.Row="0" Padding="14" Margin="0,0,0,16" Background="{DynamicResource Win11PurpleBackgroundBrush}">
             <DockPanel LastChildFill="True">
-                <materialDesign:PackIcon Kind="ClockTimeFour" Width="28" Height="28" Foreground="#512DA8" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <materialDesign:PackIcon Kind="ClockTimeFour" Width="28" Height="28" Foreground="{DynamicResource Win11PurpleBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="Scheduled Monitoring &amp; Quiet Hours" FontSize="18" FontWeight="Bold" Foreground="#311B92"/>
-                    <TextBlock Text="{Binding CurrentStatusText}" FontSize="12" Foreground="#512DA8" Margin="0,2,0,0"/>
+                    <TextBlock Text="Scheduled Monitoring &amp; Quiet Hours" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Win11PurpleBrush}"/>
+                    <TextBlock Text="{Binding CurrentStatusText}" FontSize="12" Foreground="{DynamicResource Win11PurpleBrush}" Margin="0,2,0,0"/>
                 </StackPanel>
             </DockPanel>
         </materialDesign:Card>
@@ -36,7 +36,7 @@
                 <materialDesign:Card Padding="16" Margin="0,0,0,16">
                     <StackPanel>
                         <DockPanel LastChildFill="False" Margin="0,0,0,8">
-                            <materialDesign:PackIcon Kind="BedClock" Width="22" Height="22" Foreground="#673AB7" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <materialDesign:PackIcon Kind="BedClock" Width="22" Height="22" Foreground="{DynamicResource Win11PurpleBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="Quiet Hours" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding QuietHoursEnabled}" Style="{DynamicResource MaterialDesignSwitchToggleButton}"/>
                         </DockPanel>
@@ -80,7 +80,7 @@
                 <materialDesign:Card Padding="16">
                     <StackPanel>
                         <DockPanel LastChildFill="False" Margin="0,0,0,8">
-                            <materialDesign:PackIcon Kind="BatteryAlert" Width="22" Height="22" Foreground="#E65100" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <materialDesign:PackIcon Kind="BatteryAlert" Width="22" Height="22" Foreground="{DynamicResource Win11WarningBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="Windows Battery &amp; Power State" FontSize="15" FontWeight="SemiBold" VerticalAlignment="Center"/>
                             <ToggleButton DockPanel.Dock="Right" IsChecked="{Binding PauseOnLowBattery}" Style="{DynamicResource MaterialDesignSwitchToggleButton}"/>
                         </DockPanel>

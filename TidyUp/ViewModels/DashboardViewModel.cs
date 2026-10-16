@@ -84,24 +84,24 @@ public class MonitoredFolderItem : ObservableObject
             _ => "Unknown health status"
         };
 
-    public Brush HealthBadgeBackground => HealthStatus switch
+    public string HealthBadgeBackground => HealthStatus switch
     {
-        WatcherHealthStatus.Healthy => new SolidColorBrush(Color.FromRgb(232, 245, 233)),      // #E8F5E9
-        WatcherHealthStatus.Paused => new SolidColorBrush(Color.FromRgb(245, 245, 245)),       // #F5F5F5
-        WatcherHealthStatus.Degraded => new SolidColorBrush(Color.FromRgb(255, 243, 224)),     // #FFF3E0
-        WatcherHealthStatus.Disconnected => new SolidColorBrush(Color.FromRgb(255, 235, 238)), // #FFEBEE
-        WatcherHealthStatus.Error => new SolidColorBrush(Color.FromRgb(255, 205, 210)),        // #FFCDD2
-        _ => new SolidColorBrush(Colors.LightGray)
+        WatcherHealthStatus.Healthy => TidyUp.Styles.ThemeTokens.SuccessBackground,
+        WatcherHealthStatus.Paused => TidyUp.Styles.ThemeTokens.NeutralBackground,
+        WatcherHealthStatus.Degraded => TidyUp.Styles.ThemeTokens.WarningBackground,
+        WatcherHealthStatus.Disconnected => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        WatcherHealthStatus.Error => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        _ => TidyUp.Styles.ThemeTokens.NeutralBackground
     };
 
-    public Brush HealthBadgeForeground => HealthStatus switch
+    public string HealthBadgeForeground => HealthStatus switch
     {
-        WatcherHealthStatus.Healthy => new SolidColorBrush(Color.FromRgb(46, 125, 50)),       // #2E7D32
-        WatcherHealthStatus.Paused => new SolidColorBrush(Color.FromRgb(117, 117, 117)),      // #757575
-        WatcherHealthStatus.Degraded => new SolidColorBrush(Color.FromRgb(230, 81, 0)),       // #E65100
-        WatcherHealthStatus.Disconnected => new SolidColorBrush(Color.FromRgb(198, 40, 40)),   // #C62828
-        WatcherHealthStatus.Error => new SolidColorBrush(Color.FromRgb(183, 28, 28)),          // #B71C1C
-        _ => new SolidColorBrush(Colors.Black)
+        WatcherHealthStatus.Healthy => TidyUp.Styles.ThemeTokens.Success,
+        WatcherHealthStatus.Paused => TidyUp.Styles.ThemeTokens.Neutral,
+        WatcherHealthStatus.Degraded => TidyUp.Styles.ThemeTokens.Warning,
+        WatcherHealthStatus.Disconnected => TidyUp.Styles.ThemeTokens.Error,
+        WatcherHealthStatus.Error => TidyUp.Styles.ThemeTokens.Error,
+        _ => TidyUp.Styles.ThemeTokens.TextPrimary
     };
 
     public void UpdateHealth(FolderHealthReport report)
@@ -139,12 +139,12 @@ public class RecentActivityItem
         _ => PackIconKind.InformationOutline
     };
 
-    public Brush StatusColor => Status switch
+    public string StatusForeground => Status switch
     {
-        "Success" => new SolidColorBrush(Color.FromRgb(46, 125, 50)),   // Green
-        "Warning" => new SolidColorBrush(Color.FromRgb(245, 124, 0)),  // Orange
-        "Error" => new SolidColorBrush(Color.FromRgb(211, 47, 47)),    // Red
-        _ => new SolidColorBrush(Colors.Gray)
+        "Success" => TidyUp.Styles.ThemeTokens.Success,
+        "Warning" => TidyUp.Styles.ThemeTokens.Warning,
+        "Error" => TidyUp.Styles.ThemeTokens.Error,
+        _ => TidyUp.Styles.ThemeTokens.TextSecondary
     };
 
     private static string FormatRelativeTime(DateTime timestamp)

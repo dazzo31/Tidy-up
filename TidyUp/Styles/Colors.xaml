@@ -45,5 +45,32 @@
     <Color x:Key="Win11TextDisabledColor">#8C8C8C</Color>
     <SolidColorBrush x:Key="Win11TextDisabledBrush" Color="{StaticResource Win11TextDisabledColor}"/>
 
+    <!-- Extended semantic hues (previously hard-coded in views) -->
+    <Color x:Key="Win11PurpleColor">#512DA8</Color>
+    <SolidColorBrush x:Key="Win11PurpleBrush" Color="{StaticResource Win11PurpleColor}"/>
+    <SolidColorBrush x:Key="Win11PurpleBackgroundBrush" Color="#EDE7F6"/>
+
+    <Color x:Key="Win11TealColor">#00695C</Color>
+    <SolidColorBrush x:Key="Win11TealBrush" Color="{StaticResource Win11TealColor}"/>
+    <SolidColorBrush x:Key="Win11TealBackgroundBrush" Color="#E0F2F1"/>
+
+    <Color x:Key="Win11NeutralColor">#455A64</Color>
+    <SolidColorBrush x:Key="Win11NeutralBrush" Color="{StaticResource Win11NeutralColor}"/>
+    <SolidColorBrush x:Key="Win11NeutralBackgroundBrush" Color="#ECEFF1"/>
+
+    <!-- Solid fills that carry Win11OnSolidBrush text. Identical in both themes. -->
+    <SolidColorBrush x:Key="Win11SuccessSolidBrush" Color="#2E7D32"/>
+    <SolidColorBrush x:Key="Win11ErrorSolidBrush" Color="#C62828"/>
+    <SolidColorBrush x:Key="Win11WarningSolidBrush" Color="#B3490A"/>
+    <SolidColorBrush x:Key="Win11InfoSolidBrush" Color="#005FB8"/>
+    <SolidColorBrush x:Key="Win11PurpleSolidBrush" Color="#512DA8"/>
+    <SolidColorBrush x:Key="Win11TealSolidBrush" Color="#00695C"/>
+    <SolidColorBrush x:Key="Win11NeutralSolidBrush" Color="#5C5C5C"/>
+    <SolidColorBrush x:Key="Win11OnSolidBrush" Color="#FFFFFF"/>
+
+    <!-- Monospace diagnostics panel -->
+    <SolidColorBrush x:Key="Win11CodeSurfaceBrush" Color="#263238"/>
+    <SolidColorBrush x:Key="Win11CodeTextBrush" Color="#ECEFF1"/>
+
 </ResourceDictionary>
 

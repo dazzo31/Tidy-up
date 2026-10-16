@@ -31,7 +31,24 @@ public class ThemePaletteTests
         ("Win11ErrorBrush", "Win11SurfaceBrush"),
         ("Win11ErrorBrush", "Win11ErrorBackgroundBrush"),
         ("Win11InfoBrush", "Win11SurfaceBrush"),
-        ("Win11InfoBrush", "Win11InfoBackgroundBrush")
+        ("Win11InfoBrush", "Win11InfoBackgroundBrush"),
+        ("Win11PurpleBrush", "Win11SurfaceBrush"),
+        ("Win11PurpleBrush", "Win11SubtleSurfaceBrush"),
+        ("Win11PurpleBrush", "Win11PurpleBackgroundBrush"),
+        ("Win11TealBrush", "Win11SurfaceBrush"),
+        ("Win11TealBrush", "Win11SubtleSurfaceBrush"),
+        ("Win11TealBrush", "Win11TealBackgroundBrush"),
+        ("Win11NeutralBrush", "Win11SurfaceBrush"),
+        ("Win11NeutralBrush", "Win11SubtleSurfaceBrush"),
+        ("Win11NeutralBrush", "Win11NeutralBackgroundBrush"),
+        ("Win11OnSolidBrush", "Win11SuccessSolidBrush"),
+        ("Win11OnSolidBrush", "Win11ErrorSolidBrush"),
+        ("Win11OnSolidBrush", "Win11WarningSolidBrush"),
+        ("Win11OnSolidBrush", "Win11InfoSolidBrush"),
+        ("Win11OnSolidBrush", "Win11PurpleSolidBrush"),
+        ("Win11OnSolidBrush", "Win11TealSolidBrush"),
+        ("Win11OnSolidBrush", "Win11NeutralSolidBrush"),
+        ("Win11CodeTextBrush", "Win11CodeSurfaceBrush")
     ];
 
     public static TheoryData<string> Palettes => new() { "Styles/Colors.xaml", "Styles/Colors.Dark.xaml" };

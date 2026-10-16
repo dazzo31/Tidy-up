@@ -10,6 +10,7 @@
         xmlns:enums="clr-namespace:TidyUp.Models.Enums"
         xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:styles="clr-namespace:TidyUp.Styles"
         mc:Ignorable="d"
         Title="{Binding WindowTitle}" 
         Height="720" Width="1280"
@@ -369,12 +370,12 @@
                                             <materialDesign:PackIcon.Style>
                                                 <Style TargetType="materialDesign:PackIcon">
                                                     <Setter Property="Kind" Value="CheckCircle"/>
-                                                    <Setter Property="Foreground" Value="Green"/>
+                                                    <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                                     <Setter Property="ToolTip" Value="Rule is enabled"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsEnabled}" Value="False">
                                                             <Setter Property="Kind" Value="CloseCircle"/>
-                                                            <Setter Property="Foreground" Value="Gray"/>
+                                                            <Setter Property="Foreground" Value="{DynamicResource Win11TextDisabledBrush}"/>
                                                             <Setter Property="ToolTip" Value="Rule is disabled"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -393,16 +394,16 @@
                                                 <!-- Unsaved dirty badge -->
                                                 <Border DockPanel.Dock="Left"
                                                         Visibility="{Binding IsDirty, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                        Background="#FFF3E0" CornerRadius="3" Padding="4,0" Margin="6,0,0,0"
+                                                        Background="{DynamicResource Win11WarningBackgroundBrush}" CornerRadius="3" Padding="4,0" Margin="6,0,0,0"
                                                         VerticalAlignment="Center" ToolTip="Rule has unsaved edits">
-                                                    <TextBlock Text="* Unsaved" FontSize="9" FontWeight="Bold" Foreground="#E65100"/>
+                                                    <TextBlock Text="* Unsaved" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource Win11WarningBrush}"/>
                                                 </Border>
 
                                                 <!-- Validation error badge -->
                                                 <materialDesign:PackIcon DockPanel.Dock="Left"
                                                                          Kind="AlertCircle"
                                                                          Visibility="{Binding HasErrors, Converter={StaticResource BooleanToVisibilityConverter}}"
-                                                                         Foreground="#D32F2F" Width="14" Height="14" Margin="6,0,0,0"
+                                                                         Foreground="{DynamicResource Win11ErrorBrush}" Width="14" Height="14" Margin="6,0,0,0"
                                                                          VerticalAlignment="Center"
                                                                          ToolTip="{Binding ErrorMessage}"/>
                                             </DockPanel>
@@ -699,7 +700,7 @@
                                                                                Click="RemoveFolderButton_Click"
                                                                                Tag="{Binding}"
                                                                                AutomationProperties.Name="Remove folder"
-                                                                               Foreground="Red">
+                                                                               Foreground="{DynamicResource Win11ErrorBrush}">
                                                                             <materialDesign:PackIcon Kind="Close" Width="18" Height="18"/>
                                                                         </Button>
                                                                     </Grid>
@@ -895,27 +896,27 @@
             </StatusBarItem>
             <!-- Active Warnings / Alert Badge -->
             <StatusBarItem HorizontalAlignment="Right" Margin="0,0,8,0">
-                <Border Background="#FFEBEE" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                <Border Background="{DynamicResource Win11ErrorBackgroundBrush}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
                         ToolTip="{Binding AlertBadgeTooltip}"
                         Visibility="{Binding HasActiveAlerts, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="AlertCircleOutline" Width="14" Height="14"
-                                                 Foreground="#C62828" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                 Foreground="{DynamicResource Win11ErrorBrush}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding AlertBadgeText}" FontSize="10" FontWeight="Bold"
-                                   Foreground="#C62828" VerticalAlignment="Center"/>
+                                   Foreground="{DynamicResource Win11ErrorBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </StatusBarItem>
 
             <!-- State Badge with Tooltip -->
             <StatusBarItem HorizontalAlignment="Right" Margin="0,0,12,0">
-                <Border Background="{Binding StateBadgeBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
+                <Border styles:ThemeBrush.Background="{Binding StateBadgeBackground}" CornerRadius="4" Padding="6,2" VerticalAlignment="Center"
                         ToolTip="{Binding StateBadgeTooltip}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="{Binding StateBadgeIcon}" Width="14" Height="14"
-                                                 Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                 styles:ThemeBrush.Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="{Binding StateBadgeText}" FontSize="10" FontWeight="Bold"
-                                   Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center"/>
+                                   styles:ThemeBrush.Foreground="{Binding StateBadgeForeground}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </StatusBarItem>

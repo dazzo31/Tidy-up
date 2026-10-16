@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:styles="clr-namespace:TidyUp.Styles"
              mc:Ignorable="d" 
              d:DesignWidth="950">
 
@@ -63,10 +64,10 @@
 
                 <!-- Action Badge -->
                 <Border Grid.Column="2"
-                        Background="{Binding ActionBadgeBackground}"
+                        styles:ThemeBrush.Background="{Binding ActionBadgeBackground}"
                         CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding ActionType}"
-                               Foreground="{Binding ActionBadgeForeground}"
+                               styles:ThemeBrush.Foreground="{Binding ActionBadgeForeground}"
                                FontSize="10" FontWeight="Bold"/>
                 </Border>
 
@@ -90,10 +91,10 @@
 
                 <!-- Status Badge -->
                 <Border Grid.Column="6"
-                        Background="{Binding StatusBadgeBackground}"
+                        styles:ThemeBrush.Background="{Binding StatusBadgeBackground}"
                         CornerRadius="4" Padding="6,2" HorizontalAlignment="Center" VerticalAlignment="Center">
                     <TextBlock Text="{Binding Status}"
-                               Foreground="{Binding StatusBadgeForeground}"
+                               styles:ThemeBrush.Foreground="{Binding StatusBadgeForeground}"
                                FontSize="10" FontWeight="Bold"/>
                 </Border>
 
@@ -148,33 +149,33 @@
                             <TextBlock Text="{Binding PostActionHash, StringFormat='Post-Action: {0}', TargetNullValue='Post-Action: (none)'}"
                                        FontSize="10" FontFamily="Consolas" Opacity="0.8"/>
                             <TextBlock Text="{Binding RolledBackAt, StringFormat='Rolled Back At: {0:yyyy-MM-dd HH:mm:ss}'}"
-                                       FontSize="11" Foreground="#E65100" FontWeight="SemiBold" Margin="0,4,0,0"
+                                       FontSize="11" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="SemiBold" Margin="0,4,0,0"
                                        Visibility="{Binding RolledBackAt, Converter={StaticResource StringToVisibilityConverter}}"/>
                         </StackPanel>
                     </Grid>
 
                     <!-- Actionable Error & Diagnostic Drawer -->
-                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="10,8" CornerRadius="6" Background="#FFEBEE"
+                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="10,8" CornerRadius="6" Background="{DynamicResource Win11ErrorBackgroundBrush}"
                             Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
-                                <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="#C62828" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="Actionable Diagnostic Summary" FontWeight="Bold" Foreground="#C62828" FontSize="11"/>
+                                <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="{DynamicResource Win11ErrorBrush}" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <TextBlock Text="Actionable Diagnostic Summary" FontWeight="Bold" Foreground="{DynamicResource Win11ErrorBrush}" FontSize="11"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding ActionableExplanation}" Foreground="#B71C1C" FontSize="11" TextWrapping="Wrap" Margin="24,0,0,0"/>
+                            <TextBlock Text="{Binding ActionableExplanation}" Foreground="{DynamicResource Win11ErrorBrush}" FontSize="11" TextWrapping="Wrap" Margin="24,0,0,0"/>
 
                             <!-- Technical Diagnostic Drawer Toggle -->
-                            <Expander Header="Technical Diagnostics &amp; Telemetry" Margin="24,6,0,0" FontSize="10" Foreground="#555555">
-                                <Border Background="#263238" CornerRadius="4" Padding="8" Margin="0,4,0,0">
+                            <Expander Header="Technical Diagnostics &amp; Telemetry" Margin="24,6,0,0" FontSize="10" Foreground="{DynamicResource Win11TextSecondaryBrush}">
+                                <Border Background="{DynamicResource Win11CodeSurfaceBrush}" CornerRadius="4" Padding="8" Margin="0,4,0,0">
                                     <TextBox Text="{Binding TechnicalDiagnostics}" IsReadOnly="True" TextWrapping="Wrap"
-                                             Foreground="#ECEFF1" FontFamily="Consolas" FontSize="10" BorderThickness="0" Background="Transparent"/>
+                                             Foreground="{DynamicResource Win11CodeTextBrush}" FontFamily="Consolas" FontSize="10" BorderThickness="0" Background="Transparent"/>
                                 </Border>
                             </Expander>
                         </StackPanel>
                     </Border>
 
                     <!-- Rollback Status Message (if non-error) -->
-                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="8,4" CornerRadius="4" Background="#E8F5E9">
+                    <Border Grid.Row="1" Margin="0,8,0,0" Padding="8,4" CornerRadius="4" Background="{DynamicResource Win11SuccessBackgroundBrush}">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -190,8 +191,8 @@
                             </Style>
                         </Border.Style>
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="CheckCircleOutline" Foreground="#2E7D32" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="{Binding RollbackMessage, TargetNullValue='Operation successfully reversed.'}" FontSize="11" Foreground="#2E7D32" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <materialDesign:PackIcon Kind="CheckCircleOutline" Foreground="{DynamicResource Win11SuccessBrush}" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                            <TextBlock Text="{Binding RollbackMessage, TargetNullValue='Operation successfully reversed.'}" FontSize="11" Foreground="{DynamicResource Win11SuccessBrush}" FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Border>
 

@@ -21,7 +21,7 @@
                     Padding="12,8">
                 <TextBlock Text="Insert Variable" 
                           FontWeight="SemiBold"
-                          Foreground="White"/>
+                          Foreground="{DynamicResource PrimaryHueMidForegroundBrush}"/>
             </Border>
             
             <!-- Variable List -->

@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:styles="clr-namespace:TidyUp.Styles"
         xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
         xmlns:diagnostics="clr-namespace:TidyUp.Services.Diagnostics"
         mc:Ignorable="d"
@@ -35,11 +36,11 @@
                         <materialDesign:PackIcon.Style>
                             <Style TargetType="{x:Type materialDesign:PackIcon}">
                                 <Setter Property="Kind" Value="CheckCircle"/>
-                                <Setter Property="Foreground" Value="#2E7D32"/>
+                                <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsMatch}" Value="False">
                                         <Setter Property="Kind" Value="CloseCircle"/>
-                                        <Setter Property="Foreground" Value="#C62828"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
@@ -67,10 +68,10 @@
                                    TextWrapping="Wrap">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="#2E7D32"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsMatch}" Value="False">
-                                            <Setter Property="Foreground" Value="#C62828"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -97,11 +98,11 @@
         <!-- 0: Header Zone -->
         <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16,12">
             <StackPanel Orientation="Horizontal">
-                <materialDesign:PackIcon Kind="FileSearchOutline" Width="30" Height="30" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <materialDesign:PackIcon Kind="FileSearchOutline" Width="30" Height="30" Foreground="{DynamicResource Win11OnSolidBrush}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                 <StackPanel>
-                    <TextBlock Text="Explainable Rule Decision Inspector" FontSize="18" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Explainable Rule Decision Inspector" FontSize="18" FontWeight="Bold" Foreground="{DynamicResource Win11OnSolidBrush}"/>
                     <TextBlock Text="Diagnose exact condition matches, thresholds, and rejection reasons for any file"
-                               FontSize="12" Foreground="White" Opacity="0.9"/>
+                               FontSize="12" Foreground="{DynamicResource Win11OnSolidBrush}" Opacity="0.9"/>
                 </StackPanel>
             </StackPanel>
         </materialDesign:ColorZone>
@@ -154,10 +155,10 @@
                                     Visibility="{Binding HasDiagnostics, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <materialDesign:Card.Style>
                         <Style TargetType="materialDesign:Card">
-                            <Setter Property="Background" Value="#E8F5E9"/>
+                            <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsMatch}" Value="False">
-                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                    <Setter Property="Background" Value="{DynamicResource Win11ErrorBackgroundBrush}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
@@ -167,11 +168,11 @@
                             <materialDesign:PackIcon.Style>
                                 <Style TargetType="materialDesign:PackIcon">
                                     <Setter Property="Kind" Value="CheckCircle"/>
-                                    <Setter Property="Foreground" Value="#2E7D32"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsMatch}" Value="False">
                                             <Setter Property="Kind" Value="AlertCircle"/>
-                                            <Setter Property="Foreground" Value="#C62828"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
@@ -180,10 +181,10 @@
                         <TextBlock Text="{Binding ResultSummary}" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap">
                             <TextBlock.Style>
                                 <Style TargetType="TextBlock">
-                                    <Setter Property="Foreground" Value="#2E7D32"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding IsMatch}" Value="False">
-                                            <Setter Property="Foreground" Value="#C62828"/>
+                                            <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>

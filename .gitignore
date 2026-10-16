@@ -6,6 +6,7 @@
 *.sln.docstates
 
 ## Build outputs
+/publish/
 [Bb]in/
 [Oo]bj/
 [Dd]ebug/

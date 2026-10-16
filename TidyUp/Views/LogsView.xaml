@@ -26,19 +26,19 @@
             <materialDesign:Card Margin="4,0,4,0" Padding="12">
                 <StackPanel>
                     <TextBlock Text="Success" FontSize="12" Opacity="0.7"/>
-                    <TextBlock Text="{Binding SuccessCount}" FontSize="24" FontWeight="Bold" Foreground="Green"/>
+                    <TextBlock Text="{Binding SuccessCount}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Win11SuccessBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
             <materialDesign:Card Margin="4,0,4,0" Padding="12">
                 <StackPanel>
                     <TextBlock Text="Warnings" FontSize="12" Opacity="0.7"/>
-                    <TextBlock Text="{Binding WarningCount}" FontSize="24" FontWeight="Bold" Foreground="Orange"/>
+                    <TextBlock Text="{Binding WarningCount}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Win11WarningBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
             <materialDesign:Card Margin="4,0,0,0" Padding="12">
                 <StackPanel>
                     <TextBlock Text="Errors" FontSize="12" Opacity="0.7"/>
-                    <TextBlock Text="{Binding ErrorCount}" FontSize="24" FontWeight="Bold" Foreground="Red"/>
+                    <TextBlock Text="{Binding ErrorCount}" FontSize="24" FontWeight="Bold" Foreground="{DynamicResource Win11ErrorBrush}"/>
                 </StackPanel>
             </materialDesign:Card>
         </UniformGrid>

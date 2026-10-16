@@ -38,18 +38,18 @@ public class FileRiskItemViewModel
 
     public string RiskBadgeBackground => RiskType switch
     {
-        FileRiskType.PermanentDeletion => "#FFEBEE",
-        FileRiskType.FileOverwrite => "#FFF3E0",
-        FileRiskType.LargeBatchThreshold => "#EDE7F6",
-        _ => "#FFF3E0"
+        FileRiskType.PermanentDeletion => TidyUp.Styles.ThemeTokens.ErrorBackground,
+        FileRiskType.FileOverwrite => TidyUp.Styles.ThemeTokens.WarningBackground,
+        FileRiskType.LargeBatchThreshold => TidyUp.Styles.ThemeTokens.PurpleBackground,
+        _ => TidyUp.Styles.ThemeTokens.WarningBackground
     };
 
     public string RiskBadgeForeground => RiskType switch
     {
-        FileRiskType.PermanentDeletion => "#C62828",
-        FileRiskType.FileOverwrite => "#E65100",
-        FileRiskType.LargeBatchThreshold => "#4A148C",
-        _ => "#E65100"
+        FileRiskType.PermanentDeletion => TidyUp.Styles.ThemeTokens.Error,
+        FileRiskType.FileOverwrite => TidyUp.Styles.ThemeTokens.Warning,
+        FileRiskType.LargeBatchThreshold => TidyUp.Styles.ThemeTokens.Purple,
+        _ => TidyUp.Styles.ThemeTokens.Warning
     };
 }
 

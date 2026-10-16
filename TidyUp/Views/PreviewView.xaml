@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:controls="clr-namespace:TidyUp.Controls"
+             xmlns:styles="clr-namespace:TidyUp.Styles"
              xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:PreviewViewModel}"
@@ -35,20 +36,20 @@
 
             <!-- Operation Breakdown Summary Bar -->
             <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <Border Background="#E3F2FD" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
-                    <TextBlock Text="{Binding MoveCount, StringFormat='Move: {0}'}" Foreground="#1976D2" FontWeight="SemiBold" FontSize="11"/>
+                <Border Background="{DynamicResource Win11InfoBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                    <TextBlock Text="{Binding MoveCount, StringFormat='Move: {0}'}" Foreground="{DynamicResource Win11InfoBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
-                <Border Background="#E0F2F1" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
-                    <TextBlock Text="{Binding CopyCount, StringFormat='Copy: {0}'}" Foreground="#00796B" FontWeight="SemiBold" FontSize="11"/>
+                <Border Background="{DynamicResource Win11TealBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                    <TextBlock Text="{Binding CopyCount, StringFormat='Copy: {0}'}" Foreground="{DynamicResource Win11TealBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
-                <Border Background="#F3E5F5" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
-                    <TextBlock Text="{Binding RenameCount, StringFormat='Rename: {0}'}" Foreground="#7B1FA2" FontWeight="SemiBold" FontSize="11"/>
+                <Border Background="{DynamicResource Win11PurpleBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                    <TextBlock Text="{Binding RenameCount, StringFormat='Rename: {0}'}" Foreground="{DynamicResource Win11PurpleBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
-                <Border Background="#FFEBEE" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
-                    <TextBlock Text="{Binding DeleteCount, StringFormat='Recycle: {0}'}" Foreground="#D32F2F" FontWeight="SemiBold" FontSize="11"/>
+                <Border Background="{DynamicResource Win11ErrorBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
+                    <TextBlock Text="{Binding DeleteCount, StringFormat='Recycle: {0}'}" Foreground="{DynamicResource Win11ErrorBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
-                <Border Background="#FFF3E0" CornerRadius="4" Padding="8,4">
-                    <TextBlock Text="{Binding ConflictCount, StringFormat='Conflicts: {0}'}" Foreground="#E65100" FontWeight="Bold" FontSize="11"/>
+                <Border Background="{DynamicResource Win11WarningBackgroundBrush}" CornerRadius="4" Padding="8,4">
+                    <TextBlock Text="{Binding ConflictCount, StringFormat='Conflicts: {0}'}" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="Bold" FontSize="11"/>
                 </Border>
             </StackPanel>
         </Grid>
@@ -151,10 +152,10 @@
                             <DataGridTemplateColumn Header="Status" Width="90">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Background="{Binding StatusBadgeBackground}"
+                                        <Border styles:ThemeBrush.Background="{Binding StatusBadgeBackground}"
                                                 CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Margin="4">
                                             <TextBlock Text="{Binding StatusBadgeText}"
-                                                       Foreground="{Binding StatusBadgeForeground}"
+                                                       styles:ThemeBrush.Foreground="{Binding StatusBadgeForeground}"
                                                        FontWeight="Bold" FontSize="10"/>
                                         </Border>
                                     </DataTemplate>
@@ -165,10 +166,10 @@
                             <DataGridTemplateColumn Header="Action" Width="100">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <Border Background="{Binding ActionBadgeBackground}"
+                                        <Border styles:ThemeBrush.Background="{Binding ActionBadgeBackground}"
                                                 CornerRadius="4" Padding="6,2" HorizontalAlignment="Left" Margin="4">
                                             <TextBlock Text="{Binding ActionBadgeText}"
-                                                       Foreground="{Binding ActionBadgeForeground}"
+                                                       styles:ThemeBrush.Foreground="{Binding ActionBadgeForeground}"
                                                        FontWeight="SemiBold" FontSize="10"/>
                                         </Border>
                                     </DataTemplate>
@@ -251,13 +252,13 @@
                                                 </Grid.ColumnDefinitions>
                                                 <materialDesign:PackIcon Grid.Column="0" 
                                                                         Kind="CheckCircle"
-                                                                        Foreground="Green" 
+                                                                        Foreground="{DynamicResource Win11SuccessBrush}" 
                                                                         Width="16" Height="16" 
                                                                         Margin="0,2,6,0"
                                                                         Visibility="{Binding Passed, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                                 <materialDesign:PackIcon Grid.Column="0" 
                                                                         Kind="CloseCircle"
-                                                                        Foreground="Red" 
+                                                                        Foreground="{DynamicResource Win11ErrorBrush}" 
                                                                         Width="16" Height="16" 
                                                                         Margin="0,2,6,0"
                                                                         Visibility="{Binding Passed, Converter={StaticResource InverseBooleanConverter}}"/>
@@ -302,7 +303,7 @@
                     <Button Content="Cancel Batch"
                             Command="{Binding CancelExecutionCommand}"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Foreground="Red"
+                            Foreground="{DynamicResource Win11ErrorBrush}"
                             Height="36" Margin="0,0,8,0"
                             Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
