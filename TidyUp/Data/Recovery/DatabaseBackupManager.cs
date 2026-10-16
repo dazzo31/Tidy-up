@@ -1,10 +1,19 @@
 using System.IO;
+using System.Text.RegularExpressions;
+using Microsoft.Data.Sqlite;
 using TidyUp.Configuration;
 
 namespace TidyUp.Data.Recovery;
 
-public class DatabaseBackupManager : IDatabaseBackupManager
+public partial class DatabaseBackupManager : IDatabaseBackupManager
 {
+    // Per-kind retention. Manual and untagged backups are the user's and are never pruned automatically.
+    private static readonly IReadOnlyDictionary<string, int> RetentionByTag = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["daily"] = 14,
+        ["pre_migration"] = 5
+    };
+
     private readonly string _defaultDatabasePath;
     private readonly string _backupsDirectory;
 
@@ -42,15 +51,45 @@ public class DatabaseBackupManager : IDatabaseBackupManager
                 Directory.CreateDirectory(destDir);
         }
 
-        // Safe file copy with read-share
-        await using (var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-        await using (var destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        if (!TryOnlineBackup(source, destinationPath))
         {
+            // Not a readable SQLite database (e.g. corrupt): keep the raw bytes as evidence.
+            await using var sourceStream = new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            await using var destStream = new FileStream(destinationPath, FileMode.Create, FileAccess.Write, FileShare.None);
             await sourceStream.CopyToAsync(destStream);
         }
 
-        PruneOldBackups(14);
+        PruneOldBackups();
         return destinationPath;
+    }
+
+    // The online backup API captures committed data that is still in the WAL, which a plain file copy would miss.
+    private static bool TryOnlineBackup(string source, string destination)
+    {
+        try
+        {
+            if (File.Exists(destination))
+                File.Delete(destination);
+
+            using (var sourceConnection = new SqliteConnection(
+                       new SqliteConnectionStringBuilder { DataSource = source, Mode = SqliteOpenMode.ReadOnly }.ToString()))
+            using (var destinationConnection = new SqliteConnection(
+                       new SqliteConnectionStringBuilder { DataSource = destination, Pooling = false }.ToString()))
+            {
+                sourceConnection.Open();
+                sourceConnection.BackupDatabase(destinationConnection);
+            }
+
+            SqliteConnection.ClearAllPools();
+            return true;
+        }
+        catch (SqliteException)
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(destination))
+                File.Delete(destination);
+            return false;
+        }
     }
 
     public async Task<string?> EnsureDailyBackupAsync(string? sourceDbPath = null)
@@ -83,6 +122,14 @@ public class DatabaseBackupManager : IDatabaseBackupManager
         if (!string.IsNullOrWhiteSpace(targetDir))
             Directory.CreateDirectory(targetDir);
 
+        // A leftover WAL/SHM from the replaced database would be replayed onto the restored file.
+        SqliteConnection.ClearAllPools();
+        foreach (var sidecar in new[] { target + "-wal", target + "-shm" })
+        {
+            if (File.Exists(sidecar))
+                File.Delete(sidecar);
+        }
+
         // Copy backup to target with overwrite
         await using (var sourceStream = new FileStream(backupFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
         await using (var destStream = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
@@ -108,18 +155,22 @@ public class DatabaseBackupManager : IDatabaseBackupManager
         return GetAvailableBackups().FirstOrDefault();
     }
 
-    private void PruneOldBackups(int keepCount)
+    private void PruneOldBackups()
     {
         try
         {
-            var backups = GetAvailableBackups();
-            if (backups.Count > keepCount)
+            var byTag = GetAvailableBackups()
+                .Select(path => (Path: path, Tag: ParseTag(path)))
+                .Where(b => b.Tag != null && RetentionByTag.ContainsKey(b.Tag))
+                .GroupBy(b => b.Tag!, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var group in byTag)
             {
-                foreach (var oldBackup in backups.Skip(keepCount))
+                foreach (var old in group.Skip(RetentionByTag[group.Key]))
                 {
                     try
                     {
-                        File.Delete(oldBackup);
+                        File.Delete(old.Path);
                     }
                     catch
                     {
@@ -133,5 +184,14 @@ public class DatabaseBackupManager : IDatabaseBackupManager
             // Ignore directory enumeration failures
         }
     }
+
+    private static string? ParseTag(string path)
+    {
+        var match = BackupFileName().Match(Path.GetFileNameWithoutExtension(path));
+        return match.Success ? match.Groups["tag"].Value : null;
+    }
+
+    [GeneratedRegex(@"^tidyup_(?<tag>.+?)_\d{8}(_\d{6})?$")]
+    private static partial Regex BackupFileName();
 }
 

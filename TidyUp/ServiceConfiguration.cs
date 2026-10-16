@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Configuration;
 using TidyUp.Data;
+using TidyUp.Data.Migrations;
 using TidyUp.Data.Recovery;
 using TidyUp.Data.Repositories;
 using TidyUp.Models;
@@ -43,6 +44,8 @@ public static class ServiceConfiguration
         services.AddDbContext<TidyUpDbContext>(options => options.UseSqlite(paths.ConnectionString));
 
         services.AddSingleton<IDatabaseBackupManager>(sp => new DatabaseBackupManager(sp.GetRequiredService<TidyUpPaths>()));
+        services.AddSingleton<IDbIntegrityChecker, DbIntegrityChecker>();
+        services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
 
         // Repositories � scoped so they share a DbContext within a logical operation
         services.AddTransient<IRuleRepository, RuleRepository>();
@@ -108,13 +111,29 @@ public static class ServiceConfiguration
     }
 
     /// <summary>
-    /// Ensures the database is created and migrated.
+    /// Verifies, backs up (only when a schema change is pending), migrates, and rolls back on failure.
     /// </summary>
-    public static async Task EnsureDatabaseCreatedAsync(IServiceProvider serviceProvider)
+    public static async Task<DatabaseStartupResult> InitializeDatabaseAsync(IServiceProvider serviceProvider)
     {
-        using var scope = serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<TidyUpDbContext>();
-        await dbContext.Database.EnsureCreatedAsync();
+        var paths = serviceProvider.GetRequiredService<TidyUpPaths>();
+        var migrator = serviceProvider.GetRequiredService<IDatabaseMigrator>();
+        var integrityChecker = serviceProvider.GetRequiredService<IDbIntegrityChecker>();
+
+        return await integrityChecker.SafeInitializeDatabaseAsync(
+            paths.DatabasePath,
+            () => migrator.MigrateAsync(),
+            async () =>
+            {
+                try
+                {
+                    return await migrator.HasPendingMigrationsAsync();
+                }
+                catch
+                {
+                    // Unreadable database: keep a copy of it before anything else touches it.
+                    return true;
+                }
+            });
     }
 
     /// <summary>

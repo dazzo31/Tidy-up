@@ -18,6 +18,13 @@ public class DatabaseStartupResult
 public interface IDbIntegrityChecker
 {
     Task<DbIntegrityResult> CheckIntegrityAsync(string dbPath);
-    Task<DatabaseStartupResult> SafeInitializeDatabaseAsync(string dbPath, Func<Task> migrationOrCreationAction);
+
+    /// <param name="needsPreActionBackup">
+    /// When supplied, the pre-migration backup is taken only if this returns true. When null a backup is always taken.
+    /// </param>
+    Task<DatabaseStartupResult> SafeInitializeDatabaseAsync(
+        string dbPath,
+        Func<Task> migrationOrCreationAction,
+        Func<Task<bool>>? needsPreActionBackup = null);
 }
 

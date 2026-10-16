@@ -29,10 +29,28 @@ public partial class App : Application
             // Configure services
             _serviceProvider = ServiceConfiguration.ConfigureServices();
 
-            // Ensure database is created
+            // Ensure database is created and up to date
             try
             {
-                await ServiceConfiguration.EnsureDatabaseCreatedAsync(_serviceProvider);
+                var dbStartup = await ServiceConfiguration.InitializeDatabaseAsync(_serviceProvider);
+                if (!dbStartup.Success)
+                {
+                    var restored = dbStartup.RestoredFromBackup
+                        ? $"\n\nYour previous database was restored from:\n{dbStartup.BackupPathUsed}"
+                        : string.Empty;
+                    MessageBox.Show(
+                        $"TidyUp could not upgrade its database.{restored}\n\n{dbStartup.ErrorMessage}",
+                        "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Shutdown();
+                    return;
+                }
+
+                if (dbStartup.WasCorruptedInitially && dbStartup.RestoredFromBackup)
+                {
+                    MessageBox.Show(
+                        $"TidyUp's database was damaged and has been restored from:\n{dbStartup.BackupPathUsed}\n\nChanges made after that backup may be missing.",
+                        "Database Restored", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
             }
             catch (Exception ex)
             {

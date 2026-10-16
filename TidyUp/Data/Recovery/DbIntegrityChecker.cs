@@ -60,7 +60,10 @@ public class DbIntegrityChecker : IDbIntegrityChecker
         return result;
     }
 
-    public async Task<DatabaseStartupResult> SafeInitializeDatabaseAsync(string dbPath, Func<Task> migrationOrCreationAction)
+    public async Task<DatabaseStartupResult> SafeInitializeDatabaseAsync(
+        string dbPath,
+        Func<Task> migrationOrCreationAction,
+        Func<Task<bool>>? needsPreActionBackup = null)
     {
         var startupResult = new DatabaseStartupResult();
         string? preMigrationBackup = null;
@@ -87,9 +90,12 @@ public class DbIntegrityChecker : IDbIntegrityChecker
                 }
             }
 
-            // 2. Create pre-migration backup before touching schema
+            // 2. Create pre-migration backup before touching schema (only when something will change)
             SqliteConnection.ClearAllPools();
-            preMigrationBackup = await _backupManager.CreateBackupAsync(dbPath, tag: "pre_migration");
+            if (needsPreActionBackup == null || await needsPreActionBackup())
+            {
+                preMigrationBackup = await _backupManager.CreateBackupAsync(dbPath, tag: "pre_migration");
+            }
         }
 
         // 3. Run migration / creation action safely
