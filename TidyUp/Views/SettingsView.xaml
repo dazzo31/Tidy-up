@@ -4,12 +4,13 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:controls="clr-namespace:TidyUp.Controls"
              xmlns:viewmodels="clr-namespace:TidyUp.ViewModels"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:SettingsViewModel}"
              d:DesignHeight="700" d:DesignWidth="1000">
 
-    <Grid Margin="16">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <!-- 0: Header & Action Bar -->
             <RowDefinition Height="Auto"/>
@@ -20,22 +21,10 @@
         </Grid.RowDefinitions>
 
         <!-- 0: Header and Save / Status Bar -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Application Settings" 
-                           Style="{StaticResource MaterialDesignHeadline5TextBlock}" 
-                           FontWeight="Bold"/>
-                <TextBlock Text="Configure operational behaviors, safety safeguards, engine throughput, retention, and maintenance."
-                           Style="{StaticResource MaterialDesignCaptionTextBlock}" 
-                           Opacity="0.7" Margin="0,2,0,0"/>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <controls:PageHeader Grid.Row="0" Margin="0,0,0,12"
+                             Title="Settings"
+                             Subtitle="Configure operational behaviors, safety safeguards, engine throughput, retention, and maintenance.">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <TextBlock Text="{Binding StatusMessage}"
                            Foreground="{DynamicResource PrimaryHueMidBrush}"
                            FontWeight="SemiBold"
@@ -49,7 +38,7 @@
                         Style="{StaticResource MaterialDesignRaisedButton}"
                         Height="32" Padding="14,0"/>
             </StackPanel>
-        </Grid>
+        </controls:PageHeader>
 
         <!-- 1: 5-Section Navigation Segment Bar -->
         <materialDesign:Card Grid.Row="1" Margin="0,0,0,12" Padding="6" UniformCornerRadius="6">

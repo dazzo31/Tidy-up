@@ -4,19 +4,26 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:controls="clr-namespace:TidyUp.Controls"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="900">
     
-    <Grid>
+    <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
+        <!-- Page header -->
+        <controls:PageHeader Grid.Row="0" Margin="0,0,0,12"
+                             Title="Logs"
+                             Subtitle="Application and rule-execution events, filterable and exportable."/>
+
         <!-- Statistics Cards -->
-        <UniformGrid Grid.Row="0" Rows="1" Columns="4" Margin="16,16,16,8">
+        <UniformGrid Grid.Row="1" Rows="1" Columns="4" Margin="0,0,0,8">
             <materialDesign:Card Margin="0,0,4,0" Padding="12">
                 <StackPanel>
                     <TextBlock Text="Total" FontSize="12" Opacity="0.7"/>
@@ -44,7 +51,7 @@
         </UniformGrid>
 
         <!-- Filters -->
-        <materialDesign:Card Grid.Row="1" Margin="16,8,16,8" Padding="12">
+        <materialDesign:Card Grid.Row="2" Margin="0,8,0,8" Padding="12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -94,7 +101,7 @@
         </materialDesign:Card>
 
         <!-- Logs DataGrid -->
-        <materialDesign:Card Grid.Row="2" Margin="16,8">
+        <materialDesign:Card Grid.Row="3" Margin="0,8">
             <DataGrid ItemsSource="{Binding Logs}"
                       AutoGenerateColumns="False"
                       IsReadOnly="True"
@@ -115,18 +122,32 @@
                                 <Border CornerRadius="3" Padding="6,2">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="LightGreen"/>
+                                            <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Status}" Value="Error">
-                                                    <Setter Property="Background" Value="LightCoral"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11ErrorBackgroundBrush}"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Status}" Value="Warning">
-                                                    <Setter Property="Background" Value="LightGoldenrodYellow"/>
+                                                    <Setter Property="Background" Value="{DynamicResource Win11WarningBackgroundBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
                                     </Border.Style>
-                                    <TextBlock Text="{Binding Status}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding Status}" FontWeight="SemiBold" FontSize="11" HorizontalAlignment="Center">
+                                        <TextBlock.Style>
+                                            <Style TargetType="TextBlock">
+                                                <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Error">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11ErrorBrush}"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Warning">
+                                                        <Setter Property="Foreground" Value="{DynamicResource Win11WarningBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </TextBlock.Style>
+                                    </TextBlock>
                                 </Border>
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
@@ -137,7 +158,7 @@
         </materialDesign:Card>
 
         <!-- Action Buttons -->
-        <materialDesign:Card Grid.Row="3" Margin="16,8,16,16" Padding="12">
+        <materialDesign:Card Grid.Row="4" Margin="0,8,0,0" Padding="12">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Left"
                            Text="{Binding StatusMessage}"

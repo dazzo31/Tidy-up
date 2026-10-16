@@ -21,25 +21,14 @@
             </Grid.RowDefinitions>
 
             <!-- Dashboard Header -->
-            <Grid Grid.Row="0" Margin="0,0,0,20">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <TextBlock Text="Operational Dashboard"
-                               Style="{StaticResource MaterialDesignHeadline4TextBlock}"
-                               FontWeight="SemiBold"/>
-                    <TextBlock Text="Real-time monitoring health, activity metrics, and folder automation status"
-                               Style="{StaticResource MaterialDesignBody2TextBlock}"
-                               Opacity="0.7" Margin="0,4,0,0"/>
-                </StackPanel>
-
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <controls:PageHeader Grid.Row="0" Margin="0,0,0,20"
+                                 Title="Operational Dashboard"
+                                 Subtitle="Real-time monitoring health, activity metrics, and folder automation status">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <Button Command="{Binding ScanAllFoldersCommand}"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
                             Margin="0,0,8,0"
+                            AutomationProperties.Name="Scan all folders"
                             ToolTip="Scan all active monitored folders now">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="FolderSync" VerticalAlignment="Center" Margin="0,0,6,0"/>
@@ -48,11 +37,12 @@
                     </Button>
                     <Button Command="{Binding LoadDashboardDataCommand}"
                             Style="{StaticResource MaterialDesignIconButton}"
+                            AutomationProperties.Name="Refresh dashboard"
                             ToolTip="Refresh Dashboard">
                         <materialDesign:PackIcon Kind="Refresh"/>
                     </Button>
                 </StackPanel>
-            </Grid>
+            </controls:PageHeader>
 
             <!-- Metric Cards Row -->
             <Grid Grid.Row="1" Margin="0,0,0,24">

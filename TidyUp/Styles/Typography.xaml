@@ -47,6 +47,28 @@
         <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
     </Style>
 
+    <!-- Page header (PageHeader control): one H1 size for every destination. -->
+    <Style x:Key="Win11PageTitleTextBlock" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Win11StandardFontFamily}"/>
+        <Setter Property="FontSize" Value="28"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="LineHeight" Value="36"/>
+        <Setter Property="LineStackingStrategy" Value="BlockLineHeight"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+    </Style>
+
+    <Style x:Key="Win11PageSubtitleTextBlock" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource Win11StandardFontFamily}"/>
+        <Setter Property="FontSize" Value="13"/>
+        <Setter Property="FontWeight" Value="Normal"/>
+        <Setter Property="Foreground" Value="{DynamicResource Win11TextSecondaryBrush}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+        <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+    </Style>
+
     <Style x:Key="Win11CodeTextBlock" TargetType="TextBlock">
         <Setter Property="FontFamily" Value="{StaticResource Win11MonospaceFontFamily}"/>
         <Setter Property="FontSize" Value="11"/>

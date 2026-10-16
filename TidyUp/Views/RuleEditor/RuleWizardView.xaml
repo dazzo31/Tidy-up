@@ -74,7 +74,7 @@
                     <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="Background" Value="LightGray"/>
+                                <Setter Property="Background" Value="{DynamicResource Win11NeutralSolidBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentStage}" Value="Conditions">
                                         <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
@@ -100,7 +100,7 @@
                     <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="Background" Value="LightGray"/>
+                                <Setter Property="Background" Value="{DynamicResource Win11NeutralSolidBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentStage}" Value="Actions">
                                         <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
@@ -123,7 +123,7 @@
                     <Border Width="24" Height="24" CornerRadius="12" Margin="0,0,6,0">
                         <Border.Style>
                             <Style TargetType="Border">
-                                <Setter Property="Background" Value="LightGray"/>
+                                <Setter Property="Background" Value="{DynamicResource Win11NeutralSolidBrush}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding CurrentStage}" Value="Review">
                                         <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>

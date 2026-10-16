@@ -10,7 +10,7 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:PreviewViewModel}"
              d:DesignHeight="700" d:DesignWidth="1100">
-    <Grid Margin="16">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -19,23 +19,11 @@
         </Grid.RowDefinitions>
 
         <!-- Header and Action Breakdown Badges -->
-        <Grid Grid.Row="0" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Preview &amp; Review Workspace" 
-                           Style="{StaticResource MaterialDesignHeadline5TextBlock}"
-                           FontWeight="Bold"/>
-                <TextBlock Text="Dry-run simulation of planned operations. Review impacts and evaluate condition breakdowns before applying."
-                           Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                           Opacity="0.7" Margin="0,2,0,0"/>
-            </StackPanel>
-
+        <controls:PageHeader Grid.Row="0" Margin="0,0,0,12"
+                             Title="Preview &amp; Review"
+                             Subtitle="Dry-run simulation of planned operations. Review impacts and evaluate condition breakdowns before applying.">
             <!-- Operation Breakdown Summary Bar -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Border Background="{DynamicResource Win11InfoBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
                     <TextBlock Text="{Binding MoveCount, StringFormat='Move: {0}'}" Foreground="{DynamicResource Win11InfoBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
@@ -52,7 +40,7 @@
                     <TextBlock Text="{Binding ConflictCount, StringFormat='Conflicts: {0}'}" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="Bold" FontSize="11"/>
                 </Border>
             </StackPanel>
-        </Grid>
+        </controls:PageHeader>
 
         <!-- Filter & Control Toolbar -->
         <materialDesign:Card Grid.Row="1" Margin="0,0,0,12" Padding="10,6" UniformCornerRadius="6">

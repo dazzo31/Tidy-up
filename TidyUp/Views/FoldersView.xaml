@@ -10,7 +10,7 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance Type=viewmodels:FoldersViewModel}"
              d:DesignHeight="700" d:DesignWidth="1000">
-    <Grid Margin="16">
+    <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -20,23 +20,11 @@
         </Grid.RowDefinitions>
 
         <!-- Header and Summary Cards -->
-        <Grid Grid.Row="0" Margin="0,0,0,16">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Monitored Folders Hub" 
-                           Style="{StaticResource MaterialDesignHeadline5TextBlock}"
-                           FontWeight="Bold"/>
-                <TextBlock Text="Centralized directory monitoring, permission auditing, and real-time watcher status."
-                           Style="{StaticResource MaterialDesignCaptionTextBlock}"
-                           Opacity="0.7" Margin="0,2,0,0"/>
-            </StackPanel>
-
+        <controls:PageHeader Grid.Row="0" Margin="0,0,0,16"
+                             Title="Monitored Folders"
+                             Subtitle="Centralized directory monitoring, permission auditing, and real-time watcher status.">
             <!-- Stats Bar -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal">
                 <materialDesign:Card Margin="0,0,8,0" Padding="12,6" UniformCornerRadius="6">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="FolderMultiple" VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.7"/>
@@ -59,7 +47,7 @@
 
                 <materialDesign:Card Padding="12,6" UniformCornerRadius="6">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="DarkOrange" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="{DynamicResource Win11WarningBrush}" VerticalAlignment="Center" Margin="0,0,6,0"/>
                         <StackPanel>
                             <TextBlock Text="{Binding InaccessibleCount}" FontWeight="Bold" FontSize="14"/>
                             <TextBlock Text="Attention Needed" FontSize="10" Opacity="0.6"/>
@@ -67,7 +55,7 @@
                     </StackPanel>
                 </materialDesign:Card>
             </StackPanel>
-        </Grid>
+        </controls:PageHeader>
 
         <!-- Quick Add Directory Panel -->
         <materialDesign:Card Grid.Row="1" Margin="0,0,0,16" Padding="14" UniformCornerRadius="8">

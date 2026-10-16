@@ -8,46 +8,38 @@
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="1100">
 
-    <Grid>
+    <Grid Margin="24">
         <Grid.RowDefinitions>
-            <!-- 0: Header & Filter Bar -->
+            <!-- 0: Page header -->
             <RowDefinition Height="Auto"/>
-            <!-- 1: Pagination Toolbar -->
+            <!-- 1: Filter Bar -->
             <RowDefinition Height="Auto"/>
-            <!-- 2: History List Area -->
+            <!-- 2: Pagination Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- 3: History List Area -->
             <RowDefinition Height="*"/>
-            <!-- 3: Status & Export Bar -->
+            <!-- 4: Status & Export Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- 0: Header & Filter Controls -->
-        <materialDesign:Card Grid.Row="0" Margin="16,12,16,6" Padding="14,10">
+        <!-- 0: Page header -->
+        <controls:PageHeader Grid.Row="0" Margin="0,0,0,12"
+                             Title="History"
+                             Subtitle="Durable journal of every operation, with audit details and conflict-safe rollback.">
+            <Button Command="{Binding LoadPageCommand}"
+                    AutomationProperties.Name="Refresh history"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Height="32" Padding="12,0">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </controls:PageHeader>
+
+        <!-- 1: Filter Controls -->
+        <materialDesign:Card Grid.Row="1" Margin="0,0,0,6" Padding="14,10">
             <StackPanel>
-                <Grid Margin="0,0,0,10">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Orientation="Horizontal" Grid.Column="0">
-                        <materialDesign:PackIcon Kind="History" Width="26" Height="26" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <StackPanel>
-                            <TextBlock Text="Operation History &amp; Rollback Journal" FontSize="18" FontWeight="Bold"/>
-                            <TextBlock Text="Durable SQLite journal with expandable audit details and one-click conflict-safe rollback"
-                                       FontSize="11" Opacity="0.75"/>
-                        </StackPanel>
-                    </StackPanel>
-
-                    <Button Grid.Column="1"
-                            Command="{Binding LoadPageCommand}"
-                            Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Height="32" Padding="12,0">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Refresh" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </Grid>
-
                 <!-- Filters WrapPanel -->
                 <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
                     <!-- Search Input -->
@@ -103,7 +95,7 @@
         </materialDesign:Card>
 
         <!-- 1: Pagination Toolbar -->
-        <materialDesign:Card Grid.Row="1" Margin="16,4,16,6" Padding="12,6">
+        <materialDesign:Card Grid.Row="2" Margin="0,4,0,6" Padding="12,6">
             <DockPanel LastChildFill="False">
                 <!-- Page size picker -->
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
@@ -146,7 +138,7 @@
         </materialDesign:Card>
 
         <!-- 2: Main History List -->
-        <materialDesign:Card Grid.Row="2" Margin="16,4,16,6" Padding="0">
+        <materialDesign:Card Grid.Row="3" Margin="0,4,0,6" Padding="0">
             <Grid>
                 <!-- Loading Overlay -->
                 <ProgressBar IsIndeterminate="True" Height="4" VerticalAlignment="Top"
@@ -185,7 +177,7 @@
         </materialDesign:Card>
 
         <!-- 3: Bottom Status & Export Bar -->
-        <materialDesign:Card Grid.Row="3" Margin="16,4,16,12" Padding="12,8">
+        <materialDesign:Card Grid.Row="4" Margin="0,4,0,0" Padding="12,8">
             <DockPanel LastChildFill="False">
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" VerticalAlignment="Center">
                     <materialDesign:PackIcon Kind="InformationOutline" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0" Opacity="0.7"/>

@@ -11,7 +11,7 @@ namespace TidyUp.Tests.Unit.Theming;
 /// </summary>
 public class StyleGuardTests
 {
-    private const string NamedColors = "Green|Red|Orange|White|Black|Gray|Grey|Blue|Yellow|Purple|Teal|Silver|Maroon|Navy|Lime|Cyan|Magenta";
+    private const string NamedColors = "Green|Red|Orange|White|Black|Gray|Grey|Blue|Yellow|Purple|Teal|Silver|Maroon|Navy|Lime|Cyan|Magenta|Pink|Brown|Gold|Crimson|Tomato|Dark[A-Za-z]+|Light[A-Za-z]+";
     private const string Literal = "(#[0-9A-Fa-f]{3,8}|" + NamedColors + ")";
     private const string Quote = "\"";
 
