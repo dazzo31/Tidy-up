@@ -25,6 +25,8 @@ public class MonitoredFolderState
     public int EnabledRuleCount { get; init; }
     public bool IsAnyRuleEnabled => EnabledRuleCount > 0;
 
+    public bool IsTransientLocation => TransientLocations.IsTransient(NormalizedPath);
+
     public bool IncludeSubfolders { get; init; }
     public IReadOnlyList<string> ExclusionPatterns { get; init; } = [];
     public DateTime LastEvaluatedUtc { get; init; } = DateTime.UtcNow;

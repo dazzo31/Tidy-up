@@ -19,6 +19,7 @@ namespace TidyUp.ViewModels;
 public partial class MonitoredFolderItemViewModel : ObservableObject
 {
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsTransientLocation))]
     private string _path = string.Empty;
 
     [ObservableProperty]
@@ -61,6 +62,8 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
     private bool _isPaused;
 
     public string RecursiveDisplay => IncludeSubfolders ? "Recursive" : "Top-level only";
+
+    public bool IsTransientLocation => TransientLocations.IsTransient(Path);
 
     public bool IsHealthy => Exists && HasReadPermission && HasWritePermission && !IsSystemProtected;
 

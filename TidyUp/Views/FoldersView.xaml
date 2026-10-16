@@ -195,6 +195,14 @@
                                     <StackPanel VerticalAlignment="Center" Margin="4">
                                         <TextBlock Text="{Binding Path}" FontWeight="SemiBold"/>
                                         <TextBlock Text="{Binding PermissionStatus}" FontSize="11" Opacity="0.7"/>
+                                        <StackPanel Orientation="Horizontal" Margin="0,2,0,0"
+                                                    Visibility="{Binding IsTransientLocation, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                    ToolTip="Windows and cleanup tools routinely delete files from the Temp folder, so a rule watching it can lose its source folder.">
+                                            <materialDesign:PackIcon Kind="AlertOutline" Width="12" Height="12" VerticalAlignment="Center"
+                                                                     Foreground="{DynamicResource Win11WarningBrush}"/>
+                                            <TextBlock Text="Temporary folder" FontSize="11" Margin="4,0,0,0"
+                                                       Foreground="{DynamicResource Win11WarningBrush}"/>
+                                        </StackPanel>
                                     </StackPanel>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
