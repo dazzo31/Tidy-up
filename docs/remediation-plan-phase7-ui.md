@@ -21,9 +21,9 @@ Everything else (theme not applied, first-run wizard dead, "X" icon, inconsisten
 
 ---
 
-## 0a. Execution Log & Plan Corrections (Phase 7A complete)
+## 0a. Execution Log & Plan Corrections (Phase 7A complete; DS-10 done)
 
-Status: **FIX-01..FIX-05 done** (commits `3b7f839`, `d08861a`, `cc0998c`, `22ac5b1`, `0686e05`). Remaining: BRAND-*, DS-*, VER-*.
+Status: **FIX-01..FIX-05 done** (commits `3b7f839`, `d08861a`, `cc0998c`, `22ac5b1`, `0686e05`); **DS-10 done** (`d6f8145`). Remaining: BRAND-*, DS-01..09, VER-*.
 
 ### Corrections to this plan found during execution
 
@@ -40,10 +40,12 @@ Status: **FIX-01..FIX-05 done** (commits `3b7f839`, `d08861a`, `cc0998c`, `22ac5
 | *(not in plan)* | Tray **Exit** set `MinimizeToTray=false` and the close handler persisted it, silently disabling the setting for good. Now a transient flag. |
 | *(not in plan)* | Light `warning` token claimed AA but measured 4.20:1; `#D83B01` → `#CC3600`. Both palettes are now contrast-checked from the XAML (`ThemePaletteTests`). |
 | **FIX-05:** show the wizard once. | Also fixed: Skip was bound to `FinishCommand`; "show again" mirrored the flag so Finish re-showed it every launch; the window never got its `DataContext`; the sample rule duplicated on re-run; and the wizard being the only window would end the app on close (`ShutdownMode`). Re-entry lives in Settings → General. |
+| **DS-10:** replace literal colours with tokens. | 175 XAML + C# literals removed (0 remain). View-model badge properties used to return hex strings (a one-shot binding that cannot follow a theme switch); they now return **token keys** and XAML binds them with `styles:ThemeBrush.Background/Foreground` (`SetResourceReference`), so badges re-resolve live. Solid fills use `Win11*SolidBrush` + `Win11OnSolidBrush` (white text verified AA); tints use `Win11*BackgroundBrush`. `StyleGuardTests` now fails the build if a literal colour is reintroduced under Views/, Controls/, MainWindow.xaml, ViewModels/ or Models/. All 43 referenced `Win11*` keys exist in both palettes (scripted check). |
+| *(not in plan)* | `publish/` was not git-ignored; a blanket `git add -A` staged 139 build artefacts. Caught before pushing, amended out of the local commit, `/publish/` added to `.gitignore`. |
 
 ### Known gaps carried forward
 
-- **Dark mode is only partly dark until DS-10:** main surfaces follow the Material theme, but the 137 hard-coded colours in views stay light-only.
+- **Dark mode colour literals are gone (DS-10)**, but Dark has still only been verified numerically (WCAG contrast of the tokens, app launches and loads all UI in both themes). It has not been reviewed by eye.
 - `AppSettings` is not in DI, so `ToastNotificationService` / `TrayIconService` receive `null` settings and ignore quiet mode and success/error toast toggles. Separate behaviour change; not done here.
 - Visual quality of Dark mode was verified numerically (rendered-window luminance, WCAG contrast), not by eye.
 
