@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon>Resources\tidyup.ico</ApplicationIcon>
     <Product>TidyUp</Product>
     <AssemblyTitle>TidyUp</AssemblyTitle>
     <Description>Rule-based file organisation for Windows.</Description>

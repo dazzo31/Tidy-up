@@ -1,0 +1,26 @@
+<UserControl x:Class="TidyUp.Controls.TidyUpLogo"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
+             d:DesignHeight="24" d:DesignWidth="24"
+             Focusable="False" IsTabStop="False"
+             AutomationProperties.Name="TidyUp logo">
+    <!-- Same geometry as Resources/Brand/tidyup.svg. The tile uses the accent token and the folder uses the
+         surface token, so the mark keeps its contrast when the theme flips (white folder on blue in Light,
+         dark folder on light blue in Dark). -->
+    <Viewbox Stretch="Uniform">
+        <Canvas Width="256" Height="256">
+            <Rectangle Canvas.Left="16" Canvas.Top="16" Width="224" Height="224" RadiusX="52" RadiusY="52"
+                       Fill="{DynamicResource Win11AccentBrush}"/>
+            <Rectangle Canvas.Left="52" Canvas.Top="68" Width="68" Height="40" RadiusX="12" RadiusY="12"
+                       Fill="{DynamicResource Win11SurfaceBrush}"/>
+            <Rectangle Canvas.Left="52" Canvas.Top="88" Width="152" Height="104" RadiusX="14" RadiusY="14"
+                       Fill="{DynamicResource Win11SurfaceBrush}"/>
+            <Polyline Points="92,140 118,166 166,114" StrokeThickness="18"
+                      Stroke="{DynamicResource Win11AccentBrush}"
+                      StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"/>
+        </Canvas>
+    </Viewbox>
+</UserControl>

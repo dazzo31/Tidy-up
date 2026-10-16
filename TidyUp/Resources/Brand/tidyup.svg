@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- TidyUp mark: a folder with a check on an accent-blue rounded square. 256x256 grid.
+     scripts/Build-Icon.ps1 draws exactly this geometry to produce Resources/tidyup.ico;
+     Controls/TidyUpLogo.xaml is the theme-aware in-app version. Keep the three in sync. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="TidyUp">
+  <rect x="16" y="16" width="224" height="224" rx="52" fill="#0067C0"/>
+  <rect x="52" y="68" width="68" height="40" rx="12" fill="#FFFFFF"/>
+  <rect x="52" y="88" width="152" height="104" rx="14" fill="#FFFFFF"/>
+  <polyline points="92,140 118,166 166,114" fill="none" stroke="#0067C0" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

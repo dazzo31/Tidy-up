@@ -63,10 +63,9 @@
                         BorderBrush="{DynamicResource MaterialDesignDivider}" 
                         BorderThickness="0,0,0,1">
                     <StackPanel Orientation="Horizontal">
-                        <Image Source="pack://application:,,,/Resources/tidyup.ico" 
-                               Width="24" Height="24" 
-                               VerticalAlignment="Center" 
-                               Margin="0,0,10,0"/>
+                        <controls:TidyUpLogo Width="24" Height="24"
+                                             VerticalAlignment="Center"
+                                             Margin="0,0,10,0"/>
                         <TextBlock Text="TidyUp" 
                                    FontSize="16" 
                                    FontWeight="SemiBold" 

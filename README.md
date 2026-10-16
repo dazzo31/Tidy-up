@@ -1,3 +1,5 @@
+<p align="center"><img src="TidyUp/Resources/Brand/tidyup.svg" alt="TidyUp logo" width="96" height="96"></p>
+
 # TidyUp
 
 [![Build & Test](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml/badge.svg)](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml)
