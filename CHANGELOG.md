@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.1.0] - 2026-10-11
+## [1.1.0] - 2026-10-16
 
 ### Summary
 Comprehensive UI/UX modernization, accessibility overhaul, and workflow experience release (Phase 6: `TASK-UI-01` through `TASK-UI-15`). 426 automated tests passing with 0 failures.
