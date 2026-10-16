@@ -6,6 +6,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <Product>TidyUp</Product>
+    <AssemblyTitle>TidyUp</AssemblyTitle>
+    <Description>Rule-based file organisation for Windows.</Description>
+    <Company>dazzo31</Company>
+    <Authors>dazzo31</Authors>
+    <Copyright>Copyright (c) 2026 dazzo31</Copyright>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
