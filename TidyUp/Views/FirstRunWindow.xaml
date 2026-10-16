@@ -305,7 +305,7 @@
                     </Button>
                     
                     <Button Content="Skip" 
-                           Command="{Binding FinishCommand}"
+                           Command="{Binding SkipCommand}"
                            Margin="8,0,0,0"
                            Padding="16,8">
                         <Button.Style>

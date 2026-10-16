@@ -111,6 +111,18 @@
 
                     <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
+                            <TextBlock Text="Setup Wizard" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Revisit the welcome tour to choose tray and notification defaults and optionally add a sample rule." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+                            <Button Content="Run Setup Wizard"
+                                    Command="{Binding RunSetupWizardCommand}"
+                                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                                    HorizontalAlignment="Left"
+                                    AutomationProperties.Name="Run setup wizard"/>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
                             <TextBlock Text="Application Lifecycle &amp; System Tray" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Control how Tidy-up behaves during window minimization and background execution." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
 

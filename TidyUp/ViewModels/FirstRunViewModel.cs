@@ -14,9 +14,15 @@ namespace TidyUp.ViewModels;
 
 public partial class FirstRunViewModel : ObservableObject
 {
+    public const string SampleRuleName = "Organize Documents by Type";
+
     private readonly SettingsRepository _settingsRepository;
     private readonly IRuleRepository _ruleRepository;
     private readonly AppSettings _settings;
+    private bool _isResolved;
+
+    /// <summary>True once the user finished the wizard (as opposed to skipping or closing it).</summary>
+    public bool WasCompleted { get; private set; }
 
     [ObservableProperty]
     private int _currentStep = 1;
@@ -54,7 +60,6 @@ public partial class FirstRunViewModel : ObservableObject
         _selectedConflictStrategy = settings.DefaultConflictResolution;
         _enableSystemTray = settings.SystemTrayEnabled;
         _enableNotifications = settings.ToastNotificationsEnabled;
-        _showThisAgain = settings.ShowFirstRunWizard;
     }
 
     [RelayCommand]
@@ -82,9 +87,9 @@ public partial class FirstRunViewModel : ObservableObject
         _settings.DefaultConflictResolution = SelectedConflictStrategy;
         _settings.SystemTrayEnabled = EnableSystemTray;
         _settings.ToastNotificationsEnabled = EnableNotifications;
-        _settings.ShowFirstRunWizard = ShowThisAgain;
 
-        await _settingsRepository.SaveAsync(_settings);
+        WasCompleted = true;
+        await ResolveAsync();
 
         // Create sample rule if requested
         if (CreateSampleRule)
@@ -96,16 +101,42 @@ public partial class FirstRunViewModel : ObservableObject
         OnFinishRequested?.Invoke();
     }
 
+    /// <summary>Leaves the wizard without applying any choice or creating anything.</summary>
+    [RelayCommand]
+    private async Task SkipAsync()
+    {
+        await ResolveAsync();
+        OnFinishRequested?.Invoke();
+    }
+
+    /// <summary>
+    /// Call after the window has closed. Closing it with the title-bar X counts as "seen" too,
+    /// otherwise the wizard would reappear on every launch.
+    /// </summary>
+    public Task EnsureResolvedAsync() => _isResolved ? Task.CompletedTask : ResolveAsync();
+
+    private async Task ResolveAsync()
+    {
+        _isResolved = true;
+        _settings.ShowFirstRunWizard = ShowThisAgain;
+        await _settingsRepository.SaveAsync(_settings);
+    }
+
     private async Task CreateSampleRuleAsync()
     {
         try
         {
+            if ((await _ruleRepository.GetAllAsync()).Any(r => r.Name == SampleRuleName))
+            {
+                return; // Re-running the wizard must not pile up duplicates.
+            }
+
             var downloadsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
             var documentsPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 
             var sampleRule = new Rule
             {
-                Name = "Organize Documents by Type",
+                Name = SampleRuleName,
                 Description = "Automatically sorts PDF, Word, and Excel files from Downloads into organized folders. DISABLED by default - enable after reviewing!",
                 IsEnabled = false, // Disabled for safety
                 ExecutionOrder = 0,

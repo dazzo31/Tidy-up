@@ -2,9 +2,12 @@ using System.Drawing;
 using System.Windows;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.DependencyInjection;
+using TidyUp.Data;
+using TidyUp.Data.Repositories;
 using TidyUp.Models;
 using TidyUp.Services;
 using TidyUp.ViewModels;
+using TidyUp.Views;
 
 namespace TidyUp;
 
@@ -83,6 +86,20 @@ public partial class App : Application
                 // A theming failure must never stop the app from starting; it keeps the default light theme.
             }
 
+            // First run: show the setup wizard once, before any main window exists
+            if (AppSettings.ShowFirstRunWizard)
+            {
+                try
+                {
+                    await RunSetupWizardAsync();
+                }
+                catch (Exception ex)
+                {
+                    // The wizard is optional; a failure in it must never keep the app from starting.
+                    Console.WriteLine($"Setup wizard failed: {ex.Message}");
+                }
+            }
+
             // Initialize tray icon and notification service
             _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
             _toastService = _serviceProvider.GetRequiredService<IToastNotificationService>();
@@ -107,6 +124,11 @@ public partial class App : Application
             // Show main window
             _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             MainWindow = _mainWindow;
+
+            if (_mainWindow.DataContext is MainWindowViewModel mainViewModel)
+            {
+                mainViewModel.SettingsViewModel.RunSetupWizardHandler = RunSetupWizardAsync;
+            }
             
             // Handle window close to minimize to tray
             _mainWindow.Closing += MainWindow_Closing;
@@ -119,6 +141,29 @@ public partial class App : Application
         catch (Exception ex)
         {
             MessageBox.Show($"Unhandled Startup Exception: {ex.Message}\n\n{ex.StackTrace}", "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    /// <summary>Shows the first-run wizard modally and records that it has been seen.</summary>
+    private async Task RunSetupWizardAsync()
+    {
+        // At first run the wizard is the only window, so closing it would otherwise end the application.
+        var previousShutdownMode = ShutdownMode;
+        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+
+        try
+        {
+            var viewModel = new FirstRunViewModel(
+                _serviceProvider!.GetRequiredService<SettingsRepository>(),
+                _serviceProvider!.GetRequiredService<IRuleRepository>(),
+                AppSettings!);
+
+            new FirstRunWindow(viewModel).ShowDialog();
+            await viewModel.EnsureResolvedAsync();
+        }
+        finally
+        {
+            ShutdownMode = previousShutdownMode;
         }
     }
 

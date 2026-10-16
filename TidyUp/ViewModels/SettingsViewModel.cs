@@ -56,6 +56,24 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private string _statusMessage = "";
 
+    /// <summary>Opens the first-run wizard; supplied by the application because a view-model must not create windows.</summary>
+    public Func<Task>? RunSetupWizardHandler { get; set; }
+
+    [RelayCommand]
+    private async Task RunSetupWizardAsync()
+    {
+        if (RunSetupWizardHandler == null)
+        {
+            StatusMessage = "The setup wizard is not available.";
+            return;
+        }
+
+        await RunSetupWizardHandler();
+
+        // The wizard saved through the shared settings; refresh this editor's copy so a later Save can't revert them.
+        await LoadSettingsAsync();
+    }
+
     [ObservableProperty]
     private ObservableCollection<ConflictResolution> _availableConflictStrategies;
 
