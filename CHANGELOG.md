@@ -7,6 +7,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-10-17
+
+### Summary
+Quality and visual-consistency release (Phase 7): five defects found while reviewing the live v1.1.0 build, a full
+theme-token migration, a unified status vocabulary, a responsive layout pass, real branding, and the About
+surface. **617 automated tests passing with 0 failures.**
+
+### Fixed
+- **History and rollback were unavailable on databases created by earlier releases (`F-01`, `FIX-01`).** The
+  database was created with `EnsureCreated`, so it had no migration history and later schema additions
+  (`OperationJournal`, rule revisions) never applied. The migrator now recognises a legacy schema and baselines
+  it, backs up before applying anything, and refuses to baseline if a legacy column is missing.
+- **Tests could write to the live `%APPDATA%\TidyUp` profile (`F-02`, `FIX-02`).** A test-process module
+  initializer redirects `TIDYUP_APPDATA` to a temp folder, and a source-scanning guard fails the build if a test
+  resolves the real application-data path.
+- **Repeated transient paths were not flagged (`F-03`, `FIX-03`).** `TransientLocations` now identifies Temp-style
+  folders and the Folders hub warns when a rule watches one.
+- **The theme could not follow Windows and settings reverted on close (`F-04`, `FIX-04`).** `System` is the new
+  default, Dark is a real palette, and one shared `AppSettings` instance replaces per-view copies that re-saved a
+  stale object on exit. A schema-version migration turns the old forced-Dark default into `System`.
+- **The first-run wizard appeared on every launch, and Skip did not skip (`F-05`, `FIX-05`).** It now shows once,
+  records that it ran, reuses Settings → General for "run again", and no longer ends the app when it is the only
+  window.
+- **Folders grid text was clipped** and its Scope/Exclusions wording was ambiguous; empty cells now show an em
+  dash and Scan is disabled on folders that cannot be read, with a tooltip saying why.
+- **Rule list items were hard to read:** they now carry an enabled/disabled pill and a `{n} folders · summary`
+  subtitle instead of a bare sentence.
+- **Filter inputs had no visible hints or accessible names** (22 inputs), and fixed heights clipped Material's
+  outlined controls.
+- Auxiliary navigation items are grouped under a "More" caption; Logs is no longer dimmed as if disabled.
+
+### Added
+- **Theme tokens and a style guard (`DS-10`).** Every hard-coded colour (175 of them) now comes from
+  `Styles/Colors.xaml` / `Colors.Dark.xaml` via `{DynamicResource}` or `ThemeBrush`, so badges follow the active
+  theme. `StyleGuardTests` fails the build if a literal colour is reintroduced.
+- **One folder-status vocabulary (`DS-02`).** `FolderStatus` + `FolderStatusResolver` replace the separate
+  dashboard and folders wordings; a shared `StatusBadge` shows the same icon, text and colours on every screen.
+- **`PageHeader` (`DS-01`)** so all destinations share one title size and position, with `MORE`-grouped
+  navigation (`DS-09`).
+- **Real branding (`BRAND-01`, `BRAND-02`)**: a 9-size multi-resolution icon (16–256 px) built by
+  `scripts/Build-Icon.ps1`, a theme-aware in-app logo, `ApplicationIcon` embedded in the executable, and complete
+  assembly metadata (Product, Company, Copyright, `1.2.0`).
+- **About section (`BRAND-03`)** in Settings → Advanced: version and short commit, runtime line, links to
+  releases/source/licence, and a "copy diagnostics" button.
+- **Error empty-state (`DS-06`).** `EmptyStateControl` gained an `Error` variant with a details panel and a
+  secondary action; History uses it when the journal cannot be read.
+- **Responsive Settings (`DS-05`)**: cards reflow from one column to three depending on window width.
+- **`docs/screenshots/` and `scripts/Capture-Screenshots.ps1`:** all 7 destinations in Light and Dark.
+- Guard tests: `PageHeaderTests`, `BrandAssetTests`, `InputLabelGuardTests`, `ResponsiveLayoutTests`,
+  `FolderStatusTests`, `FolderScanAvailabilityTests`, `SettingsAboutTests`, `ThemePaletteTests` (WCAG AA contrast
+  of every token pair), `ThemeTokenTests`.
+
+### Changed
+- `FolderStatus` (7 values) replaces the two overlapping status vocabularies; "Disconnected" now reads "Missing"
+  consistently.
+- Settings, Folders, Preview, History and Logs use 24 px page padding (previously a mix of 0/16/24).
+- The Logs statistics and status chips, the rule wizard stepper, and the Folders stats icons now use semantic
+  tokens rather than named colours, several of which failed contrast.
+- README destination list, hero screenshot, and the screenshot documentation.
+
+---
+
 ## [1.1.0] - 2026-10-16
 
 ### Summary

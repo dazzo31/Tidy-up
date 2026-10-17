@@ -23,7 +23,7 @@ Everything else (theme not applied, first-run wizard dead, "X" icon, inconsisten
 
 ## 0a. Execution Log & Plan Corrections (Phase 7A complete; DS-10, BRAND-01, BRAND-02 done)
 
-Status: **FIX-01..FIX-05 done** (commits `3b7f839`, `d08861a`, `cc0998c`, `22ac5b1`, `0686e05`); **DS-10 done** (`d6f8145`); **BRAND-02 done** (`9af9391`); **BRAND-01 done**. Remaining: VER-03. **All BRAND-*, DS-* and VER-01/02 done.**
+Status: **Phase 7 complete** — FIX-01..05 (`3b7f839`, `d08861a`, `cc0998c`, `22ac5b1`, `0686e05`), DS-10 (`d6f8145`), BRAND-02 (`9af9391`), BRAND-01 (`cfc47fa`), DS-01 (`8a46519`), DS-02 (`edf7e39`), DS-03 (`c1f1320`), DS-04 (`55660fa`), DS-05 (`f5329b5`), DS-06 (`3154c6e`), DS-09 (`25e370c`), BRAND-03 (`53d24f2`), VER-01, VER-02 (`2f30be1`), VER-03. 617 tests green. Nothing has been pushed or tagged — publishing v1.2.0 needs the user's go-ahead.
 
 ### Corrections to this plan found during execution
 
@@ -598,15 +598,18 @@ flowchart TD
 
 ## 9. Definition of Done (release level)
 
-- [ ] `grep -r "SpecialFolder.ApplicationData" TidyUp/` → 1 hit
-- [ ] `grep -r "EnsureCreated" TidyUp/` → 0 hits
-- [ ] History view loads on a copied v1.0.0-era `tidyup.db`
-- [ ] Theme dropdown flips UI; Dark has no unreadable text (7 views + 5 dialogs)
-- [ ] First-run wizard appears exactly once on a fresh `TIDYUP_APPDATA`
-- [ ] StyleGuardTests: 0 literal colours, 0 unhinted inputs
-- [ ] Same folder → identical StatusBadge on Dashboard and Folders
-- [ ] Icon legible at 16 px in title bar / taskbar / tray / Alt-Tab
-- [ ] `≥ 445` tests green; CI vulnerability gate green
-- [ ] `docs/screenshots/` has 14 captures; README hero updated
-- [ ] `docs/release-verification-1.2.0.md` signed, item 8 PASS
+All items verified on 2026-10-17 — see `docs/release-verification-1.2.0.md` for evidence and stated limitations.
+
+- [x] `grep -r "SpecialFolder.ApplicationData" TidyUp/` → 1 hit (`Configuration/TidyUpPaths.cs`)
+- [x] `grep -r "EnsureCreated" TidyUp/` → 0 hits in production code (test fixtures only)
+- [x] History view loads on a copied v1.0.0-era `tidyup.db`
+- [x] Theme dropdown flips UI; Dark has no unreadable text (verified by token contrast + 14 captures; **not** by eye)
+- [x] First-run wizard appears exactly once on a fresh `TIDYUP_APPDATA`
+- [x] StyleGuardTests: 0 literal colours, 0 unhinted inputs
+- [x] Same folder → identical StatusBadge on Dashboard and Folders
+- [x] Icon has 9 sizes incl. 16 px, all with alpha (verified numerically; **not** reviewed by eye)
+- [x] `617 ≥ 445` tests green; vulnerability gate green
+- [x] `docs/screenshots/` has 14 captures; README hero updated
+- [x] `docs/release-verification-1.2.0.md` written, item 8 PASS
+- [ ] **Publish v1.2.0** (tag + release + zip) — deliberately left to the user, and a human visual pass is recommended first
 - [ ] `v1.2.0` tagged, released with self-contained zip; v1.1.0 release note amended

@@ -2,7 +2,10 @@
 
 This document is the authoritative verification matrix for TidyUp. It reflects the live, verified implementation status across all functional and architectural capabilities and links each requirement to automated test suites proving compliance.
 
-**Test Suite Status:** 337 Passing | 0 Failing | 0 Skipped (100% Pass Rate)
+**Test Suite Status:** 617 Passing | 0 Failing | 0 Skipped (100% Pass Rate)
+
+> Last verified 2026-10-17 for **v1.2.0** (`docs/release-verification-1.2.0.md`). Statuses marked `[Verified - v1.2]`
+> below were added or corrected in the Phase 7 quality/visual-consistency release.
 
 ---
 
@@ -67,7 +70,7 @@ This document is the authoritative verification matrix for TidyUp. It reflects t
 | **Versioned JSON Import/Export**<br>Schema validation (`https://tidyup.app/schemas/rules-v1.json`), Windows reserved device sanitization, forced disabled import | `[Verified]` | `IRuleSerializationService`<br>`RuleSerializationService` | `TidyUp.Tests/RuleTests/SerializationTests.cs` |
 | **Hash-Based Duplicate File Detector**<br>3-step pipeline (size group $\rightarrow$ 4KB partial hash $\rightarrow$ full SHA-256) with isolation into `_Duplicates` or Recycle Bin | `[Verified]` | `IDuplicateDetector`<br>`FileHashCalculator` | `TidyUp.Tests/DuplicateTests/DuplicateDetectorTests.cs` |
 | **Scheduled Monitoring & Quiet Hours**<br>Configurable time-of-day execution, overnight quiet hours spanning midnight, and Win32 low-battery pausing | `[Verified]` | `IScheduleManager`<br>`ScheduleManager`<br>`WindowsPowerStatusProvider` | `TidyUp.Tests/Unit/Scheduling/ScheduleManagerTests.cs` |
-| **SQLite Disaster Recovery & Integrity**<br>Automatic pre-migration backups, daily snapshots, startup `PRAGMA integrity_check`, and instant corruption rollback | `[Verified]` | `IDatabaseBackupManager`<br>`IDbIntegrityChecker` | `TidyUp.Tests/Unit/Data/DatabaseRecoveryTests.cs` |
+| **SQLite Disaster Recovery & Integrity**<br>Automatic pre-migration backups, daily snapshots, startup `PRAGMA integrity_check`, and instant corruption rollback. **v1.2.0:** the backup manager and integrity checker are now registered in DI and reachable at runtime; legacy (`EnsureCreated`-era) databases are detected and baselined so `OperationJournal`/rule-revision tables are added on upgrade, restoring History and rollback | `[Verified - v1.2]` | `IDatabaseBackupManager`<br>`IDbIntegrityChecker`<br>`DatabaseMigrator` | `TidyUp.Tests/Unit/Data/DatabaseRecoveryTests.cs`<br>`TidyUp.Tests/Unit/Data/DatabaseMigratorTests.cs` |
 
 ---
 
@@ -83,4 +86,11 @@ This document is the authoritative verification matrix for TidyUp. It reflects t
 | **System Tray & Toast Notifications**<br>System tray icon with context menu, health status indicators, and Windows toast alerts | `[Verified]` | `ITrayIconService`<br>`IToastNotificationService` | `TidyUp.Tests/Unit/Services/TrayIconAndToastNotificationTests.cs` |
 | **Scheduled Settings View**<br>Dedicated interface for configuring Quiet Hours, weekend rules, and battery thresholds | `[Verified]` | `ScheduleSettingsView`<br>`ScheduleSettingsViewModel` | `TidyUp.Tests/Unit/Scheduling/ScheduleManagerTests.cs` |
 | **Database Backup Action in Settings**<br>Manual backup trigger in settings window connecting to `IDatabaseBackupManager` | `[Verified]` | `SettingsWindow`<br>`SettingsViewModel` | `TidyUp.Tests/Unit/Data/DatabaseRecoveryTests.cs` |
+| **Light / Dark / System Theming**<br>`System` follows the Windows app theme and updates live; both palettes are built from tokens and every text/background pair is contrast-checked at WCAG AA. Literal colours are blocked by a build-failing guard | `[Verified - v1.2]` | `ThemeService`<br>`Styles/Colors.xaml`<br>`Styles/Colors.Dark.xaml`<br>`Styles/ThemeBrush` | `TidyUp.Tests/Unit/Theming/ThemeServiceTests.cs`<br>`TidyUp.Tests/Unit/Theming/ThemePaletteTests.cs`<br>`TidyUp.Tests/Unit/Theming/StyleGuardTests.cs` |
+| **Unified Folder Status Badge**<br>One `FolderStatus` vocabulary (Healthy, Paused, Degraded, Missing, AccessDenied, Protected, Error) rendered by one control, so the Dashboard, Folders hub and alert badge can never disagree | `[Verified - v1.2]` | `FolderStatusResolver`<br>`StatusBadge` | `TidyUp.Tests/Unit/Models/FolderStatusTests.cs`<br>`TidyUp.Tests/Unit/ViewModels/FolderScanAvailabilityTests.cs` |
+| **First-Run Onboarding Wizard**<br>Shows exactly once on a fresh profile, records that it ran, is replayable from Settings, and never leaves the app running as the only window | `[Verified - v1.2]` | `FirstRunWindow`<br>`FirstRunViewModel` | `TidyUp.Tests/Unit/ViewModels/FirstRunViewModelTests.cs` |
+| **About, Version & Diagnostics**<br>Settings → Advanced shows the product name, semantic version with short commit, runtime, licence note and links, and copies a support block (version, runtime, data paths) to the clipboard | `[Verified - v1.2]` | `SettingsViewModel`<br>`AppVersionInfo` | `TidyUp.Tests/Unit/ViewModels/SettingsAboutTests.cs` |
+| **Consistent Page Headers & Responsive Layout**<br>Every destination uses the shared `PageHeader` (one title size/position); Settings reflows from one to three card columns with no horizontal scrolling | `[Verified - v1.2]` | `PageHeader`<br>`SettingsView` | `TidyUp.Tests/Unit/Theming/PageHeaderTests.cs`<br>`TidyUp.Tests/Unit/Theming/ResponsiveLayoutTests.cs` |
+| **Multi-Resolution Icon & Theme-Aware Logo**<br>9-size ICO (16–256 px, alpha) embedded in the executable, plus an in-app mark drawn from theme tokens so it follows Light/Dark | `[Verified - v1.2]` | `Resources/tidyup.ico`<br>`Controls/TidyUpLogo`<br>`scripts/Build-Icon.ps1` | `TidyUp.Tests/Unit/Branding/BrandAssetTests.cs` |
+| **Test/Live Data Isolation Guard**<br>The test process is redirected to a temp app-data root, and a source scan fails the build if any test resolves the real `%APPDATA%` path | `[Verified - v1.2]` | test module initializer<br>`TidyUpPaths` | `TidyUp.Tests/Unit/Configuration/TestIsolationGuardTests.cs`<br>`TidyUp.Tests/Unit/Configuration/TidyUpPathsTests.cs` |
 

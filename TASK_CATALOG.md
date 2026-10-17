@@ -958,6 +958,16 @@ OUT OF SCOPE:
 
 DONE WHEN:
 - Database corruption or failed migration is safely intercepted, pre-migration backup restored, and error logged.
+
+VERIFICATION NOTE (added 2026-10-17, Phase 7 / v1.2.0):
+This task was marked COMPLETE but its services were never registered in DI, so the Settings backup button
+reported "Backup manager not available", and `DatabaseBackupManager`/`DbIntegrityChecker` were unreachable at
+runtime. Both are now registered and the recovery path is exercised on startup. The database was also created
+with `EnsureCreated`, so databases from a ≤1.1.0 install had no migration history and never received the
+`OperationJournal` or rule-revision tables — History and rollback were therefore unavailable on upgraded
+installs (defect F-01). `DatabaseMigrator` now detects and baselines a legacy schema, backs up before applying
+migrations, and refuses to baseline when a legacy column is missing. See `docs/remediation-plan-phase7-ui.md`
+(FIX-01, FIX-04) and `docs/release-verification-1.2.0.md`.
 ```
 
 ---
