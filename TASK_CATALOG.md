@@ -1544,3 +1544,103 @@ DONE WHEN:
 | AC-16 | Categorized 5-section Settings with contextual risk warnings | General, Safety, Performance, Storage & Logs, Advanced sections with risk notes | **VERIFIED** |
 | AC-17 | Centralized Windows 11 tokens, High-DPI scaling & accessibility | `Colors.xaml`, `Typography.xaml`, `Controls.xaml`, `AccessibilityStyles.xaml`, `TabIndex` | **VERIFIED** |
 
+---
+
+# Phase 7: Quality & Visual Consistency Release (v1.2.0)
+
+Source of truth for this phase: `docs/remediation-plan-phase7-ui.md` (plan + execution log with per-task
+deviations). Verification evidence: `docs/release-verification-1.2.0.md`.
+
+### TASK-FIX-01..05: Defect remediation found by reviewing the live v1.1.0 build (STATUS: COMPLETE)
+```text
+OBJECTIVE:
+Fix the five defects that surfaced when reviewing the shipped build rather than the test suite.
+
+TARGET FILES:
+- `DatabaseMigrator`, `Migrations/*`, `DatabaseBackupManager`, `DbIntegrityChecker`, `ServiceConfiguration`
+- test module initializer + `TestIsolationGuardTests`
+- `TransientLocations`, `FoldersView`/`FoldersViewModel`
+- `ThemeService`, `Styles/Colors.Dark.xaml`, `SettingsRepository`, `AppSettings`, `MainWindowViewModel`
+- `FirstRunWindow`/`FirstRunViewModel`, `SettingsView`
+
+IN SCOPE:
+- F-01 History/rollback unavailable on upgraded databases (EnsureCreated-era schema never migrated).
+- F-02 tests could resolve and write the live %APPDATA% profile.
+- F-03 transient (Temp-style) paths were not identified.
+- F-04 the theme could not follow Windows; settings reverted on close.
+- F-05 the first-run wizard reappeared every launch and Skip did not skip.
+
+DONE WHEN:
+- Each defect has a regression test; the four migrator cases (legacy, fresh, already-migrated, corrupt) pass.
+```
+
+### TASK-DS-01..10 + BRAND-01..03: Design system, branding, and consistency (STATUS: COMPLETE)
+```text
+OBJECTIVE:
+Make every screen share one palette, one status vocabulary, one header pattern and one brand.
+
+TARGET FILES:
+- `Styles/Colors.xaml`, `Styles/Colors.Dark.xaml`, `Styles/ThemeBrush.cs`, `Styles/ThemeTokens.cs`
+- `Controls/PageHeader`, `Controls/StatusBadge`, `Controls/EmptyStateControl`, `Controls/TidyUpLogo`
+- `Models/Enums/FolderStatus.cs`, `Models/Folders/FolderStatusResolver.cs`
+- `Resources/tidyup.ico`, `scripts/Build-Icon.ps1`, `TidyUp.csproj` metadata
+- all views under `Views/`, `MainWindow.xaml`, `SettingsView.xaml`
+- `Services/Diagnostics/AppVersionInfo.cs`
+
+IN SCOPE:
+- DS-10 token migration (175 hard-coded colours) + `StyleGuardTests`.
+- DS-01 shared `PageHeader`; DS-09 grouped auxiliary navigation.
+- DS-02 unified `FolderStatus` + `StatusBadge`; DS-04 grid/Scan gating; DS-03 input hints;
+  DS-05 responsive Settings; DS-06 rule list and unified empty/error states.
+- BRAND-01 multi-resolution icon + theme-aware logo; BRAND-02 canonical naming and metadata; BRAND-03 About card.
+
+DONE WHEN:
+- StyleGuard (colours and input labels) reports 0 offenders; the same folder cannot render two different statuses.
+```
+
+### TASK-VER-01..03: Verification and release preparation (STATUS: COMPLETE)
+```text
+OBJECTIVE:
+Prove the phase's claims, capture a visual baseline, and prepare the release without publishing it.
+
+TARGET FILES:
+- `TidyUp.Tests/Unit/Theming/*`, `Unit/Branding/*`, `Unit/Models/FolderStatusTests.cs`,
+  `Unit/ViewModels/SettingsAboutTests.cs`, `Unit/ViewModels/FolderScanAvailabilityTests.cs`
+- `scripts/Capture-Screenshots.ps1`, `docs/screenshots/*.png`
+- `CHANGELOG.md`, `docs/FEATURE_MATRIX.md`, `docs/release-verification-1.2.0.md`
+
+IN SCOPE:
+- VER-01 regression/guard suite green (617 tests) and the vulnerability gate clean.
+- VER-02 14 captures (7 destinations x Light/Dark) plus the README hero image.
+- VER-03 changelog, catalog correction (TASK-ADV-07 note), feature matrix refresh, verification document.
+
+DONE WHEN:
+- Verification document states PASS/limitations honestly and the release is prepared but NOT published.
+```
+
+#### Phase 7 Acceptance Verification Matrix
+| ID | Requirement / Acceptance Criterion | Implementation & Test Evidence | Status |
+|:---|:---|:---|:---:|
+| AC-18 | No hard-coded colours anywhere in views/view-models | 175 literals migrated to `Win11*` tokens; `StyleGuardTests` | **VERIFIED** |
+| AC-19 | Every filter input has a hint or accessible name | 22 inputs named; `InputLabelGuardTests` | **VERIFIED** |
+| AC-20 | One status vocabulary for monitored folders | `FolderStatusResolver`, `StatusBadge`; `FolderStatusTests` (all 20 pairs) | **VERIFIED** |
+| AC-21 | Identical status shown on Dashboard and Folders | `FolderStatusTests` + runtime check on a seeded profile | **VERIFIED** |
+| AC-22 | Uniform page headers across destinations | `PageHeader`; `PageHeaderTests`; UIA offsets identical in both themes | **VERIFIED** |
+| AC-23 | Settings reflows instead of one fixed column | `WrapPanel` of 520 px cards; 1 column @1000 px, 3 @1920 px; `ResponsiveLayoutTests` | **VERIFIED** |
+| AC-24 | Scan disabled with an explanation on unreadable folders | `FolderStatusPresentation.CanScan/ScanTooltip`; `FolderScanAvailabilityTests` | **VERIFIED** |
+| AC-25 | Real multi-resolution icon embedded in the executable | 9 sizes incl. 16 px, 32-bit alpha; `BrandAssetTests`; `ApplicationIcon` set | **VERIFIED** |
+| AC-26 | Canonical product name and complete assembly metadata | `TidyUp.csproj` Product/Company/Copyright/`1.2.0`; exe reports `1.2.0+<sha>` | **VERIFIED** |
+| AC-27 | About surface with version, commit and diagnostics copy | `SettingsView` About card, `AppVersionInfo`; `SettingsAboutTests` | **VERIFIED** |
+| AC-28 | Error states are rendered, not just logged | `EmptyStateControl Variant=Error`; History error card + Copy details | **VERIFIED** |
+| AC-29 | Upgrade path from a v1.0.0-era database restores History/rollback | `DatabaseMigratorTests` (4 cases), backup-before-migration | **VERIFIED** |
+| AC-30 | Tests can never touch live application data | Test-process redirect + source-scan guard; live profile hashes unchanged | **VERIFIED** |
+| AC-31 | Visual baseline committed for both themes | `docs/screenshots/` (14 PNGs) + `scripts/Capture-Screenshots.ps1` | **VERIFIED** |
+| AC-32 | Release prepared with honest verification record | `docs/release-verification-1.2.0.md` incl. stated limitations; **not published** | **VERIFIED** |
+
+#### Known limitations carried into v1.2.0
+- `AppSettings` is not registered in DI, so `ToastNotificationService` / `TrayIconService` receive `null`
+  settings and ignore quiet mode and the success/error toast toggles. Tracked for a future release.
+- Visual quality was verified numerically and structurally (luminance, contrast, UI Automation geometry), not by
+  eye. A human pass is recommended before publishing.
+- One intermittent unit-test failure was observed once and did not reproduce in 15 runs; recorded in the
+  verification document.
