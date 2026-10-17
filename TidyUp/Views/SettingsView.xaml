@@ -307,6 +307,52 @@
                                     HorizontalAlignment="Left" Height="30" Padding="12,0"/>
                         </StackPanel>
                     </materialDesign:Card>
+
+                    <!-- About -->
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="About TidyUp" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
+                            <TextBlock Text="Rule-based file organisation for Windows, built around data safety and reversibility." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <controls:TidyUpLogo Width="40" Height="40" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock Text="TidyUp" FontSize="16" FontWeight="SemiBold"/>
+                                    <TextBlock FontSize="12" Opacity="0.75">
+                                        <Run Text="Version"/>
+                                        <Run Text="{Binding VersionText, Mode=OneWay}"/>
+                                    </TextBlock>
+                                    <TextBlock Text="Released under the MIT licence" FontSize="10" Opacity="0.6"/>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <TextBlock Text="{Binding RuntimeText}" FontSize="10" Opacity="0.6" TextWrapping="Wrap" Margin="0,0,0,12"/>
+
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Content="Release notes"
+                                        Command="{Binding OpenReleasesCommand}"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Height="30" Padding="12,0" Margin="0,0,8,8"
+                                        AutomationProperties.Name="Open release notes"/>
+                                <Button Content="Source code"
+                                        Command="{Binding OpenRepositoryCommand}"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Height="30" Padding="12,0" Margin="0,0,8,8"
+                                        AutomationProperties.Name="Open source repository"/>
+                                <Button Content="Licence"
+                                        Command="{Binding OpenLicenseCommand}"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Height="30" Padding="12,0" Margin="0,0,8,8"
+                                        AutomationProperties.Name="Open licence"/>
+                                <Button Content="Copy diagnostics"
+                                        Command="{Binding CopyDiagnosticsCommand}"
+                                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                                        Height="30" Padding="12,0" Margin="0,0,0,8"
+                                        ToolTip="Copies version, runtime and data paths for a bug report"
+                                        AutomationProperties.Name="Copy diagnostics"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </materialDesign:Card>
                 </WrapPanel>
 
             </WrapPanel>

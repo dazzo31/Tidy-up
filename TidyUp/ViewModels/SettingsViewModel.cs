@@ -1,11 +1,15 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using System.Reflection;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using TidyUp.Configuration;
 using TidyUp.Data;
 using TidyUp.Models;
 using TidyUp.Models.Enums;
+using TidyUp.Services.Diagnostics;
 
 namespace TidyUp.ViewModels;
 
@@ -188,6 +192,70 @@ public partial class SettingsViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Error optimizing database: {ex.Message}";
+        }
+    }
+
+    // ----- About (BRAND-03) -----
+
+    /// <summary>"1.2.0 (fb8b11f)" for the About card.</summary>
+    public string VersionText => AppVersionInfo.Display;
+
+    public string CommitText => AppVersionInfo.Commit;
+
+    public string RuntimeText => $".NET {Environment.Version.ToString(3)} on {Environment.OSVersion.VersionString}";
+
+    [RelayCommand]
+    private void OpenReleases() => OpenExternal("https://github.com/dazzo31/Tidy-up/releases");
+
+    [RelayCommand]
+    private void OpenLicense() => OpenExternal("https://github.com/dazzo31/Tidy-up/blob/main/LICENSE");
+
+    [RelayCommand]
+    private void OpenRepository() => OpenExternal("https://github.com/dazzo31/Tidy-up");
+
+    /// <summary>
+    /// Copies a support block (version, runtime, database path and schema) so a bug report does not need a back-and-forth.
+    /// </summary>
+    [RelayCommand]
+    private void CopyDiagnostics()
+    {
+        try
+        {
+            System.Windows.Clipboard.SetText(BuildDiagnostics());
+            StatusMessage = "Diagnostics copied to the clipboard.";
+        }
+        catch (Exception ex)
+        {
+            // The clipboard is a shared OS resource and can be locked by another process.
+            StatusMessage = $"Could not copy diagnostics: {ex.Message}";
+        }
+    }
+
+    /// <summary>Support block copied by <see cref="CopyDiagnostics"/>; also asserted by tests.</summary>
+    public string BuildDiagnostics()
+    {
+        var paths = TidyUpPaths.FromEnvironmentOrDefault();
+        var lines = new[]
+        {
+            $"TidyUp {AppVersionInfo.Display}",
+            $"Runtime: {RuntimeText}",
+            $"Data folder: {paths.AppDataRoot}",
+            $"Database: {paths.DatabasePath}",
+            $"Settings: {paths.SettingsPath}"
+        };
+
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private void OpenExternal(string url)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Could not open link: {ex.Message}";
         }
     }
 }
