@@ -10,6 +10,10 @@
 
 **TidyUp** is a high-performance, hardened automated file organization tool for Windows. It provides intelligent rule-based sorting, active folder monitoring, duplicate detection, and automated cleanup with an uncompromising focus on **data safety, predictability, and reversibility**.
 
+![TidyUp dashboard (Light theme)](docs/screenshots/dashboard-light.png)
+
+Every destination is captured in both themes under [`docs/screenshots/`](docs/screenshots); regenerate them with `scripts/Capture-Screenshots.ps1`.
+
 ---
 
 ## Key Features
