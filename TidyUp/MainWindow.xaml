@@ -87,17 +87,6 @@
                             <TextBlock Text="New Rule" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button Style="{StaticResource MaterialDesignFlatButton}"
-                            Command="{Binding ViewHelpCommand}"
-                            ToolTip="Help &amp; Guide (F1)"
-                            AutomationProperties.Name="Help and Guide"
-                            Height="32"
-                            HorizontalContentAlignment="Left">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="HelpCircleOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock Text="Help &amp; Guide" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
                 </StackPanel>
 
                 <!-- 6 Core Navigation Destinations -->
@@ -193,17 +182,39 @@
                             </StackPanel>
                         </Button>
 
-                        <Separator Margin="0,8" Background="{DynamicResource MaterialDesignDivider}"/>
+                        <Separator Margin="0,10,0,4" Background="{DynamicResource MaterialDesignDivider}"/>
 
-                        <!-- Auxiliary: Logs -->
+                        <!-- Auxiliary destinations: still real pages, just not part of the six-step workflow -->
+                        <TextBlock Text="MORE"
+                                   FontSize="10"
+                                   FontWeight="Bold"
+                                   Opacity="0.6"
+                                   Margin="12,0,0,4"
+                                   AutomationProperties.HeadingLevel="Level2"/>
+
+                        <!-- Logs -->
                         <Button Command="{Binding ViewLogsCommand}"
                                 ToolTip="System Logs"
                                 AutomationProperties.Name="System Logs"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Height="36" Margin="0,2" HorizontalContentAlignment="Left">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="FileDocumentOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                                <TextBlock Text="Logs" VerticalAlignment="Center" Opacity="0.85"/>
+                                <TextBlock Text="Logs" VerticalAlignment="Center" FontWeight="Medium"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Help & Guide -->
+                        <Button Command="{Binding ViewHelpCommand}"
+                                ToolTip="Help &amp; Guide (F1)"
+                                AutomationProperties.Name="Help and Guide"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisual}"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Height="36" Margin="0,2" HorizontalContentAlignment="Left">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="HelpCircleOutline" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                                <TextBlock Text="Help &amp; Guide" VerticalAlignment="Center" FontWeight="Medium"/>
                             </StackPanel>
                         </Button>
                     </StackPanel>

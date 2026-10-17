@@ -14,7 +14,7 @@
 
 ## Key Features
 
-- 🖥️ **Modern Windows 11 User Experience:** Persistent left navigation rail across 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) with accessible focus and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`).
+- 🖥️ **Modern Windows 11 User Experience:** Persistent left navigation rail across 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) plus a "More" group for Logs and Help, with accessible focus and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`).
 - 🪄 **4-Stage Guided Rule Wizard:** Seamless step-by-step rule creation (Folders, Conditions, Actions, Review) with lossless synchronization to advanced tabbed editing.
 - 📁 **Dedicated Folders Management Hub:** Centralized monitored folders workspace with real-time directory permission auditing (`Read/Write`, `Read Only`, `Access Denied`), system-protected path detection, and exclusion patterns (`.git`, `node_modules`).
 - 👁️ **Full-Page Preview & Review Workspace:** First-class dry-run simulation workspace with operation breakdown counters, virtualized DataGrid, side-by-side impact review, and cooperative in-flight batch cancellation.
