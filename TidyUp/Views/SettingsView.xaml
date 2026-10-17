@@ -81,12 +81,13 @@
         </materialDesign:Card>
 
         <!-- 2: Categorized Settings Content Panels -->
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
-            <StackPanel MaxWidth="850" HorizontalAlignment="Left">
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <!-- Cards have a fixed width so they reflow: 1 column when narrow, 2-3 across when wide. -->
+            <WrapPanel Orientation="Horizontal">
 
                 <!-- SECTION 1: GENERAL -->
-                <StackPanel Visibility="{Binding IsGeneralActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                <WrapPanel Visibility="{Binding IsGeneralActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Appearance &amp; Theme" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Customize the application visual palette between modern Windows light and dark surfaces." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -99,7 +100,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Setup Wizard" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Revisit the welcome tour to choose tray and notification defaults and optionally add a sample rule." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -111,7 +112,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Application Lifecycle &amp; System Tray" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Control how TidyUp behaves during window minimization and background execution." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -133,7 +134,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Windows Toast Notifications" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Deliver real-time alerts when operations succeed or require intervention." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -151,11 +152,11 @@
                                       Margin="0,0,0,4"/>
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- SECTION 2: SAFETY & SAFEGUARDS -->
-                <StackPanel Visibility="{Binding IsSafetyActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                <WrapPanel Visibility="{Binding IsSafetyActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Default Conflict Resolution Policy" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Determines what happens when a moved or copied file shares the same name as an existing destination file." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -175,7 +176,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Recycle Bin Deletion Safeguard" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Protect against accidental permanent data loss by routing deleted files through the Windows Recycle Bin." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -191,11 +192,11 @@
                             <TextBlock Text="Displays the Safeguard Risk Modal when deleting files or moving more than 50 files in a single batch." FontSize="10" Opacity="0.6" Margin="28,2,0,0"/>
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- SECTION 3: PERFORMANCE & ENGINE -->
-                <StackPanel Visibility="{Binding IsPerformanceActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                <WrapPanel Visibility="{Binding IsPerformanceActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Throughput &amp; Worker Concurrency" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Tune execution pipeline thread pool limits and file scanning batch sizes." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -210,7 +211,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Watcher Throttling &amp; File Lock Handlers" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Stabilize file detection during downloads, stream writes, or network share latency." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -232,11 +233,11 @@
                             <TextBlock Text="Time between lock polling attempts. Default: 1000ms." FontSize="10" Opacity="0.6" Margin="0,0,0,0"/>
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- SECTION 4: STORAGE & LOGS -->
-                <StackPanel Visibility="{Binding IsStorageLogsActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                <WrapPanel Visibility="{Binding IsStorageLogsActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Journal &amp; Log Retention" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Prune historical execution journals and diagnostic logs to conserve disk capacity." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -251,7 +252,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Database Backup &amp; Recovery" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Manage SQLite database snapshots to protect rules, journals, and configuration." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -265,11 +266,11 @@
                                     HorizontalAlignment="Left" Height="30" Padding="12,0"/>
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </WrapPanel>
 
                 <!-- SECTION 5: ADVANCED & MAINTENANCE -->
-                <StackPanel Visibility="{Binding IsAdvancedActive, Converter={StaticResource BooleanToVisibilityConverter}}">
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                <WrapPanel Visibility="{Binding IsAdvancedActive, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Diagnostic Telemetry" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Enable verbose logging for troubleshooting rule evaluation and monitor events." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -281,7 +282,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="SQLite Database Optimization (VACUUM)" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Defragments database file storage, reclaims deleted record pages, and reorganizes database indices." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -293,7 +294,7 @@
                         </StackPanel>
                     </materialDesign:Card>
 
-                    <materialDesign:Card Margin="0,0,0,12" Padding="16" UniformCornerRadius="6">
+                    <materialDesign:Card Width="520" Margin="0,0,16,16" Padding="16" UniformCornerRadius="6">
                         <StackPanel>
                             <TextBlock Text="Configuration Reset" FontWeight="Bold" FontSize="14" Margin="0,0,0,4"/>
                             <TextBlock Text="Revert all application settings back to original factory defaults. Existing rules and folders are not modified." FontSize="11" Opacity="0.7" Margin="0,0,0,12"/>
@@ -306,9 +307,9 @@
                                     HorizontalAlignment="Left" Height="30" Padding="12,0"/>
                         </StackPanel>
                     </materialDesign:Card>
-                </StackPanel>
+                </WrapPanel>
 
-            </StackPanel>
+            </WrapPanel>
         </ScrollViewer>
     </Grid>
 </UserControl>
