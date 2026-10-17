@@ -188,11 +188,18 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
 
-                        <!-- Scope (Recursive / Top Level) -->
-                        <DataGridTextColumn Header="Scope" Binding="{Binding RecursiveDisplay}" Width="100"/>
+                        <!-- Scope (Includes subfolders / Top-level only) -->
+                        <DataGridTextColumn Header="Scope" Binding="{Binding RecursiveDisplay}" Width="Auto" MinWidth="140"/>
 
-                        <!-- Exclusion Patterns -->
-                        <DataGridTextColumn Header="Exclusions" Binding="{Binding ExclusionPatternsText}" Width="160"/>
+                        <!-- Exclusion Patterns (em dash when none; full list in the tooltip) -->
+                        <DataGridTextColumn Header="Exclusions" Binding="{Binding ExclusionsDisplay}" Width="160">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                    <Setter Property="ToolTip" Value="{Binding ExclusionsDisplay}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <!-- Linked Rules -->
                         <DataGridTemplateColumn Header="Linked Rules" Width="180">
@@ -215,7 +222,9 @@
                                         <Button Style="{StaticResource MaterialDesignIconButton}"
                                                 Command="{Binding DataContext.ScanFolderNowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                ToolTip="Scan folder for active files"
+                                                ToolTip="{Binding ScanTooltip}"
+                                                AutomationProperties.Name="Scan folder now"
+                                                IsEnabled="{Binding CanScan}"
                                                 Width="28" Height="28">
                                             <materialDesign:PackIcon Kind="Magnify" Width="16" Height="16"/>
                                         </Button>
@@ -225,6 +234,7 @@
                                                 Command="{Binding DataContext.OpenInExplorerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
                                                 ToolTip="Open directory in Windows Explorer"
+                                                AutomationProperties.Name="Open folder in Explorer"
                                                 Width="28" Height="28">
                                             <materialDesign:PackIcon Kind="FolderOpen" Width="16" Height="16"/>
                                         </Button>
@@ -233,7 +243,8 @@
                                         <Button Style="{StaticResource MaterialDesignIconButton}"
                                                 Command="{Binding DataContext.TogglePauseWatcherCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                 CommandParameter="{Binding}"
-                                                ToolTip="Toggle active watcher"
+                                                ToolTip="Pause or resume monitoring of this folder"
+                                                AutomationProperties.Name="Pause or resume monitoring"
                                                 Width="28" Height="28">
                                             <materialDesign:PackIcon Kind="PauseCircleOutline" Width="16" Height="16"/>
                                         </Button>

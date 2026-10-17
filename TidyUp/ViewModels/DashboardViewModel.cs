@@ -30,8 +30,20 @@ public class MonitoredFolderItem : ObservableObject
     public bool IsScanning
     {
         get => _isScanning;
-        set => SetProperty(ref _isScanning, value);
+        set
+        {
+            if (SetProperty(ref _isScanning, value))
+            {
+                OnPropertyChanged(nameof(CanScan));
+                OnPropertyChanged(nameof(ScanTooltip));
+            }
+        }
     }
+
+    /// <summary>False while a scan runs and for any folder that cannot be read (missing, denied, protected, errored).</summary>
+    public bool CanScan => !IsScanning && FolderStatusPresentation.CanScan(Status);
+
+    public string ScanTooltip => IsScanning ? "Scan in progress" : FolderStatusPresentation.ScanTooltip(Status);
 
     private WatcherHealthStatus _healthStatus = WatcherHealthStatus.Healthy;
     public WatcherHealthStatus HealthStatus
@@ -78,6 +90,8 @@ public class MonitoredFolderItem : ObservableObject
     private void NotifyStatusChanged()
     {
         OnPropertyChanged(nameof(Status));
+        OnPropertyChanged(nameof(CanScan));
+        OnPropertyChanged(nameof(ScanTooltip));
         OnPropertyChanged(nameof(HealthStatusText));
         OnPropertyChanged(nameof(HealthTooltip));
     }
@@ -465,7 +479,7 @@ public partial class DashboardViewModel : ObservableObject
     [RelayCommand]
     public async Task ScanFolderAsync(MonitoredFolderItem? folder)
     {
-        if (folder is null || !folder.Exists)
+        if (folder is null || !folder.Exists || !folder.CanScan)
             return;
 
         folder.IsScanning = true;

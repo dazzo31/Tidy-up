@@ -188,7 +188,9 @@
                                                         Padding="8,4" Height="32"
                                                         Command="{Binding DataContext.ScanFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                         CommandParameter="{Binding}"
-                                                        IsEnabled="{Binding IsScanning, Converter={StaticResource InverseBooleanConverter}, FallbackValue=True}">
+                                                        IsEnabled="{Binding CanScan}"
+                                                        ToolTip="{Binding ScanTooltip}"
+                                                        AutomationProperties.Name="Scan folder">
                                                     <StackPanel Orientation="Horizontal">
                                                         <materialDesign:PackIcon Kind="Magnify" VerticalAlignment="Center" Margin="0,0,4,0"/>
                                                         <TextBlock Text="Scan" VerticalAlignment="Center"/>

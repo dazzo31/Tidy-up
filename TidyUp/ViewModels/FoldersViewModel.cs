@@ -39,9 +39,11 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
     private bool _isSystemProtected;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RecursiveDisplay))]
     private bool _includeSubfolders = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ExclusionsDisplay))]
     private string _exclusionPatternsText = string.Empty;
 
     [ObservableProperty]
@@ -62,7 +64,10 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
     [ObservableProperty]
     private bool _isPaused;
 
-    public string RecursiveDisplay => IncludeSubfolders ? "Recursive" : "Top-level only";
+    public string RecursiveDisplay => IncludeSubfolders ? "Includes subfolders" : "Top-level only";
+
+    /// <summary>Exclusions for display: an em dash when there are none, so the cell never looks broken.</summary>
+    public string ExclusionsDisplay => string.IsNullOrWhiteSpace(ExclusionPatternsText) ? "—" : ExclusionPatternsText;
 
     public bool IsTransientLocation => TransientLocations.IsTransient(Path);
 
@@ -70,7 +75,13 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
 
     /// <summary>The same status the Dashboard shows for this folder.</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanScan))]
+    [NotifyPropertyChangedFor(nameof(ScanTooltip))]
     private FolderStatus _status = FolderStatus.Healthy;
+
+    public bool CanScan => FolderStatusPresentation.CanScan(Status);
+
+    public string ScanTooltip => FolderStatusPresentation.ScanTooltip(Status);
 
     /// <summary>Recomputes <see cref="Status"/> from the inspected flags (used when there is no catalog state).</summary>
     public void RefreshStatus()
@@ -556,6 +567,12 @@ public partial class FoldersViewModel : ObservableObject
         if (!Directory.Exists(folder.Path))
         {
             StatusMessage = $"Cannot scan: folder does not exist ({folder.Path})";
+            return;
+        }
+
+        if (!folder.CanScan)
+        {
+            StatusMessage = $"Cannot scan '{folder.Path}': {FolderStatusPresentation.Text(folder.Status).ToLowerInvariant()}.";
             return;
         }
 

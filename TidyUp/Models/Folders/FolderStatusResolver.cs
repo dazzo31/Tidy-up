@@ -80,6 +80,18 @@ public static class FolderStatusPresentation
         _ => PackIconKind.CloseCircleOutline
     };
 
+    /// <summary>
+    /// A manual scan makes sense when the folder can be read. A degraded watcher is included on purpose: a scan is the
+    /// way to catch up on events it missed. Missing, denied, protected and errored folders cannot be scanned.
+    /// </summary>
+    public static bool CanScan(FolderStatus status) =>
+        status is FolderStatus.Healthy or FolderStatus.Paused or FolderStatus.Degraded;
+
+    /// <summary>Tooltip for a Scan button, explaining why it is disabled when it is.</summary>
+    public static string ScanTooltip(FolderStatus status) => CanScan(status)
+        ? "Scan this folder now"
+        : $"Can't scan: folder is {Text(status).ToLowerInvariant()}. {Description(status)}";
+
     /// <summary>Token for the pill's tinted background.</summary>
     public static string BackgroundToken(FolderStatus status) => status switch
     {
