@@ -153,6 +153,18 @@
                     Visibility="{Binding HistoryEntries.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=Zero}"
                     Margin="32"/>
 
+                <!-- Error State: the journal itself could not be read -->
+                <controls:EmptyStateControl
+                    Variant="Error"
+                    IconKind="DatabaseAlertOutline"
+                    Title="{Binding LoadErrorMessage}"
+                    Description="The operation journal could not be opened. If this persists, restore from a database backup in Settings, then reload."
+                    Details="{Binding LoadErrorDetails}"
+                    SecondaryActionText="Copy details"
+                    SecondaryActionCommand="{Binding CopyErrorDetailsCommand}"
+                    Visibility="{Binding HasLoadError, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Margin="32"/>
+
                 <!-- Virtualized Items List for fast rendering -->
                 <ListView ItemsSource="{Binding HistoryEntries}"
                           SelectedItem="{Binding SelectedEntry}"

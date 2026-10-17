@@ -241,6 +241,7 @@ public partial class PreviewViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyChanges))]
+    [NotifyPropertyChangedFor(nameof(ApplyButtonText))]
     private int _approvedCount;
 
     [ObservableProperty]
@@ -290,6 +291,16 @@ public partial class PreviewViewModel : ObservableObject
         ExecutionPlan != null &&
         AllItems.Any(i => i.IsApproved) &&
         !AllItems.Any(i => i.IsApproved && i.HasConflict);
+
+    /// <summary>
+    /// Caption for the apply button. A bare "Apply 0" reads like a broken button, so the empty case is spelled out.
+    /// </summary>
+    public string ApplyButtonText => ApprovedCount switch
+    {
+        0 => "Apply approved changes (none selected)",
+        1 => "Apply 1 approved change",
+        _ => $"Apply {ApprovedCount} approved changes"
+    };
 
     public bool EnablePreFlightValidation { get; set; }
 

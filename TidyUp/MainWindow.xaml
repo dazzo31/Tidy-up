@@ -389,6 +389,36 @@
                                                            FontWeight="SemiBold"
                                                            FontSize="13"
                                                            TextTrimming="CharacterEllipsis"/>
+
+                                                <!-- Enabled/Disabled pill, matching the Folders hub vocabulary -->
+                                                <Border DockPanel.Dock="Left" Margin="6,0,0,0" CornerRadius="10" Padding="7,0" Height="18"
+                                                        VerticalAlignment="Center"
+                                                        ToolTip="A disabled rule never runs until you enable it">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                                    <Setter Property="Background" Value="{DynamicResource Win11NeutralBackgroundBrush}"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <TextBlock FontSize="9" FontWeight="Bold" VerticalAlignment="Center">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Text" Value="Enabled"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource Win11SuccessBrush}"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding IsEnabled}" Value="False">
+                                                                        <Setter Property="Text" Value="Disabled"/>
+                                                                        <Setter Property="Foreground" Value="{DynamicResource Win11TextSecondaryBrush}"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+                                                </Border>
                                                 
                                                 <!-- Unsaved dirty badge -->
                                                 <Border DockPanel.Dock="Left"
@@ -407,11 +437,12 @@
                                                                          ToolTip="{Binding ErrorMessage}"/>
                                             </DockPanel>
 
-                                            <!-- Natural language rule summary -->
-                                            <TextBlock Text="{Binding Summary}" 
+                                            <!-- Folders + condition summary -->
+                                            <TextBlock Text="{Binding ListSubtitle}" 
                                                        Opacity="0.75"
                                                        FontSize="11"
-                                                       TextTrimming="CharacterEllipsis"
+                                                       TextTrimming="WordEllipsis"
+                                                       MaxHeight="30"
                                                        Margin="0,2,0,0"
                                                        ToolTip="{Binding Summary}"/>
                                         </StackPanel>
@@ -422,7 +453,7 @@
                                                Padding="6,2"
                                                Margin="6,0,0,0"
                                                VerticalAlignment="Center"
-                                               ToolTip="Execution Priority Order">
+                                               ToolTip="{Binding ExecutionOrderTooltip}">
                                             <TextBlock Text="{Binding ExecutionOrder}" 
                                                       FontSize="10"
                                                       FontWeight="Bold"/>
@@ -527,14 +558,15 @@
                     <!-- Rule Editor Content Area -->
                     <Grid>
                         <!-- No rule selected message -->
-                        <TextBlock Text="Select a rule from the list, or press Ctrl+N to create a new one."
-                                  Opacity="0.6"
-                                  FontSize="14"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  Margin="0,48,0,0">
-                            <TextBlock.Style>
-                                <Style TargetType="TextBlock">
+                        <controls:EmptyStateControl
+                            IconKind="FilterOutline"
+                            Title="No rule selected"
+                            Description="Pick a rule from the list to edit it here, or create a new one to start automating a folder."
+                            ActionText="New Rule (Ctrl+N)"
+                            ActionCommand="{Binding CreateNewRuleCommand}"
+                            Margin="0,24,0,0">
+                            <controls:EmptyStateControl.Style>
+                                <Style TargetType="controls:EmptyStateControl">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
@@ -542,8 +574,8 @@
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </TextBlock.Style>
-                        </TextBlock>
+                            </controls:EmptyStateControl.Style>
+                        </controls:EmptyStateControl>
 
                         <!-- Content when rule is selected -->
                         <Grid>

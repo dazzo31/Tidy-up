@@ -302,7 +302,7 @@
                             Height="36" Margin="0,0,8,0"
                             Visibility="{Binding IsExecuting, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
-                    <Button Content="{Binding ApprovedCount, StringFormat='Apply {0} Approved Change(s)'}"
+                    <Button Content="{Binding ApplyButtonText}"
                             Command="{Binding ApplyChangesCommand}"
                             Style="{StaticResource MaterialDesignRaisedButton}"
                             Height="36" Padding="16,0"

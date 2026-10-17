@@ -206,6 +206,17 @@ public partial class HistoryViewModel : ObservableObject
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalRecords / PageSize) : 0;
     public bool HasPreviousPage => CurrentPage > 1;
     public bool HasNextPage => CurrentPage < TotalPages;
+
+    /// <summary>Set when the journal could not be read; the view shows an error card instead of an empty list.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasLoadError))]
+    private string? _loadErrorMessage;
+
+    /// <summary>Raw exception text, shown only in the collapsible details panel.</summary>
+    [ObservableProperty]
+    private string? _loadErrorDetails;
+
+    public bool HasLoadError => !string.IsNullOrWhiteSpace(LoadErrorMessage);
     public string PageSummary => TotalRecords == 0
         ? "No entries"
         : $"Page {CurrentPage} of {Math.Max(1, TotalPages)} ({TotalRecords} total entries)";
@@ -298,6 +309,26 @@ public partial class HistoryViewModel : ObservableObject
         }
 
         return (_directContext!, false);
+    }
+
+    /// <summary>Copies the full failure text so a user can paste it into a bug report.</summary>
+    [RelayCommand]
+    public void CopyErrorDetails()
+    {
+        var text = string.IsNullOrWhiteSpace(LoadErrorDetails)
+            ? (LoadErrorMessage ?? StatusMessage)
+            : LoadErrorDetails!;
+
+        try
+        {
+            System.Windows.Clipboard.SetText(text);
+            StatusMessage = "Error details copied to the clipboard.";
+        }
+        catch (Exception ex)
+        {
+            // The clipboard can be locked by another process; not worth failing over.
+            StatusMessage = $"Could not copy details: {ex.Message}";
+        }
     }
 
     /// <summary>
@@ -398,6 +429,8 @@ public partial class HistoryViewModel : ObservableObject
             }
 
             StatusMessage = $"Showing {HistoryEntries.Count} of {TotalRecords} records.";
+            LoadErrorMessage = null;
+            LoadErrorDetails = null;
             OnPropertyChanged(nameof(TotalPages));
             OnPropertyChanged(nameof(HasPreviousPage));
             OnPropertyChanged(nameof(HasNextPage));
@@ -405,6 +438,8 @@ public partial class HistoryViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            LoadErrorMessage = "History could not be read from the database.";
+            LoadErrorDetails = ex.ToString();
             StatusMessage = $"Error loading history: {ex.Message}";
         }
         finally

@@ -9,12 +9,12 @@
     <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="480">
             <!-- Icon Badge -->
-            <Border Width="64" Height="64" CornerRadius="32"
+            <Border x:Name="IconBadge" Width="64" Height="64" CornerRadius="32"
                     Background="{DynamicResource MaterialDesignToolBarBackground}"
                     HorizontalAlignment="Center" Margin="0,0,0,16">
-                <materialDesign:PackIcon Kind="{Binding IconKind, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                <materialDesign:PackIcon x:Name="IconGlyph"
+                                        Kind="{Binding IconKind, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                         Width="32" Height="32"
-                                        Foreground="{DynamicResource PrimaryHueMidBrush}"
                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
 
@@ -32,6 +32,17 @@
                        LineHeight="18"
                        Foreground="{DynamicResource MaterialDesignBody}"/>
 
+            <!-- Optional technical details (error variant) -->
+            <Border x:Name="DetailsPanel" Visibility="Collapsed"
+                    Background="{DynamicResource MaterialDesignToolBarBackground}"
+                    CornerRadius="4" Padding="10,8" Margin="0,0,0,16"
+                    HorizontalAlignment="Stretch">
+                <TextBlock x:Name="DetailsText" FontSize="11" TextWrapping="Wrap"
+                           FontFamily="Consolas, Cascadia Code, monospace"
+                           Foreground="{DynamicResource MaterialDesignBody}"
+                           Opacity="0.85" MaxHeight="120"/>
+            </Border>
+
             <!-- Optional Action Button -->
             <Button Content="{Binding ActionText, RelativeSource={RelativeSource AncestorType=UserControl}}"
                     Command="{Binding ActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -40,6 +51,16 @@
                     Style="{DynamicResource AccessibleButton}"
                     HorizontalAlignment="Center"
                     Padding="16,6"/>
+
+            <!-- Optional secondary action (error variant: copy details) -->
+            <Button x:Name="SecondaryButton" Visibility="Collapsed"
+                    Content="{Binding SecondaryActionText, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Command="{Binding SecondaryActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                    Style="{StaticResource MaterialDesignFlatButton}"
+                    HorizontalAlignment="Center"
+                    Margin="0,6,0,0"
+                    Padding="12,4"
+                    FontSize="12"/>
         </StackPanel>
     </Grid>
 </UserControl>

@@ -104,6 +104,22 @@ public partial class Rule : ObservableObject
     [ObservableProperty]
     private string _summary = string.Empty;
 
+    /// <summary>"{n} folder(s) \u00b7 {summary}" \u2014 what the rule list shows under the name.</summary>
+    public string ListSubtitle
+    {
+        get
+        {
+            var folderCount = MonitoredFolders?.Count ?? 0;
+            var folders = folderCount == 1 ? "1 folder" : $"{folderCount} folders";
+            return string.IsNullOrWhiteSpace(Summary) ? folders : $"{folders} \u00b7 {Summary}";
+        }
+    }
+
+    /// <summary>Explains the priority badge, including the last-run file count when there is one.</summary>
+    public string ExecutionOrderTooltip => LastRunDate is { } lastRun
+        ? $"Execution priority {ExecutionOrder} (lower runs first). Last run {lastRun.ToLocalTime():g} processed {FilesProcessedCount} file(s)."
+        : $"Execution priority {ExecutionOrder} (lower runs first). No files matched on the last run.";
+
     /// <summary>
     /// Whether this rule has unsaved changes.
     /// </summary>

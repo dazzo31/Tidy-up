@@ -1176,6 +1176,12 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
+        // These only change how the rule is described (e.g. the list subtitle), not the rule itself.
+        if (e.PropertyName is nameof(Rule.FilesProcessedCount) or nameof(Rule.LastRunDate))
+        {
+            return;
+        }
+
         IsRuleDirty = true;
         if (SelectedRule != null)
         {
