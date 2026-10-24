@@ -125,15 +125,26 @@
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="File Name" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox Grid.Column="0"
+                                  SelectedValue="FileName"
+                                  SelectedValuePath="Tag"
+                                  SelectionChanged="ConditionType_SelectionChanged"
+                                  VerticalAlignment="Center"
+                                  AutomationProperties.Name="Condition target type"
+                                  Margin="0,0,8,0">
+                            <ComboBoxItem Content="File Name" Tag="FileName"/>
+                            <ComboBoxItem Content="Extension" Tag="Extension"/>
+                            <ComboBoxItem Content="File Size" Tag="Size"/>
+                            <ComboBoxItem Content="File Date" Tag="Date"/>
+                        </ComboBox>
                         <ComboBox Grid.Column="1" 
                                   SelectedItem="{Binding Operator}"
-                                  ItemsSource="{Binding Source={x:Type enums:StringOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                  ItemsSource="{Binding Source={x:Static local:FileNameCondition.AvailableOperators}}"
                                   AutomationProperties.Name="File name operator"
                                   Margin="0,0,8,0"/>
                         <TextBox Grid.Column="2" 
@@ -179,15 +190,26 @@
                     CornerRadius="4">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="130"/>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="Extension" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <ComboBox Grid.Column="0"
+                              SelectedValue="Extension"
+                              SelectedValuePath="Tag"
+                              SelectionChanged="ConditionType_SelectionChanged"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Condition target type"
+                              Margin="0,0,8,0">
+                        <ComboBoxItem Content="File Name" Tag="FileName"/>
+                        <ComboBoxItem Content="Extension" Tag="Extension"/>
+                        <ComboBoxItem Content="File Size" Tag="Size"/>
+                        <ComboBoxItem Content="File Date" Tag="Date"/>
+                    </ComboBox>
                     <ComboBox Grid.Column="1" 
                               SelectedItem="{Binding Operator}"
-                              ItemsSource="{Binding Source={x:Type enums:StringOperator}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                              ItemsSource="{Binding Source={x:Static local:FileExtensionCondition.AvailableOperators}}"
                               AutomationProperties.Name="Extension operator"
                               Margin="0,0,8,0"/>
                     <TextBox Grid.Column="2" 
@@ -217,16 +239,27 @@
                     CornerRadius="4">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="130"/>
                         <ColumnDefinition Width="150"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="100"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="File Size" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                    <ComboBox Grid.Column="0"
+                              SelectedValue="Size"
+                              SelectedValuePath="Tag"
+                              SelectionChanged="ConditionType_SelectionChanged"
+                              VerticalAlignment="Center"
+                              AutomationProperties.Name="Condition target type"
+                              Margin="0,0,8,0">
+                        <ComboBoxItem Content="File Name" Tag="FileName"/>
+                        <ComboBoxItem Content="Extension" Tag="Extension"/>
+                        <ComboBoxItem Content="File Size" Tag="Size"/>
+                        <ComboBoxItem Content="File Date" Tag="Date"/>
+                    </ComboBox>
                     <ComboBox Grid.Column="1" 
                               SelectedItem="{Binding Operator}"
-                              ItemsSource="{Binding Source={x:Type local:FileSizeCondition}, Path=SizeOperator, Converter={StaticResource EnumToItemsSourceConverter}}"
+                              ItemsSource="{Binding Source={x:Static local:FileSizeCondition.AvailableOperators}}"
                               AutomationProperties.Name="Size operator"
                               Margin="0,0,8,0"/>
                     <TextBox Grid.Column="2" 
@@ -266,21 +299,32 @@
                     </Grid.RowDefinitions>
                     <Grid Grid.Row="0">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="120"/>
+                            <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="150"/>
                             <ColumnDefinition Width="160"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBlock Grid.Column="0" Text="File Date" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                        <ComboBox Grid.Column="0"
+                                  SelectedValue="Date"
+                                  SelectedValuePath="Tag"
+                                  SelectionChanged="ConditionType_SelectionChanged"
+                                  VerticalAlignment="Center"
+                                  AutomationProperties.Name="Condition target type"
+                                  Margin="0,0,8,0">
+                            <ComboBoxItem Content="File Name" Tag="FileName"/>
+                            <ComboBoxItem Content="Extension" Tag="Extension"/>
+                            <ComboBoxItem Content="File Size" Tag="Size"/>
+                            <ComboBoxItem Content="File Date" Tag="Date"/>
+                        </ComboBox>
                         <ComboBox Grid.Column="1" 
                                   SelectedItem="{Binding Type}"
-                                  ItemsSource="{Binding Source={x:Type local:FileDateCondition}, Path=DateType, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                  ItemsSource="{Binding Source={x:Static local:FileDateCondition.AvailableDateTypes}}"
                                   AutomationProperties.Name="Date type"
                                   Margin="0,0,8,0"/>
                         <ComboBox Grid.Column="2" 
                                   SelectedItem="{Binding Operator}"
-                                  ItemsSource="{Binding Source={x:Type local:FileDateCondition}, Path=DateOperator, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                  ItemsSource="{Binding Source={x:Static local:FileDateCondition.AvailableOperators}}"
                                   AutomationProperties.Name="Date operator"
                                   Margin="0,0,8,0"/>
                         <Button Grid.Column="4"
@@ -293,7 +337,7 @@
                         </Button>
                     </Grid>
                     <!-- Context-sensitive Date / Days Editor -->
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="120,8,0,0">
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="130,8,0,0">
                         <!-- Specific Date Picker -->
                         <DatePicker SelectedDate="{Binding Value}"
                                     materialDesign:HintAssist.Hint="Date"

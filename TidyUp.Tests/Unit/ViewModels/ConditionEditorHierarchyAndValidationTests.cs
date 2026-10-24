@@ -212,5 +212,73 @@ public class ConditionEditorHierarchyAndValidationTests
         promptWasCalled.Should().BeFalse(); // No prompt for empty group
         _viewModel.RootCondition.Conditions.Should().BeEmpty();
     }
-}
 
+    [Fact]
+    public void ConditionEditor_ChangeConditionType_ReplacesInPlaceAndPreservesValue()
+    {
+        _viewModel.RootCondition = new ConditionGroup { Operator = LogicOperator.And };
+        var c1 = new FileNameCondition { Value = "first" };
+        var c2 = new FileNameCondition { Value = "pdf" };
+        var c3 = new FileNameCondition { Value = "third" };
+        _viewModel.RootCondition.Conditions.Add(c1);
+        _viewModel.RootCondition.Conditions.Add(c2);
+        _viewModel.RootCondition.Conditions.Add(c3);
+
+        _viewModel.ChangeConditionType(c2, "Extension");
+
+        _viewModel.RootCondition.Conditions.Count.Should().Be(3);
+        _viewModel.RootCondition.Conditions[0].Should().BeSameAs(c1);
+        _viewModel.RootCondition.Conditions[2].Should().BeSameAs(c3);
+
+        var replaced = _viewModel.RootCondition.Conditions[1] as FileExtensionCondition;
+        replaced.Should().NotBeNull();
+        replaced!.Value.Should().Be("pdf");
+        replaced.Operator.Should().Be(StringOperator.Is);
+    }
+
+    [Fact]
+    public void ConditionEditor_ChangeConditionType_InsideNestedGroup_ReplacesCorrectly()
+    {
+        _viewModel.RootCondition = new ConditionGroup { Operator = LogicOperator.And };
+        var nested = new ConditionGroup { Operator = LogicOperator.Or };
+        var fn = new FileNameCondition { Value = "temp" };
+        nested.Conditions.Add(fn);
+        _viewModel.RootCondition.Conditions.Add(nested);
+
+        _viewModel.ChangeConditionType(fn, "Size");
+
+        nested.Conditions.Count.Should().Be(1);
+        var sizeCondition = nested.Conditions[0] as FileSizeCondition;
+        sizeCondition.Should().NotBeNull();
+        sizeCondition!.Operator.Should().Be(FileSizeCondition.SizeOperator.GreaterThan);
+        sizeCondition.Value.Should().Be(0);
+    }
+
+    [Fact]
+    public void ConditionEditor_ChangeConditionType_ToDateCondition_SetsDefaultDateProperties()
+    {
+        _viewModel.RootCondition = new ConditionGroup { Operator = LogicOperator.And };
+        var fn = new FileNameCondition { Value = "old" };
+        _viewModel.RootCondition.Conditions.Add(fn);
+
+        _viewModel.ChangeConditionType(fn, "Date");
+
+        var dateCondition = _viewModel.RootCondition.Conditions[0] as FileDateCondition;
+        dateCondition.Should().NotBeNull();
+        dateCondition!.Type.Should().Be(FileDateCondition.DateType.Modified);
+        dateCondition.Operator.Should().Be(FileDateCondition.DateOperator.After);
+        dateCondition.Value.Date.Should().Be(DateTime.Today);
+    }
+
+    [Fact]
+    public void ConditionEditor_ChangeConditionType_SameType_DoesNotReplace()
+    {
+        _viewModel.RootCondition = new ConditionGroup { Operator = LogicOperator.And };
+        var fn = new FileNameCondition { Value = "report" };
+        _viewModel.RootCondition.Conditions.Add(fn);
+
+        _viewModel.ChangeConditionType(fn, "FileName");
+
+        _viewModel.RootCondition.Conditions[0].Should().BeSameAs(fn);
+    }
+}

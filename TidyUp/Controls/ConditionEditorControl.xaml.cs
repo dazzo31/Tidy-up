@@ -22,12 +22,21 @@ public partial class ConditionEditorControl : UserControl
 
     private void ConditionType_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (e.RemovedItems.Count == 0) return;
+
         if (sender is ComboBox comboBox && comboBox.SelectedItem is ComboBoxItem item)
         {
             var conditionType = item.Tag?.ToString();
             if (!string.IsNullOrEmpty(conditionType) && DataContext is ConditionEditorViewModel vm)
             {
-                vm.ChangeConditionTypeCommand.Execute(conditionType);
+                if (comboBox.DataContext is Models.Domain.Condition targetCondition)
+                {
+                    vm.ChangeConditionType(targetCondition, conditionType);
+                }
+                else
+                {
+                    vm.ChangeConditionTypeCommand.Execute(conditionType);
+                }
             }
         }
     }

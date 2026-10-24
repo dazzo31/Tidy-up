@@ -67,6 +67,7 @@ public partial class ConditionGroup : Condition
 /// </summary>
 public partial class FileNameCondition : Condition
 {
+    public static IReadOnlyList<StringOperator> AvailableOperators { get; } = Enum.GetValues<StringOperator>();
     [ObservableProperty]
     private StringOperator _operator = StringOperator.Is;
     
@@ -165,6 +166,15 @@ public partial class FileNameCondition : Condition
 /// </summary>
 public partial class FileExtensionCondition : Condition
 {
+    public static IReadOnlyList<StringOperator> AvailableOperators { get; } = new[]
+    {
+        StringOperator.Is,
+        StringOperator.IsNot,
+        StringOperator.Contains,
+        StringOperator.DoesNotContain,
+        StringOperator.StartsWith,
+        StringOperator.EndsWith
+    };
     [ObservableProperty]
     private StringOperator _operator = StringOperator.Is;
     
@@ -217,6 +227,7 @@ public partial class FileSizeCondition : Condition
     [JsonIgnore]
     private double _displaySize;
 
+    public static IReadOnlyList<SizeOperator> AvailableOperators { get; } = Enum.GetValues<SizeOperator>();
     public static IReadOnlyList<string> AvailableUnits { get; } = new[] { "Bytes", "KB", "MB", "GB" };
 
     private bool _isSyncing;
@@ -329,6 +340,9 @@ public partial class FileDateCondition : Condition
         Between,
         OlderThanDays
     }
+
+    public static IReadOnlyList<DateType> AvailableDateTypes { get; } = Enum.GetValues<DateType>();
+    public static IReadOnlyList<DateOperator> AvailableOperators { get; } = Enum.GetValues<DateOperator>();
 
     [ObservableProperty]
     private DateType _type = DateType.Modified;

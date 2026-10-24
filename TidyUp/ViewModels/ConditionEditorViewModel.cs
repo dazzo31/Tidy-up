@@ -133,16 +133,32 @@ public partial class ConditionEditorViewModel : ObservableObject
     /// <summary>
     /// Changes the condition type (FileName, Extension, Size, Date).
     /// </summary>
-    [RelayCommand]
-    private void ChangeConditionType(string conditionType)
+    /// <summary>
+    /// Changes the condition type for a specific condition.
+    /// </summary>
+    public void ChangeConditionType(Condition targetCondition, string conditionType)
     {
-        if (SelectedItem is not Condition selectedCondition) return;
-        if (RootCondition == null) return;
+        if (targetCondition == null || RootCondition == null) return;
+
+        if (targetCondition is FileNameCondition && conditionType == "FileName") return;
+        if (targetCondition is FileExtensionCondition && conditionType == "Extension") return;
+        if (targetCondition is FileSizeCondition && conditionType == "Size") return;
+        if (targetCondition is FileDateCondition && conditionType == "Date") return;
+
+        string preservedValue = string.Empty;
+        if (targetCondition is FileNameCondition fn && !string.IsNullOrWhiteSpace(fn.Value))
+        {
+            preservedValue = fn.Value.TrimStart('.');
+        }
+        else if (targetCondition is FileExtensionCondition ext && !string.IsNullOrWhiteSpace(ext.Value))
+        {
+            preservedValue = ext.Value.TrimStart('.');
+        }
 
         Condition newCondition = conditionType switch
         {
-            "FileName" => new FileNameCondition { Operator = StringOperator.Contains, Value = "" },
-            "Extension" => new FileExtensionCondition { Operator = StringOperator.Is, Value = "" },
+            "FileName" => new FileNameCondition { Operator = StringOperator.Contains, Value = preservedValue },
+            "Extension" => new FileExtensionCondition { Operator = StringOperator.Is, Value = preservedValue },
             "Size" => new FileSizeCondition { Operator = FileSizeCondition.SizeOperator.GreaterThan, Value = 0 },
             "Date" => new FileDateCondition 
             { 
@@ -150,11 +166,28 @@ public partial class ConditionEditorViewModel : ObservableObject
                 Operator = FileDateCondition.DateOperator.After,
                 Value = DateTime.Today
             },
-            _ => selectedCondition
+            _ => targetCondition
         };
 
-        ReplaceConditionRecursive(RootCondition, selectedCondition, newCondition);
-        SelectedItem = newCondition;
+        if (ReferenceEquals(newCondition, targetCondition)) return;
+
+        if (ReplaceConditionRecursive(RootCondition, targetCondition, newCondition))
+        {
+            SelectedItem = newCondition;
+            _ = RefreshPreviewAsync();
+        }
+    }
+
+    /// <summary>
+    /// Changes the condition type (FileName, Extension, Size, Date) of the currently selected item.
+    /// </summary>
+    [RelayCommand]
+    private void ChangeConditionType(string conditionType)
+    {
+        if (SelectedItem is Condition selectedCondition)
+        {
+            ChangeConditionType(selectedCondition, conditionType);
+        }
     }
 
     private bool ReplaceConditionRecursive(ConditionGroup group, Condition oldCondition, Condition newCondition)
