@@ -520,10 +520,12 @@
                          CanUserAddRows="False"
                          CanUserDeleteRows="False"
                          GridLinesVisibility="Horizontal"
-                         HeadersVisibility="All"
-                         SelectionMode="Single">
+                         HeadersVisibility="Column"
+                         SelectionMode="Single"
+                         Background="{DynamicResource MaterialDesignPaper}"
+                         BorderThickness="0">
                     <DataGrid.Resources>
-                        <Style TargetType="DataGridRow">
+                        <Style TargetType="DataGridRow" BasedOn="{StaticResource {x:Type DataGridRow}}">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Matches}" Value="True">
                                     <Setter Property="Background" Value="{DynamicResource Win11SuccessBackgroundBrush}"/>
