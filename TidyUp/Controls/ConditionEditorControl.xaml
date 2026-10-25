@@ -374,7 +374,7 @@
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8">
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="_Add Condition"
+                    Content="Add Condition"
                     Command="{Binding AddConditionCommand}"
                     automation:AutomationProperties.Name="Add condition"
                     Margin="0,0,8,0">
@@ -383,7 +383,7 @@
                 </Button.CommandParameter>
             </Button>
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="Add _Group"
+                    Content="Add Group"
                     Command="{Binding AddGroupCommand}"
                     automation:AutomationProperties.Name="Add condition group"
                     Margin="0,0,8,0">

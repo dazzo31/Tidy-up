@@ -276,7 +276,7 @@
                             Height="36" Padding="18,0" Margin="0,0,12,0">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="Stop" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="_Stop" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Text="Stop" FontWeight="Bold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
@@ -288,14 +288,14 @@
                             Height="36" Padding="18,0">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="CheckBold" Width="18" Height="18" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="_Apply Changes" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <TextBlock Text="Apply Changes" FontWeight="Bold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
                     <!-- Close Button -->
                     <Button DockPanel.Dock="Right"
                             Style="{StaticResource MaterialDesignFlatButton}"
-                            Content="_Close"
+                            Content="Close"
                             IsCancel="True"
                             Click="CloseButton_Click"
                             Margin="0,0,12,0" Height="36"/>

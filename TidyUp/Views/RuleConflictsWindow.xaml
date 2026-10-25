@@ -72,7 +72,7 @@
         <!-- Actions -->
         <DockPanel Grid.Row="2" Margin="0,16,0,0" LastChildFill="False">
             <Button DockPanel.Dock="Right" Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="_Close" Width="100" Click="CloseButton_Click"/>
+                    Content="Close" Width="100" Click="CloseButton_Click"/>
         </DockPanel>
     </Grid>
 </Window>

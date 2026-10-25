@@ -132,13 +132,13 @@
                     Style="{StaticResource MaterialDesignRaisedButton}"
                     Background="{DynamicResource Win11TealSolidBrush}" BorderBrush="{DynamicResource Win11TealSolidBrush}"
                     Foreground="{DynamicResource Win11OnSolidBrush}"
-                    Content="_Restore This Revision"
+                    Content="Restore This Revision"
                     Command="{Binding RestoreRevisionCommand}"
                     IsEnabled="{Binding CanRestore}"/>
 
             <Button DockPanel.Dock="Right"
                     Style="{StaticResource MaterialDesignFlatButton}"
-                    Content="_Close"
+                    Content="Close"
                     Click="CloseButton_Click"
                     Width="90"/>
         </DockPanel>

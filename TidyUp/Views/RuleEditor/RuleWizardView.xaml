@@ -211,7 +211,7 @@
                 <Button Grid.Column="0" Command="{Binding CancelCommand}"
                         IsCancel="True"
                         Style="{StaticResource MaterialDesignOutlinedButton}">
-                    <TextBlock Text="_Cancel"/>
+                    <TextBlock Text="Cancel"/>
                 </Button>
 
                 <!-- Error Message -->
@@ -224,7 +224,7 @@
                         Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="ArrowLeft" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock Text="_Back" VerticalAlignment="Center"/>
+                        <TextBlock Text="Back" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
 
@@ -233,7 +233,7 @@
                         Visibility="{Binding IsReviewStage, Converter={StaticResource InverseBooleanConverter}}"
                         Style="{StaticResource MaterialDesignRaisedButton}">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="_Next" VerticalAlignment="Center"/>
+                        <TextBlock Text="Next" VerticalAlignment="Center"/>
                         <materialDesign:PackIcon Kind="ArrowRight" VerticalAlignment="Center" Margin="4,0,0,0"/>
                     </StackPanel>
                 </Button>
@@ -247,7 +247,7 @@
                         Foreground="{DynamicResource Win11OnSolidBrush}">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="CheckBold" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock Text="_Save Rule" VerticalAlignment="Center"/>
+                        <TextBlock Text="Save Rule" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>

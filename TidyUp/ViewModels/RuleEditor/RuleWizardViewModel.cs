@@ -57,6 +57,7 @@ public partial class RuleWizardViewModel : ObservableObject
     private bool _isRuleEnabled;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddFolderCommand))]
     private string _newFolderPathInput = string.Empty;
 
     public ObservableCollection<MonitoredFolder> MonitoredFolders { get; } = new();
@@ -114,10 +115,12 @@ public partial class RuleWizardViewModel : ObservableObject
         ConditionEditor.RootCondition = new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
     }
 
+    public bool CanAddFolder(string? path) => !string.IsNullOrWhiteSpace(path) || !string.IsNullOrWhiteSpace(NewFolderPathInput);
+
     /// <summary>
     /// Adds a monitored folder either from parameter or from text input.
     /// </summary>
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanAddFolder))]
     public void AddFolder(string? path = null)
     {
         var rawPath = !string.IsNullOrWhiteSpace(path) ? path : NewFolderPathInput?.Trim();

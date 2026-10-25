@@ -142,6 +142,7 @@ public partial class FoldersViewModel : ObservableObject
     }
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(AddMonitoredFolderCommand))]
     private string _newFolderPathInput = string.Empty;
 
     [ObservableProperty]
@@ -490,7 +491,9 @@ public partial class FoldersViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    public bool CanAddMonitoredFolder => !string.IsNullOrWhiteSpace(NewFolderPathInput);
+
+    [RelayCommand(CanExecute = nameof(CanAddMonitoredFolder))]
     public void AddMonitoredFolder()
     {
         if (string.IsNullOrWhiteSpace(NewFolderPathInput))

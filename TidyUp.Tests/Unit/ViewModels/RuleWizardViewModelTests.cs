@@ -222,5 +222,28 @@ public class RuleWizardViewModelTests
         vm.ExecutionPlan!.TotalScanned.Should().Be(25);
         vm.ExecutionPlan.TotalMatched.Should().Be(5);
     }
-}
 
+    [Fact]
+    public void AddFolderCommand_CanExecute_ReflectsNewFolderPathInputPresence()
+    {
+        var vm = CreateViewModel();
+
+        // Initially empty -> disabled
+        vm.NewFolderPathInput = string.Empty;
+        vm.AddFolderCommand.CanExecute(null).Should().BeFalse();
+
+        // Whitespace only -> disabled
+        vm.NewFolderPathInput = "   ";
+        vm.AddFolderCommand.CanExecute(null).Should().BeFalse();
+
+        // Valid path entered manually -> enabled
+        vm.NewFolderPathInput = @"C:\Test\ManualFolder";
+        vm.AddFolderCommand.CanExecute(null).Should().BeTrue();
+
+        // Executing adds folder, clears input, and disables button again
+        vm.AddFolderCommand.Execute(null);
+        vm.MonitoredFolders.Should().ContainSingle(f => f.Path == @"C:\Test\ManualFolder");
+        vm.NewFolderPathInput.Should().BeEmpty();
+        vm.AddFolderCommand.CanExecute(null).Should().BeFalse();
+    }
+}

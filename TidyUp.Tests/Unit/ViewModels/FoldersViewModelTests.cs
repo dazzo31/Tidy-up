@@ -161,5 +161,25 @@ public class FoldersViewModelTests : IDisposable
 
         _viewModel.StatusMessage.Should().Contain("Scan complete: found 2 active files");
     }
-}
 
+    [Fact]
+    public void AddMonitoredFolderCommand_CanExecute_ReflectsNewFolderPathInputPresence()
+    {
+        // Initially empty -> disabled
+        _viewModel.NewFolderPathInput = string.Empty;
+        _viewModel.AddMonitoredFolderCommand.CanExecute(null).Should().BeFalse();
+
+        // Whitespace only -> disabled
+        _viewModel.NewFolderPathInput = "   ";
+        _viewModel.AddMonitoredFolderCommand.CanExecute(null).Should().BeFalse();
+
+        // Path entered manually -> enabled
+        _viewModel.NewFolderPathInput = _tempTestDir;
+        _viewModel.AddMonitoredFolderCommand.CanExecute(null).Should().BeTrue();
+
+        // Executing adds folder, clears input, and disables button again
+        _viewModel.AddMonitoredFolderCommand.Execute(null);
+        _viewModel.NewFolderPathInput.Should().BeEmpty();
+        _viewModel.AddMonitoredFolderCommand.CanExecute(null).Should().BeFalse();
+    }
+}

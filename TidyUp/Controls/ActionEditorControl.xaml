@@ -24,7 +24,7 @@
                     AutomationProperties.Name="Add action">
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="_Add Action" VerticalAlignment="Center"/>
+                    <TextBlock Text="Add Action" VerticalAlignment="Center"/>
                 </StackPanel>
                 <Button.ContextMenu>
                     <ContextMenu x:Name="AddActionMenu">
