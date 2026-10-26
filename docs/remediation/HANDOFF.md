@@ -1,10 +1,17 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `87ca750`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `a38ec5b`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 2 Gate Passed (Tasks 12, 13, 14, 15, 16, 17, 18, 27 Complete)  
-**Active Task & Current State:** `TASK-REM-27` (`DONE`) -> Next: Phase 3 Gate / `TASK-REM-22` (Two-Phase Durable Journaling & Rule Metadata Tracking)  
+**Last Verified Phase Gate:** Phase 2 Gate Passed; Phase 3 In Progress (`TASK-REM-22` Complete)  
+**Active Task & Current State:** `TASK-REM-22` (`DONE`) -> Next: `TASK-REM-19` (Immutable Planned Parameter Execution & {counter} Fix)  
 **Completed Changes & Files:**
+- `TASK-REM-22` (SHA: `a38ec5b`):
+  - `OperationJournalEntry.cs` & `PlannedFileAction.cs` & `FileAction.cs`: Rule metadata properties (`RuleId`, `RuleName`, `RuleRevisionId`) propagated from plan generator through file actions to durable journal entries.
+  - `ActionExecutor.cs`: Journal entries recorded on both success (`Completed`) and failure (`Failed`) with pre-action and post-action checksums and error messages.
+  - On `Overwrite` and `RenameOld` conflict resolutions, existing target files are safely moved to timestamped displaced backup paths, avoiding data loss and recording backup locations in `Details`.
+  - `RollbackEngine.cs`: Failed execution entries reject rollback gracefully with `TargetMissing` reason without throwing; batch rollback only reverses completed actions.
+  - `RollbackEngineTests.cs`: Unit tests verify journal entry persistence for success, failure, and displaced overwrite backup. 706 tests passing.
+
 - `FoldersViewModel.cs`:
   - Added `_isScanning` observable property with `CanScan` / `ScanTooltip` notification dispatch to `MonitoredFolderItemViewModel`.
   - Injected `IWatcherReconciler? watcherReconciler = null` into `FoldersViewModel`.

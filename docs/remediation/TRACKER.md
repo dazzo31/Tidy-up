@@ -51,7 +51,7 @@
 ### Phase 3: Durable Execution Foundation
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-22` | Two-phase durable journaling & rule metadata tracking | NOT_STARTED | Phase 2 Gate | — | Target: TU-21 | Intent-before-mutation & RuleId links |
+| `TASK-REM-22` | Two-phase durable journaling & rule metadata tracking | DONE | Phase 2 Gate | `a38ec5b` | TU-21: durable journal success/failure, RuleId/RuleName/RuleRevisionId, displaced backup path in details, 706 tests passing | Proceed to `TASK-REM-19` |
 | `TASK-REM-19` | Immutable planned parameter execution & {counter} fix | NOT_STARTED | `TASK-REM-22` | — | Target: TU-15 | Execute frozen plan paths, no drift |
 | `TASK-REM-20` | Atomic batch lifetime lease & state machine guarding | NOT_STARTED | `TASK-REM-19` | — | Target: TU-44 | ExecutingBatch lease held across batch |
 
