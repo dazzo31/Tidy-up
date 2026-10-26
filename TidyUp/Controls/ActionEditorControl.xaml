@@ -205,9 +205,16 @@
                                                         <materialDesign:PackIcon Kind="FolderOpen" Width="20" Height="20"/>
                                                     </Button>
                                                 </Grid>
+                                                <CheckBox Content="Preserve subfolder structure"
+                                                         IsChecked="{Binding PreserveSubfolderStructure}"
+                                                         Margin="0,0,0,8"/>
                                                 <CheckBox Content="Apply subsequent actions to source file"
                                                          IsChecked="{Binding ApplyToSourceFile}"
                                                          Margin="0,0,0,8"/>
+                                                <ComboBox materialDesign:HintAssist.Hint="If file exists"
+                                                         SelectedItem="{Binding ConflictResolution}"
+                                                         ItemsSource="{Binding Source={x:Type enums:ConflictResolution}, Converter={StaticResource EnumToItemsSourceConverter}}"
+                                                         AutomationProperties.Name="Conflict resolution"/>
                                             </StackPanel>
                                         </DataTemplate>
 

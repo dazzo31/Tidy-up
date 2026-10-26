@@ -25,6 +25,11 @@ public class PlannedFileAction
     public Guid? DependsOnActionId { get; set; }
 
     /// <summary>
+    /// The root monitored folder from which the source file was discovered, used for relative path calculations.
+    /// </summary>
+    public string? MonitoredSourceRoot { get; set; }
+
+    /// <summary>
     /// The proposed destination or resulting file path, if applicable.
     /// </summary>
     public string? TargetPath { get; set; }

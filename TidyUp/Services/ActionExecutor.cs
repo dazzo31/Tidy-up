@@ -106,7 +106,99 @@ public class ActionExecutor(
         return result;
     }
 
-    private async Task<ActionResult> ExecuteMoveAsync(MoveFileAction action, FileInfo fileInfo, int? counter)
+    public async Task<ActionResult> ExecutePlannedActionAsync(
+        PlannedFileAction plannedAction,
+        Guid? batchId = null)
+    {
+        ArgumentNullException.ThrowIfNull(plannedAction);
+
+        if (plannedAction.IsSkipped)
+        {
+            return new ActionResult
+            {
+                Success = false,
+                Type = ActionResultType.Skipped,
+                ErrorMessage = plannedAction.ResolutionNote ?? "Action skipped by policy."
+            };
+        }
+
+        var fileInfo = new FileInfo(plannedAction.SourcePath);
+        if (!fileInfo.Exists)
+        {
+            return new ActionResult
+            {
+                Success = false,
+                Type = ActionResultType.Error,
+                ErrorMessage = $"Source file '{plannedAction.SourcePath}' not found."
+            };
+        }
+
+        // Verify confinement if TargetPath is set
+        if (!string.IsNullOrEmpty(plannedAction.TargetPath))
+        {
+            string? destinationBase = plannedAction.FileAction switch
+            {
+                MoveFileAction m => variableEngine.Resolve(m.DestinationPath, fileInfo, plannedAction.Order),
+                CopyFileAction c => variableEngine.Resolve(c.DestinationPath, fileInfo, plannedAction.Order),
+                _ => null
+            };
+
+            if (!string.IsNullOrEmpty(destinationBase))
+            {
+                var fullBase = Path.GetFullPath(destinationBase).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                var fullTarget = Path.GetFullPath(plannedAction.TargetPath);
+                if (!fullTarget.StartsWith(fullBase, StringComparison.OrdinalIgnoreCase))
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Error,
+                        ErrorMessage = $"Target path '{plannedAction.TargetPath}' escapes base destination '{destinationBase}' confinement."
+                    };
+                }
+            }
+        }
+
+        var originalPath = fileInfo.FullName;
+        var preActionHash = FileChecksumHelper.ComputeSha256(originalPath);
+
+        ActionResult result = plannedAction.FileAction switch
+        {
+            MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, plannedAction.Order, plannedAction.TargetPath),
+            CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, plannedAction.Order, plannedAction.TargetPath),
+            _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.Order, batchId)
+        };
+
+        if (result.Success && _rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction))
+        {
+            var postPath = result.TargetPath ?? result.ResultPath ?? originalPath;
+            var postActionHash = !string.IsNullOrEmpty(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
+
+            await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+            {
+                BatchId = batchId ?? Guid.NewGuid(),
+                ActionType = plannedAction.FileAction switch
+                {
+                    MoveFileAction => "Move",
+                    CopyFileAction => "Copy",
+                    _ => plannedAction.FileAction.GetType().Name
+                },
+                OriginalPath = originalPath,
+                TargetPath = postPath,
+                PreActionHash = preActionHash,
+                PostActionHash = postActionHash,
+                Status = "Completed"
+            });
+        }
+
+        return result;
+    }
+
+    private async Task<ActionResult> ExecuteMoveAsync(
+        MoveFileAction action,
+        FileInfo fileInfo,
+        int? counter,
+        string? destinationOverride = null)
     {
         try
         {
@@ -138,23 +230,46 @@ public class ActionExecutor(
                 }
             }
 
-            var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
-            var destFileName = fileInfo.Name;
-            var fullDestPath = Path.Combine(destPath, destFileName);
-
-            // Ensure destination directory exists
-            Directory.CreateDirectory(destPath);
-
-            // Handle conflicts
-            fullDestPath = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
-            if (fullDestPath is null)
+            string fullDestPath;
+            if (!string.IsNullOrEmpty(destinationOverride))
             {
-                return new ActionResult
+                fullDestPath = destinationOverride;
+                var parentDir = Path.GetDirectoryName(fullDestPath);
+                if (!string.IsNullOrEmpty(parentDir))
                 {
-                    Success = false,
-                    Type = ActionResultType.Skipped,
-                    ErrorMessage = "Operation skipped due to conflict"
-                };
+                    Directory.CreateDirectory(parentDir);
+                }
+            }
+            else
+            {
+                var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+                if (action.PreserveSubfolderStructure && !string.IsNullOrWhiteSpace(action.MonitoredSourceRoot) && fileInfo.DirectoryName != null)
+                {
+                    var relSub = Simulation.ExecutionPlanGenerator.GetSafeRelativeSubfolder(action.MonitoredSourceRoot, fileInfo.DirectoryName);
+                    if (!string.IsNullOrEmpty(relSub))
+                    {
+                        destPath = Path.Combine(destPath, relSub);
+                    }
+                }
+
+                var destFileName = fileInfo.Name;
+                fullDestPath = Path.Combine(destPath, destFileName);
+
+                // Ensure destination directory exists
+                Directory.CreateDirectory(destPath);
+
+                // Handle conflicts
+                var resolvedDest = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                if (resolvedDest is null)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Skipped,
+                        ErrorMessage = "Operation skipped due to conflict"
+                    };
+                }
+                fullDestPath = resolvedDest;
             }
 
             // If overwriting, delete the destination file first since File.Move doesn't support overwrite
@@ -179,7 +294,11 @@ public class ActionExecutor(
         }
     }
 
-    private async Task<ActionResult> ExecuteCopyAsync(CopyFileAction action, FileInfo fileInfo, int? counter)
+    private async Task<ActionResult> ExecuteCopyAsync(
+        CopyFileAction action,
+        FileInfo fileInfo,
+        int? counter,
+        string? destinationOverride = null)
     {
         try
         {
@@ -211,23 +330,46 @@ public class ActionExecutor(
                 }
             }
 
-            var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
-            var destFileName = fileInfo.Name;
-            var fullDestPath = Path.Combine(destPath, destFileName);
-
-            // Ensure destination directory exists
-            Directory.CreateDirectory(destPath);
-
-            // Handle conflicts
-            fullDestPath = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
-            if (fullDestPath is null)
+            string fullDestPath;
+            if (!string.IsNullOrEmpty(destinationOverride))
             {
-                return new ActionResult
+                fullDestPath = destinationOverride;
+                var parentDir = Path.GetDirectoryName(fullDestPath);
+                if (!string.IsNullOrEmpty(parentDir))
                 {
-                    Success = false,
-                    Type = ActionResultType.Skipped,
-                    ErrorMessage = "Operation skipped due to conflict"
-                };
+                    Directory.CreateDirectory(parentDir);
+                }
+            }
+            else
+            {
+                var destPath = variableEngine.Resolve(action.DestinationPath, fileInfo, counter);
+                if (action.PreserveSubfolderStructure && !string.IsNullOrWhiteSpace(action.MonitoredSourceRoot) && fileInfo.DirectoryName != null)
+                {
+                    var relSub = Simulation.ExecutionPlanGenerator.GetSafeRelativeSubfolder(action.MonitoredSourceRoot, fileInfo.DirectoryName);
+                    if (!string.IsNullOrEmpty(relSub))
+                    {
+                        destPath = Path.Combine(destPath, relSub);
+                    }
+                }
+
+                var destFileName = fileInfo.Name;
+                fullDestPath = Path.Combine(destPath, destFileName);
+
+                // Ensure destination directory exists
+                Directory.CreateDirectory(destPath);
+
+                // Handle conflicts
+                var resolvedDest = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                if (resolvedDest is null)
+                {
+                    return new ActionResult
+                    {
+                        Success = false,
+                        Type = ActionResultType.Skipped,
+                        ErrorMessage = "Operation skipped due to conflict"
+                    };
+                }
+                fullDestPath = resolvedDest;
             }
 
             // Retry logic

@@ -151,7 +151,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                     currentVirtualPath,
                     currentVirtualName,
                     fileCounter,
-                    targetReservations);
+                    targetReservations,
+                    folderPath);
 
                 plannedAction.InitialSourcePath = fileInfo.FullName;
                 plannedAction.DependsOnActionId = previousActionId;
@@ -215,7 +216,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         string currentVirtualPath,
         string currentVirtualName,
         int counter,
-        Dictionary<string, PlannedFileAction> targetReservations)
+        Dictionary<string, PlannedFileAction> targetReservations,
+        string? monitoredRoot = null)
     {
         var plannedAction = new PlannedFileAction
         {
@@ -224,23 +226,42 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             RuleName = ruleName,
             FileSizeBytes = fileInfo.Length,
             SourceModifiedDate = fileInfo.LastWriteTime,
-            Order = action.Order
+            Order = action.Order,
+            MonitoredSourceRoot = monitoredRoot
         };
 
         switch (action)
         {
             case MoveFileAction moveAction:
+                moveAction.MonitoredSourceRoot ??= monitoredRoot;
                 plannedAction.ActionType = ActionType.Move;
                 plannedAction.ConflictResolution = moveAction.ConflictResolution;
                 var moveDestDir = _variableEngine.Resolve(moveAction.DestinationPath, fileInfo, counter);
+                if (moveAction.PreserveSubfolderStructure && !string.IsNullOrWhiteSpace(monitoredRoot) && fileInfo.DirectoryName != null)
+                {
+                    var relSub = GetSafeRelativeSubfolder(monitoredRoot, fileInfo.DirectoryName);
+                    if (!string.IsNullOrEmpty(relSub))
+                    {
+                        moveDestDir = Path.Combine(moveDestDir, relSub);
+                    }
+                }
                 plannedAction.TargetPath = Path.Combine(moveDestDir, currentVirtualName);
                 CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
 
             case CopyFileAction copyAction:
+                copyAction.MonitoredSourceRoot ??= monitoredRoot;
                 plannedAction.ActionType = ActionType.Copy;
                 plannedAction.ConflictResolution = copyAction.ConflictResolution;
                 var copyDestDir = _variableEngine.Resolve(copyAction.DestinationPath, fileInfo, counter);
+                if (copyAction.PreserveSubfolderStructure && !string.IsNullOrWhiteSpace(monitoredRoot) && fileInfo.DirectoryName != null)
+                {
+                    var relSub = GetSafeRelativeSubfolder(monitoredRoot, fileInfo.DirectoryName);
+                    if (!string.IsNullOrEmpty(relSub))
+                    {
+                        copyDestDir = Path.Combine(copyDestDir, relSub);
+                    }
+                }
                 plannedAction.TargetPath = Path.Combine(copyDestDir, currentVirtualName);
                 CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
@@ -404,6 +425,40 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                     ? $"Target file already exists: {normalizedTarget}"
                     : $"Batch conflict: target already reserved by another action: {normalizedTarget}";
                 break;
+        }
+    }
+
+    /// <summary>
+    /// Computes the relative subfolder of a file within a monitored root while verifying directory confinement.
+    /// Returns null if the file directory is at the root, escapes the root, or is invalid.
+    /// </summary>
+    public static string? GetSafeRelativeSubfolder(string monitoredRoot, string fileDirectory)
+    {
+        try
+        {
+            var fullRoot = Path.GetFullPath(monitoredRoot).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var fullDir = Path.GetFullPath(fileDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            // Case-insensitive prefix confinement check
+            if (!fullDir.StartsWith(fullRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var relative = Path.GetRelativePath(fullRoot, fullDir);
+            if (string.IsNullOrWhiteSpace(relative) ||
+                relative == "." ||
+                relative.StartsWith("..", StringComparison.Ordinal) ||
+                Path.IsPathRooted(relative))
+            {
+                return null;
+            }
+
+            return relative;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

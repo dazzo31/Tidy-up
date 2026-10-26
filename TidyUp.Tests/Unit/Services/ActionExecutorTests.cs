@@ -457,6 +457,132 @@ public class ActionExecutorTests : IDisposable
 
     #endregion
 
+
+    #region PreserveSubfolderStructure and Planned Execution Tests
+
+    [Fact]
+    public async Task ExecuteMoveAsync_WithPreserveSubfolderStructure_MovesFileToNestedDestination()
+    {
+        // Arrange
+        var rootDir = _fileHelper.CreateTestDirectory("MonitoredRoot");
+        var nestedDir = Directory.CreateDirectory(Path.Combine(rootDir.FullName, "Sub1", "Sub2"));
+        var sourceFilePath = Path.Combine(nestedDir.FullName, "deep.txt");
+        await File.WriteAllTextAsync(sourceFilePath, "deep content");
+        var sourceFile = new FileInfo(sourceFilePath);
+
+        var destDir = _fileHelper.CreateTestDirectory("DestRoot");
+        var action = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            PreserveSubfolderStructure = true,
+            MonitoredSourceRoot = rootDir.FullName,
+            ConflictResolution = ConflictResolution.Skip
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        var expectedDest = Path.Combine(destDir.FullName, "Sub1", "Sub2", "deep.txt");
+        File.Exists(expectedDest).Should().BeTrue();
+        File.Exists(sourceFilePath).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecuteCopyAsync_WithPreserveSubfolderStructure_CopiesFileToNestedDestination()
+    {
+        // Arrange
+        var rootDir = _fileHelper.CreateTestDirectory("MonitoredCopyRoot");
+        var nestedDir = Directory.CreateDirectory(Path.Combine(rootDir.FullName, "Docs"));
+        var sourceFilePath = Path.Combine(nestedDir.FullName, "copy_deep.txt");
+        await File.WriteAllTextAsync(sourceFilePath, "deep copy content");
+        var sourceFile = new FileInfo(sourceFilePath);
+
+        var destDir = _fileHelper.CreateTestDirectory("DestCopyRoot");
+        var action = new CopyFileAction
+        {
+            DestinationPath = destDir.FullName,
+            PreserveSubfolderStructure = true,
+            MonitoredSourceRoot = rootDir.FullName,
+            ConflictResolution = ConflictResolution.Skip
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        var expectedDest = Path.Combine(destDir.FullName, "Docs", "copy_deep.txt");
+        File.Exists(expectedDest).Should().BeTrue();
+        File.Exists(sourceFilePath).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ExecutePlannedActionAsync_WithPlannedTargetPath_ExecutesToExactDestination()
+    {
+        // Arrange
+        var destDir = _fileHelper.CreateTestDirectory("PlannedDest");
+        var sourceFile = _fileHelper.CreateTestFile("planned_source.txt", "planned data");
+        var targetPath = Path.Combine(destDir.FullName, "Nested", "final_output.txt");
+
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Skip
+        };
+
+        var planned = new PlannedFileAction
+        {
+            SourcePath = sourceFile.FullName,
+            TargetPath = targetPath,
+            FileAction = moveAction,
+            ActionType = ActionType.Move
+        };
+
+        // Act
+        var result = await _executor.ExecutePlannedActionAsync(planned);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        File.Exists(targetPath).Should().BeTrue();
+        File.Exists(sourceFile.FullName).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ExecutePlannedActionAsync_EscapingTargetPath_FailsConfinement()
+    {
+        // Arrange
+        var destDir = _fileHelper.CreateTestDirectory("ConfinedDest");
+        var escapeDir = _fileHelper.CreateTestDirectory("OutsideDest");
+        var sourceFile = _fileHelper.CreateTestFile("escape_source.txt", "escape data");
+        var targetPath = Path.Combine(escapeDir.FullName, "escaped.txt");
+
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Skip
+        };
+
+        var planned = new PlannedFileAction
+        {
+            SourcePath = sourceFile.FullName,
+            TargetPath = targetPath,
+            FileAction = moveAction,
+            ActionType = ActionType.Move
+        };
+
+        // Act
+        var result = await _executor.ExecutePlannedActionAsync(planned);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("escapes base destination");
+        File.Exists(sourceFile.FullName).Should().BeTrue();
+    }
+
+    #endregion
+
     public void Dispose()
     {
         _fileHelper.Dispose();

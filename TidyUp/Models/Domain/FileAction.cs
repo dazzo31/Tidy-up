@@ -65,6 +65,12 @@ public partial class MoveFileAction : FileAction
     /// </summary>
     [ObservableProperty]
     private bool _removeEmptyFolders;
+
+    /// <summary>
+    /// The root monitored directory, used when preserving subfolder hierarchy.
+    /// </summary>
+    [ObservableProperty]
+    private string? _monitoredSourceRoot;
 }
 
 /// <summary>
@@ -97,6 +103,12 @@ public partial class CopyFileAction : FileAction
     /// </summary>
     [ObservableProperty]
     private bool _applyToSourceFile = true;
+
+    /// <summary>
+    /// The root monitored directory, used when preserving subfolder hierarchy.
+    /// </summary>
+    [ObservableProperty]
+    private string? _monitoredSourceRoot;
 }
 
 /// <summary>

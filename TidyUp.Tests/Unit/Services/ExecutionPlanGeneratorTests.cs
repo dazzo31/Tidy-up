@@ -641,5 +641,92 @@ public class ExecutionPlanGeneratorTests : IDisposable
         item.IsApproved.Should().BeFalse("skipped actions must default to unapproved");
         item.IsSkipped.Should().BeTrue();
     }
-}
+    [Fact]
+    public async Task GeneratePlanForFolderAsync_PreserveSubfolderStructure_PreservesNestedHierarchy()
+    {
+        // Arrange
+        var rootDir = Path.Combine(_testRoot, "SubfolderRoot");
+        var subDir = Path.Combine(rootDir, "SubA", "SubB");
+        var destDir = Path.Combine(_testRoot, "SubfolderDest");
+        Directory.CreateDirectory(subDir);
+        Directory.CreateDirectory(destDir);
 
+        var nestedFile = Path.Combine(subDir, "report.pdf");
+        var rootFile = Path.Combine(rootDir, "summary.pdf");
+        await File.WriteAllTextAsync(nestedFile, "nested content");
+        await File.WriteAllTextAsync(rootFile, "root content");
+
+        var rule = new Rule
+        {
+            Name = "Preserve Subfolder Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = destDir,
+                    PreserveSubfolderStructure = true,
+                    ConflictResolution = ConflictResolution.Skip,
+                    Order = 0
+                }
+            }
+        };
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, rootDir, includeSubfolders: true);
+
+        // Assert
+        plan.PlannedActions.Should().HaveCount(2);
+
+        var nestedAction = plan.PlannedActions.Single(a => a.SourcePath.EndsWith("report.pdf", StringComparison.OrdinalIgnoreCase));
+        var rootAction = plan.PlannedActions.Single(a => a.SourcePath.EndsWith("summary.pdf", StringComparison.OrdinalIgnoreCase));
+
+        // Nested file preserves SubA/SubB relative path
+        var expectedNestedTarget = Path.Combine(destDir, "SubA", "SubB", "report.pdf");
+        nestedAction.TargetPath.Should().Be(expectedNestedTarget);
+        nestedAction.MonitoredSourceRoot.Should().Be(rootDir);
+
+        // Root file has no extra subfolder
+        var expectedRootTarget = Path.Combine(destDir, "summary.pdf");
+        rootAction.TargetPath.Should().Be(expectedRootTarget);
+        rootAction.MonitoredSourceRoot.Should().Be(rootDir);
+    }
+
+    [Fact]
+    public async Task GeneratePlanForFolderAsync_WithoutPreserveSubfolderStructure_FlattensDestination()
+    {
+        // Arrange
+        var rootDir = Path.Combine(_testRoot, "FlattenRoot");
+        var subDir = Path.Combine(rootDir, "Level1");
+        var destDir = Path.Combine(_testRoot, "FlattenDest");
+        Directory.CreateDirectory(subDir);
+        Directory.CreateDirectory(destDir);
+
+        var nestedFile = Path.Combine(subDir, "flattened.pdf");
+        await File.WriteAllTextAsync(nestedFile, "nested content");
+
+        var rule = new Rule
+        {
+            Name = "Flatten Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = destDir,
+                    PreserveSubfolderStructure = false,
+                    ConflictResolution = ConflictResolution.Skip,
+                    Order = 0
+                }
+            }
+        };
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, rootDir, includeSubfolders: true);
+
+        // Assert
+        plan.PlannedActions.Should().ContainSingle();
+        var action = plan.PlannedActions[0];
+        action.TargetPath.Should().Be(Path.Combine(destDir, "flattened.pdf"));
+    }
+}

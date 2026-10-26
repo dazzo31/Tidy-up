@@ -24,6 +24,14 @@ public interface IActionExecutor
     Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter = null, Guid? batchId = null);
 
     /// <summary>
+    /// Executes a planned file action using its pre-computed immutable parameters and verifying destination confinement.
+    /// </summary>
+    /// <param name="plannedAction">The planned action to execute.</param>
+    /// <param name="batchId">Optional batch identifier for durable journal grouping.</param>
+    /// <returns>Result of executing the planned action.</returns>
+    Task<ActionResult> ExecutePlannedActionAsync(PlannedFileAction plannedAction, Guid? batchId = null);
+
+    /// <summary>
     /// Previews what actions would do without executing them (dry run).
     /// </summary>
     /// <param name="actions">List of actions to preview.</param>
