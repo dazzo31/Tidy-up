@@ -1,6 +1,6 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `9e2367d` (pending TASK-REM-11 commit)  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `f25833b`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
 **Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-11` completed)  
 **Active Task & Current State:** `TASK-REM-11` (`DONE`) -> Next: `TASK-REM-34` (Atomic settings persistence & corrupt profile recovery)  
