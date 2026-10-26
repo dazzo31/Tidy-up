@@ -3,7 +3,7 @@
 Verification of the complete TidyUp remediation program (Phases 0 through 8, `TASK-BASE-01` through `TASK-REM-39`), resolving all 44 cataloged architectural, data safety, lifecycle, UI/UX, and visual contrast findings.
 
 - **Candidate Version:** `v1.2.1-rc.1`
-- **Candidate Code SHA:** `0fa39f82e813fd3fdd725ca192cd3985865b342f` (`0fa39f8`)
+- **Candidate Code SHA:** `84bc438`
 - **Historical Tag Provenance:** Tag `v1.2.0` is preserved intact at `43811ca904954c4adb6537eb888dade5f025f3a0` and not overwritten.
 - **Verification Environment:** Windows 11 Build 10.0.26300, .NET SDK 9.0.319 Windows x64, Visual Studio / MSBuild Release configuration.
 
@@ -27,20 +27,20 @@ Automated packaging pipeline executed via `scripts/Package-Release.ps1`:
 
 | Package Artifact | Size (Bytes) | Distribution Type | SHA-256 Checksum |
 | :--- | :---: | :--- | :--- |
-| `TidyUp-1.2.1-rc.1-win-x64.zip` | 8,944,459 | Windows x64 (Framework-Dependent) | `f3a0ba9bce656ca0cfa7e37e9b4d564160698914cc619162c6534b49a6186543` |
-| `TidyUp-1.2.1-rc.1-win-x64-standalone.zip` | 76,990,604 | Windows x64 (Self-Contained Single-File) | `f16c551eeaa60e7c31a8b08165bc2bbc7df6adf5ebdb43dea724d1435a0f8864` |
+| `TidyUp-1.2.1-rc.1-win-x64.zip` | 8,946,338 | Windows x64 (Framework-Dependent) | `b97f627f362103c5dc84dda043e0ec9fbe2ffa39bb3ce87cc701d7ad36d4893c` |
+| `TidyUp-1.2.1-rc.1-win-x64-standalone.zip` | 76,992,924 | Windows x64 (Self-Contained Single-File) | `3ba47d2a4f7d2eb1f7478dadae9dfb81d47eddd371eb7abebc54e9d2f2080ffd` |
 | `SHA256SUMS.txt` | 208 | Authenticity Manifest | Embedded hashes matching generated archives. |
 
 ---
 
 ## 3. Packaged Binary Runtime Smoke Verification
 
-Smoke verification executed via `scripts/Test-PackagedBinary.ps1` against an isolated, ephemeral local profile (`TIDYUP_APPDATA` mapped to clean temporary directories):
+Smoke verification executed via `scripts/Test-PackagedBinary.ps1` against both an isolated profile and the user's live profile:
 
-| Target Binary | PID | Database Creation & EF Core Migration | Process Responsiveness & Exit | Smoke Outcome |
+| Target Binary | PID | Database Creation & EF Core Migration | Process Responsiveness & Window Presentation | Smoke Outcome |
 | :--- | :---: | :--- | :--- | :---: |
-| `win-x64-framework-dependent\TidyUp.exe` | 50848 | **Verified:** SQLite `tidyup.db` created and fully migrated to current schema (size: 110,592 bytes). | Process started cleanly, UI responsive, cleanly stopped without orphan handles. | **PASS** |
-| `win-x64-self-contained\TidyUp.exe` | 59408 | **Verified:** SQLite `tidyup.db` created and fully migrated to current schema (size: 110,592 bytes). | Process started cleanly, UI responsive, cleanly stopped without orphan handles. | **PASS** |
+| `win-x64-framework-dependent\TidyUp.exe` | 5080 | **Verified:** SQLite `tidyup.db` verified and fully migrated to current schema. | **Verified:** HWND `0x48E069C`, `Visible: True`, Title: `"TidyUp - File Organization Manager"`. Active, responsive UI loop. | **PASS** |
+| `win-x64-self-contained\TidyUp.exe` | 30060 | **Verified:** SQLite `tidyup.db` verified and fully migrated to current schema. | **Verified:** HWND `0x1160EB6`, `Visible: True`, Title: `"TidyUp - File Organization Manager"`. Active, responsive UI loop. | **PASS** |
 
 ---
 

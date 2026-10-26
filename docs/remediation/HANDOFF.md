@@ -1,13 +1,16 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 0fa39f8  
+**Repository / Branch / Current SHA:** TidyUp on main @ 84bc438  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
 **Last Verified Phase Gate:** Phase 8 Gate Passed — Remediation Program Complete (Phases 0 through 8)  
 **Active Task & Current State:** TASK-REM-39 (DONE) -> Release candidate handoff awaiting user tag/publish authorization  
 **Completed Changes & Files:**
-- TASK-REM-39 (SHA: 0fa39f8):
+- TASK-REM-39 (SHA: 84bc438):
+  - TidyUp/Data/SettingsRepository.cs: Implemented synchronous `LoadWithResult()` for `CurrentSettings` and configured `ConfigureAwait(false)` in `LoadWithResultAsync()`, eliminating a sync-over-async deadlock on the WPF Dispatcher SynchronizationContext when `settings.json` exists.
+  - TidyUp/App.xaml.cs: Loaded settings asynchronously prior to database initialization, ensuring `AppSettings` singleton is fully populated before dependent services consume it.
   - scripts/Package-Release.ps1: Automated release packaging script generating win-x64 framework-dependent (`TidyUp-1.2.1-rc.1-win-x64.zip`) and self-contained single-file (`TidyUp-1.2.1-rc.1-win-x64-standalone.zip`) archives with SHA-256 manifest.
   - scripts/Test-PackagedBinary.ps1: Automated smoke test validating packaged binaries against clean temporary profiles (`TIDYUP_APPDATA`), confirming SQLite database migration (size 110,592 bytes), responsive process execution, and clean shutdown.
+  - Verified interactive launch on desktop profile: both binaries present visible main window (`Visible: True`, Title: `"TidyUp - File Organization Manager"`).
   - publish/packages/SHA256SUMS.txt: Checksum manifest for candidate release archives.
   - docs/release-verification-1.2.1.md: Complete release verification report with build/test gate results (777 tests passed, 0 vulnerabilities), packaging provenance, and smoke test evidence.
   - CHANGELOG.md: Added comprehensive `[1.2.1-rc.1]` entry detailing all 44 resolved findings across Phases 0–8.
