@@ -5,6 +5,7 @@ using TidyUp.Data;
 using TidyUp.Data.Recovery;
 using TidyUp.Models;
 using TidyUp.Models.Enums;
+using TidyUp.Models.Domain;
 using TidyUp.ViewModels;
 using TidyUp.Configuration;
 using Xunit;
@@ -80,7 +81,7 @@ public class SettingsCategorizedExperienceTests : IDisposable
         settings.UseRecycleBinByDefault.Should().BeTrue();
         settings.RequireDestructiveConfirmations.Should().BeTrue();
         settings.DefaultConflictResolution.Should().Be(ConflictResolution.RenameNew);
-        settings.MaxConcurrentOperations.Should().Be(4);
+        settings.MaxConcurrentOperations.Should().Be(1);
         settings.ScanBatchSize.Should().Be(500);
         settings.DebounceDelayMs.Should().Be(500);
         settings.NetworkFolderPollingIntervalSeconds.Should().Be(30);
@@ -191,5 +192,69 @@ public class SettingsCategorizedExperienceTests : IDisposable
 
         vm.StatusMessage.Should().Contain("Database backup created");
         _backupManagerMock.Verify(m => m.CreateBackupAsync(null, null, "manual"), Times.Once);
+    }
+
+    [Fact]
+    public void BrowseBackupDirectoryCommand_WhenFolderSelected_UpdatesSettingsDatabaseBackupPath()
+    {
+        var paths = new TidyUpPaths(_tempTestDir);
+        var vm = new SettingsViewModel(_settingsRepo, _backupManagerMock.Object, null, paths);
+        var customPath = Path.Combine(_tempTestDir, "CustomBackups");
+        vm.BrowseFolderHandler = () => customPath;
+
+        vm.BrowseBackupDirectoryCommand.Execute(null);
+
+        vm.Settings.DatabaseBackupPath.Should().Be(customPath);
+        vm.DefaultBackupsDirectory.Should().Be(paths.BackupsDirectory);
+    }
+
+    [Fact]
+    public void ActionEditorViewModel_UsesAppSettingsDefaults_ForConflictResolutionAndRecycleBin()
+    {
+        var settings = new AppSettings
+        {
+            DefaultConflictResolution = ConflictResolution.Overwrite,
+            UseRecycleBinByDefault = false
+        };
+
+        var actionEditor = new ActionEditorViewModel(settings);
+
+        actionEditor.AddMoveActionCommand.Execute(null);
+        actionEditor.SelectedAction.Should().BeOfType<MoveFileAction>();
+        ((MoveFileAction)actionEditor.SelectedAction!).ConflictResolution.Should().Be(ConflictResolution.Overwrite);
+
+        actionEditor.AddCopyActionCommand.Execute(null);
+        actionEditor.SelectedAction.Should().BeOfType<CopyFileAction>();
+        ((CopyFileAction)actionEditor.SelectedAction!).ConflictResolution.Should().Be(ConflictResolution.Overwrite);
+
+        actionEditor.AddDeleteActionCommand.Execute(null);
+        actionEditor.SelectedAction.Should().BeOfType<DeleteFileAction>();
+        ((DeleteFileAction)actionEditor.SelectedAction!).UseRecycleBin.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DatabaseBackupManager_HonorsCustomBackupPath_WhenSpecifiedInAppSettings()
+    {
+        var customBackupDir = Path.Combine(_tempTestDir, "CustomBackupDir");
+        Directory.CreateDirectory(customBackupDir);
+
+        var dbPath = Path.Combine(_tempTestDir, "source.db");
+        using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}"))
+        {
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "CREATE TABLE T (Id INT);";
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
+
+        var settings = new AppSettings { DatabaseBackupPath = customBackupDir };
+        var manager = new DatabaseBackupManager(dbPath, Path.Combine(_tempTestDir, "DefaultBackups"), settings);
+
+        var backupPath = await manager.CreateBackupAsync(tag: "custom_test");
+
+        backupPath.Should().NotBeNull();
+        backupPath!.Should().StartWith(customBackupDir);
+        File.Exists(backupPath).Should().BeTrue();
     }
 }

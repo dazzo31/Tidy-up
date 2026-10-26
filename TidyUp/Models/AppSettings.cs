@@ -76,7 +76,7 @@ public partial class AppSettings : ObservableObject
 
     // Performance Settings
     [ObservableProperty]
-    private int _maxConcurrentOperations = 4;
+    private int _maxConcurrentOperations = 1;
 
     [ObservableProperty]
     private int _scanBatchSize = 500;

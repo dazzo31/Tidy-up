@@ -45,7 +45,7 @@ public static class ServiceConfiguration
         // Also register DbContext directly for simple transient use
         services.AddDbContext<TidyUpDbContext>(options => options.UseSqlite(paths.ConnectionString));
 
-        services.AddSingleton<IDatabaseBackupManager>(sp => new DatabaseBackupManager(sp.GetRequiredService<TidyUpPaths>()));
+        services.AddSingleton<IDatabaseBackupManager>(sp => new DatabaseBackupManager(sp.GetRequiredService<TidyUpPaths>(), sp.GetService<AppSettings>()));
         services.AddSingleton<IDbIntegrityChecker, DbIntegrityChecker>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
         services.AddSingleton<IThemeService>(_ => new ThemeService(
@@ -122,6 +122,7 @@ public static class ServiceConfiguration
         services.AddTransient<RuleConflictsViewModel>();
         services.AddTransient<RuleRevisionDiffViewModel>();
         services.AddTransient<FoldersViewModel>();
+        services.AddTransient<ActionEditorViewModel>();
 
         // Views
         services.AddTransient<MainWindow>();

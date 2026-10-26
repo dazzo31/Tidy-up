@@ -20,7 +20,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
     private readonly ConcurrentDictionary<string, DateTime> _fileChangeTimestamps = new(StringComparer.OrdinalIgnoreCase);
     private readonly ConcurrentDictionary<string, bool> _reconnectingFolders = new(StringComparer.OrdinalIgnoreCase);
     private readonly CompositeDisposable _subscriptions = new();
-    private readonly TimeSpan _debounceDelay = TimeSpan.FromMilliseconds(500);
+    private readonly TimeSpan _debounceDelay;
     private readonly IFileLockDetector _fileLockDetector;
     private readonly IRetryQueueManager? _retryQueueManager;
     private readonly IWatcherHealthMonitor? _watcherHealthMonitor;
@@ -46,8 +46,10 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
     public FileMonitorService(
         IFileLockDetector? fileLockDetector = null,
         IRetryQueueManager? retryQueueManager = null,
-        IWatcherHealthMonitor? watcherHealthMonitor = null)
+        IWatcherHealthMonitor? watcherHealthMonitor = null,
+        TidyUp.Models.AppSettings? appSettings = null)
     {
+        _debounceDelay = TimeSpan.FromMilliseconds(appSettings?.DebounceDelayMs > 0 ? appSettings.DebounceDelayMs : 500);
         _fileLockDetector = fileLockDetector ?? new FileLockDetector();
         _retryQueueManager = retryQueueManager;
         _watcherHealthMonitor = watcherHealthMonitor;

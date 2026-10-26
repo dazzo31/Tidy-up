@@ -164,6 +164,32 @@ public partial class SettingsViewModel : ObservableObject
         }
     }
 
+    public string DefaultBackupsDirectory => _paths?.BackupsDirectory ?? string.Empty;
+
+    public Func<string?>? BrowseFolderHandler { get; set; }
+
+    [RelayCommand]
+    private void BrowseBackupDirectory()
+    {
+        var selected = BrowseFolderHandler != null
+            ? BrowseFolderHandler()
+            : DefaultBrowseFolder();
+
+        if (!string.IsNullOrWhiteSpace(selected))
+        {
+            Settings.DatabaseBackupPath = selected;
+        }
+    }
+
+    private static string? DefaultBrowseFolder()
+    {
+        var dialog = new Microsoft.Win32.OpenFolderDialog
+        {
+            Title = "Select Database Backup Storage Directory"
+        };
+        return dialog.ShowDialog() == true ? dialog.FolderName : null;
+    }
+
     [RelayCommand]
     private async Task BackupDatabaseAsync()
     {

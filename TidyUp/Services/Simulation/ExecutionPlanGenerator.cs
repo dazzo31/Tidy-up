@@ -12,11 +12,13 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
 {
     private readonly IRuleEngine _ruleEngine;
     private readonly IVariableEngine _variableEngine;
+    private readonly TidyUp.Models.AppSettings? _appSettings;
 
-    public ExecutionPlanGenerator(IRuleEngine ruleEngine, IVariableEngine variableEngine)
+    public ExecutionPlanGenerator(IRuleEngine ruleEngine, IVariableEngine variableEngine, TidyUp.Models.AppSettings? appSettings = null)
     {
         _ruleEngine = ruleEngine ?? throw new ArgumentNullException(nameof(ruleEngine));
         _variableEngine = variableEngine ?? throw new ArgumentNullException(nameof(variableEngine));
+        _appSettings = appSettings;
     }
 
     public async Task<ExecutionPlan> GeneratePlanAsync(Rule rule, CancellationToken cancellationToken = default)

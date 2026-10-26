@@ -99,6 +99,25 @@ public partial class App : Application
                 _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>().SetShared(AppSettings);
             }
 
+            // Auto cleanup logs on startup if enabled (TASK-REM-35)
+            if (AppSettings?.AutoCleanupLogs == true && AppSettings.LogRetentionDays > 0)
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _serviceProvider.CreateScope();
+                        var logRepo = scope.ServiceProvider.GetRequiredService<TidyUp.Data.Repositories.IActionLogRepository>();
+                        var cutoff = DateTime.UtcNow.AddDays(-AppSettings.LogRetentionDays);
+                        await logRepo.DeleteOlderThanAsync(cutoff);
+                    }
+                    catch
+                    {
+                        // Background cleanup failure must not disrupt startup
+                    }
+                });
+            }
+
             // Apply the saved theme (and follow later changes) before any window is created
             try
             {

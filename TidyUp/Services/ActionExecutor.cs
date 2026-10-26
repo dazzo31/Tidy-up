@@ -21,12 +21,21 @@ public class ActionExecutor(
     ISafeFileSystem? safeFileSystem = null,
     IFileLockDetector? fileLockDetector = null,
     IRollbackEngine? rollbackEngine = null,
-    IOperationTelemetryService? telemetryService = null) : IActionExecutor
+    IOperationTelemetryService? telemetryService = null,
+    TidyUp.Models.AppSettings? appSettings = null) : IActionExecutor
 {
     private readonly ISafeFileSystem _safeFileSystem = safeFileSystem ?? new WindowsShellFileOperations();
     private readonly IFileLockDetector _fileLockDetector = fileLockDetector ?? new FileLockDetector();
     private readonly IRollbackEngine? _rollbackEngine = rollbackEngine;
     private readonly IOperationTelemetryService? _telemetryService = telemetryService;
+    private readonly TidyUp.Models.AppSettings? _appSettings = appSettings;
+
+    private (TimeSpan Timeout, TimeSpan PollInterval) GetLockWaitTimes()
+    {
+        var count = _appSettings?.FileLockRetryCount > 0 ? _appSettings.FileLockRetryCount : 3;
+        var delay = _appSettings?.FileLockRetryDelayMs > 0 ? _appSettings.FileLockRetryDelayMs : 1000;
+        return (TimeSpan.FromMilliseconds(count * delay), TimeSpan.FromMilliseconds(Math.Min(delay, 500)));
+    }
     private const int MaxRetries = 3;
     private static readonly int[] RetryDelays = [100, 500, 2000];
 
@@ -402,8 +411,8 @@ public class ActionExecutor(
             {
                 var isReady = await _fileLockDetector.WaitForFileReadyAsync(
                     fileInfo.FullName,
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromMilliseconds(100));
+                    GetLockWaitTimes().Timeout,
+                    GetLockWaitTimes().PollInterval);
 
                 if (!isReady)
                 {
@@ -525,8 +534,8 @@ public class ActionExecutor(
             {
                 var isReady = await _fileLockDetector.WaitForFileReadyAsync(
                     fileInfo.FullName,
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromMilliseconds(100));
+                    GetLockWaitTimes().Timeout,
+                    GetLockWaitTimes().PollInterval);
 
                 if (!isReady)
                 {
@@ -647,8 +656,8 @@ public class ActionExecutor(
             {
                 var isReady = await _fileLockDetector.WaitForFileReadyAsync(
                     fileInfo.FullName,
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromMilliseconds(100));
+                    GetLockWaitTimes().Timeout,
+                    GetLockWaitTimes().PollInterval);
 
                 if (!isReady)
                 {
@@ -740,8 +749,8 @@ public class ActionExecutor(
             {
                 var isReady = await _fileLockDetector.WaitForFileReadyAsync(
                     fileInfo.FullName,
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromMilliseconds(100));
+                    GetLockWaitTimes().Timeout,
+                    GetLockWaitTimes().PollInterval);
 
                 if (!isReady)
                 {
@@ -817,8 +826,8 @@ public class ActionExecutor(
             {
                 var isReady = await _fileLockDetector.WaitForFileReadyAsync(
                     fileInfo.FullName,
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromMilliseconds(100));
+                    GetLockWaitTimes().Timeout,
+                    GetLockWaitTimes().PollInterval);
 
                 if (!isReady)
                 {

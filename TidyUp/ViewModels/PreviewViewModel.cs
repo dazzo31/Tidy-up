@@ -148,6 +148,7 @@ public partial class PreviewViewModel : ObservableObject
     private readonly IExecutionDiscrepancyAnalyzer? _discrepancyAnalyzer;
     private readonly IBatchProcessingCoordinator _batchCoordinator;
     private readonly IExplainableDecisionEngine? _explainableEngine;
+    private readonly TidyUp.Models.AppSettings? _appSettings;
     private CancellationTokenSource? _batchCancellationTokenSource;
 
     [ObservableProperty]
@@ -369,13 +370,15 @@ public partial class PreviewViewModel : ObservableObject
         IActionExecutor actionExecutor,
         IExecutionDiscrepancyAnalyzer? discrepancyAnalyzer = null,
         IBatchProcessingCoordinator? batchCoordinator = null,
-        IExplainableDecisionEngine? explainableEngine = null)
+        IExplainableDecisionEngine? explainableEngine = null,
+        TidyUp.Models.AppSettings? appSettings = null)
     {
         _planGenerator = planGenerator ?? throw new ArgumentNullException(nameof(planGenerator));
         _actionExecutor = actionExecutor ?? throw new ArgumentNullException(nameof(actionExecutor));
         _discrepancyAnalyzer = discrepancyAnalyzer;
         _batchCoordinator = batchCoordinator ?? new BatchProcessingCoordinator(_actionExecutor);
         _explainableEngine = explainableEngine;
+        _appSettings = appSettings;
 
         ConfirmApplyHandler = DefaultConfirmApply;
         SafeguardDialogHandler = DefaultSafeguardDialog;
@@ -621,7 +624,7 @@ public partial class PreviewViewModel : ObservableObject
 
         // Step 2: Evaluate destructive-action safeguards (permanent deletion, overwrite, >50 files)
         var safeguardVm = new SafeguardConfirmationViewModel();
-        bool requiresSafeguard = safeguardVm.EvaluateRisks(approvedItems);
+        bool requiresSafeguard = (_appSettings?.RequireDestructiveConfirmations ?? true) && safeguardVm.EvaluateRisks(approvedItems);
         if (requiresSafeguard)
         {
             if (!SafeguardDialogHandler(safeguardVm))

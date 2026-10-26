@@ -19,14 +19,16 @@ public partial class DatabaseBackupManager : IDatabaseBackupManager
 
     public string DefaultDatabasePath => _defaultDatabasePath;
     public string BackupsDirectory => _backupsDirectory;
+    private readonly TidyUp.Models.AppSettings? _appSettings;
 
-    public DatabaseBackupManager(string databasePath, string backupsDirectory)
+    public DatabaseBackupManager(string databasePath, string backupsDirectory, TidyUp.Models.AppSettings? appSettings = null)
     {
         _defaultDatabasePath = databasePath;
         _backupsDirectory = backupsDirectory;
+        _appSettings = appSettings;
     }
 
-    public DatabaseBackupManager(TidyUpPaths paths) : this(paths.DatabasePath, paths.BackupsDirectory)
+    public DatabaseBackupManager(TidyUpPaths paths, TidyUp.Models.AppSettings? appSettings = null) : this(paths.DatabasePath, paths.BackupsDirectory, appSettings)
     {
     }
 
@@ -36,13 +38,17 @@ public partial class DatabaseBackupManager : IDatabaseBackupManager
         if (!File.Exists(source))
             return null;
 
-        Directory.CreateDirectory(_backupsDirectory);
+        var effectiveBackupsDir = !string.IsNullOrWhiteSpace(_appSettings?.DatabaseBackupPath)
+            ? _appSettings.DatabaseBackupPath
+            : _backupsDirectory;
+
+        Directory.CreateDirectory(effectiveBackupsDir);
 
         if (string.IsNullOrWhiteSpace(destinationPath))
         {
             var cleanTag = string.IsNullOrWhiteSpace(tag) ? "backup" : tag.Trim();
             var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
-            destinationPath = Path.Combine(_backupsDirectory, $"tidyup_{cleanTag}_{timestamp}.db");
+            destinationPath = Path.Combine(effectiveBackupsDir, $"tidyup_{cleanTag}_{timestamp}.db");
         }
         else
         {
@@ -98,11 +104,15 @@ public partial class DatabaseBackupManager : IDatabaseBackupManager
         if (!File.Exists(source))
             return null;
 
-        Directory.CreateDirectory(_backupsDirectory);
+        var effectiveBackupsDir = !string.IsNullOrWhiteSpace(_appSettings?.DatabaseBackupPath)
+            ? _appSettings.DatabaseBackupPath
+            : _backupsDirectory;
+
+        Directory.CreateDirectory(effectiveBackupsDir);
 
         var todayTag = DateTime.UtcNow.ToString("yyyyMMdd");
         var expectedDailyFileName = $"tidyup_daily_{todayTag}.db";
-        var dailyPath = Path.Combine(_backupsDirectory, expectedDailyFileName);
+        var dailyPath = Path.Combine(effectiveBackupsDir, expectedDailyFileName);
 
         if (File.Exists(dailyPath))
         {

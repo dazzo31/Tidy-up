@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TidyUp.Models.Domain;
+using TidyUp.Models;
 using TidyUp.Models.Enums;
 
 namespace TidyUp.ViewModels;
@@ -13,6 +14,12 @@ public partial class ActionEditorViewModel : ObservableObject
 {
     [ObservableProperty]
     private ObservableCollection<FileAction> _actions = new();
+    private readonly AppSettings? _appSettings;
+
+    public ActionEditorViewModel(AppSettings? appSettings = null)
+    {
+        _appSettings = appSettings;
+    }
 
     [ObservableProperty]
     private FileAction? _selectedAction;
@@ -27,7 +34,7 @@ public partial class ActionEditorViewModel : ObservableObject
         {
             Order = Actions.Count,
             DestinationPath = "",
-            ConflictResolution = ConflictResolution.Skip
+            ConflictResolution = _appSettings?.DefaultConflictResolution ?? ConflictResolution.Skip
         };
         Actions.Add(action);
         SelectedAction = action;
@@ -43,7 +50,7 @@ public partial class ActionEditorViewModel : ObservableObject
         {
             Order = Actions.Count,
             DestinationPath = "",
-            ConflictResolution = ConflictResolution.Skip,
+            ConflictResolution = _appSettings?.DefaultConflictResolution ?? ConflictResolution.Skip,
             ApplyToSourceFile = true
         };
         Actions.Add(action);
@@ -75,7 +82,7 @@ public partial class ActionEditorViewModel : ObservableObject
         var action = new DeleteFileAction
         {
             Order = Actions.Count,
-            UseRecycleBin = true,
+            UseRecycleBin = _appSettings?.UseRecycleBinByDefault ?? true,
             ConfirmBeforeDelete = true
         };
         Actions.Add(action);

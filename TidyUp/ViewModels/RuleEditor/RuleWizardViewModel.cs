@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TidyUp.Data.Repositories;
+using TidyUp.Models;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
 using TidyUp.Services.Folders;
@@ -90,7 +91,7 @@ public partial class RuleWizardViewModel : ObservableObject
 
     public ConditionEditorViewModel ConditionEditor { get; } = new();
 
-    public ActionEditorViewModel ActionEditor { get; } = new();
+    public ActionEditorViewModel ActionEditor { get; }
 
     [ObservableProperty]
     private RuleValidationResult? _validationResult;
@@ -136,13 +137,15 @@ public partial class RuleWizardViewModel : ObservableObject
         IRuleValidator ruleValidator,
         IExecutionPlanGenerator executionPlanGenerator,
         IRuleSummaryGenerator? ruleSummaryGenerator = null,
-        IFolderPathNormalizer? pathNormalizer = null)
+        IFolderPathNormalizer? pathNormalizer = null,
+        AppSettings? appSettings = null)
     {
         _ruleRepository = ruleRepository;
         _ruleValidator = ruleValidator;
         _executionPlanGenerator = executionPlanGenerator;
         _ruleSummaryGenerator = ruleSummaryGenerator ?? new RuleSummaryGenerator();
         _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
+        ActionEditor = new ActionEditorViewModel(appSettings);
 
         // Initialize default empty root condition
         ConditionEditor.RootCondition = new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
