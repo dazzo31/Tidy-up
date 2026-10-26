@@ -156,7 +156,7 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <CheckBox IsChecked="{Binding IsApproved, UpdateSourceTrigger=PropertyChanged}"
-                                                  IsEnabled="{Binding CanBeApplied}"
+                                                  IsEnabled="{Binding CanToggleApproval}"
                                                   HorizontalAlignment="Center"
                                                   AutomationProperties.Name="Approve planned action"/>
                                     </DataTemplate>

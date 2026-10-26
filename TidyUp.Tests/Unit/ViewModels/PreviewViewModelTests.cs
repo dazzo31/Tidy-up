@@ -598,4 +598,140 @@ public class PreviewViewModelTests : IDisposable
     }
 
     #endregion
+
+    #region TASK-REM-21 (TU-24): Post-Execution Selection & Apply Button Eligibility Predicate Tests
+
+    [Fact]
+    public async Task ApplyChangesAsync_DisablesApplyButton_AndUpdatesCaption_WhenAllApprovedActionsSucceed()
+    {
+        // Arrange
+        var file1 = Path.Combine(_testTempDir, "succ1.txt");
+        var file2 = Path.Combine(_testTempDir, "succ2.txt");
+        File.WriteAllText(file1, "Content 1");
+        File.WriteAllText(file2, "Content 2");
+
+        var moveAction1 = new MoveFileAction { DestinationPath = Path.Combine(_testTempDir, "Dest") };
+        var moveAction2 = new MoveFileAction { DestinationPath = Path.Combine(_testTempDir, "Dest") };
+
+        var plan = new ExecutionPlan
+        {
+            PlannedActions =
+            {
+                new PlannedFileAction
+                {
+                    SourcePath = file1,
+                    TargetPath = Path.Combine(_testTempDir, "Dest", "succ1.txt"),
+                    ActionType = ActionType.Move,
+                    FileAction = moveAction1,
+                    HasConflict = false
+                },
+                new PlannedFileAction
+                {
+                    SourcePath = file2,
+                    TargetPath = Path.Combine(_testTempDir, "Dest", "succ2.txt"),
+                    ActionType = ActionType.Move,
+                    FileAction = moveAction2,
+                    HasConflict = false
+                }
+            }
+        };
+
+        _viewModel.LoadPlan(plan);
+        _viewModel.PendingApprovedCount.Should().Be(2);
+        _viewModel.CanApplyChanges.Should().BeTrue();
+        _viewModel.ApplyButtonText.Should().Be("Apply 2 approved changes");
+
+        _actionExecutorMock
+            .Setup(x => x.ExecuteActionAsync(It.IsAny<FileAction>(), It.IsAny<FileInfo>(), It.IsAny<int?>(), It.IsAny<Guid?>()))
+            .ReturnsAsync(new ActionResult { Success = true, ResultPath = Path.Combine(_testTempDir, "Dest", "succ.txt") });
+
+        // Act
+        await _viewModel.ApplyChangesAsync();
+
+        // Assert: Apply button is immediately disabled and caption reflects terminal success
+        _viewModel.PendingApprovedCount.Should().Be(0);
+        _viewModel.CanApplyChanges.Should().BeFalse();
+        _viewModel.ApplyChangesCommand.CanExecute(null).Should().BeFalse();
+        _viewModel.ApplyButtonText.Should().Be("All approved changes applied");
+        _viewModel.ExecutedSuccessCount.Should().Be(2);
+        _viewModel.ExecutedFailureCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task ApplyChangesAsync_DisablesApplyButton_AndShowsFailureCaption_WhenSomeActionsFail()
+    {
+        // Arrange
+        var file1 = Path.Combine(_testTempDir, "fail1.txt");
+        var file2 = Path.Combine(_testTempDir, "fail2.txt");
+        File.WriteAllText(file1, "Content 1");
+        File.WriteAllText(file2, "Content 2");
+
+        var moveAction1 = new MoveFileAction { DestinationPath = Path.Combine(_testTempDir, "Dest") };
+        var moveAction2 = new MoveFileAction { DestinationPath = Path.Combine(_testTempDir, "Dest") };
+
+        var plan = new ExecutionPlan
+        {
+            PlannedActions =
+            {
+                new PlannedFileAction
+                {
+                    SourcePath = file1,
+                    TargetPath = Path.Combine(_testTempDir, "Dest", "fail1.txt"),
+                    ActionType = ActionType.Move,
+                    FileAction = moveAction1,
+                    HasConflict = false
+                },
+                new PlannedFileAction
+                {
+                    SourcePath = file2,
+                    TargetPath = Path.Combine(_testTempDir, "Dest", "fail2.txt"),
+                    ActionType = ActionType.Move,
+                    FileAction = moveAction2,
+                    HasConflict = false
+                }
+            }
+        };
+
+        _viewModel.LoadPlan(plan);
+
+        _actionExecutorMock
+            .Setup(x => x.ExecuteActionAsync(moveAction1, It.IsAny<FileInfo>(), It.IsAny<int?>(), It.IsAny<Guid?>()))
+            .ReturnsAsync(new ActionResult { Success = true, ResultPath = Path.Combine(_testTempDir, "Dest", "fail1.txt") });
+        _actionExecutorMock
+            .Setup(x => x.ExecuteActionAsync(moveAction2, It.IsAny<FileInfo>(), It.IsAny<int?>(), It.IsAny<Guid?>()))
+            .ReturnsAsync(new ActionResult { Success = false, ErrorMessage = "Access Denied" });
+
+        // Act
+        await _viewModel.ApplyChangesAsync();
+
+        // Assert: Apply button is immediately disabled, failure is reported, and completed actions cannot be re-applied
+        _viewModel.PendingApprovedCount.Should().Be(0);
+        _viewModel.CanApplyChanges.Should().BeFalse();
+        _viewModel.ApplyChangesCommand.CanExecute(null).Should().BeFalse();
+        _viewModel.ApplyButtonText.Should().Be("Execution completed with failures");
+        _viewModel.ExecutedSuccessCount.Should().Be(1);
+        _viewModel.ExecutedFailureCount.Should().Be(1);
+        _viewModel.StatusMessage.Should().Contain("completed with errors: 1 succeeded, 1 failed");
+    }
+
+    [Fact]
+    public void ExecutedActions_CannotBeReApprovedOrReapplied()
+    {
+        // Arrange
+        var plan = CreateSampleExecutionPlan();
+        _viewModel.LoadPlan(plan);
+
+        var firstItem = _viewModel.AllItems.First(i => !i.HasConflict);
+        firstItem.IsExecuted = true;
+
+        // Assert
+        firstItem.CanToggleApproval.Should().BeFalse();
+        firstItem.CanBeApplied.Should().BeFalse();
+
+        // Calling SetAllApproved(true) must not re-approve executed items
+        _viewModel.SetAllApproved(true);
+        _viewModel.AllItems.Where(i => i.IsExecuted).Should().OnlyContain(i => !i.CanBeApplied);
+    }
+
+    #endregion
 }

@@ -27,6 +27,8 @@ public partial class PlannedActionItemViewModel : ObservableObject
     private string _executionStatus = "Pending";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanBeApplied))]
+    [NotifyPropertyChangedFor(nameof(CanToggleApproval))]
     private bool _isExecuted;
 
     [ObservableProperty]
@@ -130,7 +132,8 @@ public partial class PlannedActionItemViewModel : ObservableObject
         }
     }
 
-    public bool CanBeApplied => IsApproved && !HasConflict && !IsExecuted;
+    public bool CanToggleApproval => !HasConflict && !IsExecuted && !IsSkipped;
+    public bool CanBeApplied => IsApproved && !HasConflict && !IsExecuted && !IsSkipped;
 }
 
 /// <summary>
@@ -265,9 +268,17 @@ public partial class PreviewViewModel : ObservableObject
     private int _conflictCount;
 
     [ObservableProperty]
+    private bool _wasCancelled;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyChanges))]
     [NotifyPropertyChangedFor(nameof(ApplyButtonText))]
+    [NotifyPropertyChangedFor(nameof(PendingApprovedCount))]
     private int _approvedCount;
+
+    public int PendingApprovedCount => AllItems.Count > 0
+        ? AllItems.Count(i => i.CanBeApplied)
+        : ApprovedCount;
 
     [ObservableProperty]
     private int _executedSuccessCount;
@@ -314,18 +325,42 @@ public partial class PreviewViewModel : ObservableObject
         !IsLoading &&
         !IsExecuting &&
         ExecutionPlan != null &&
-        AllItems.Any(i => i.IsApproved) &&
+        PendingApprovedCount > 0 &&
         !AllItems.Any(i => i.IsApproved && i.HasConflict);
 
     /// <summary>
     /// Caption for the apply button. A bare "Apply 0" reads like a broken button, so the empty case is spelled out.
+    /// Harmonized to reflect pending approved actions and terminal execution states (TASK-REM-21).
     /// </summary>
-    public string ApplyButtonText => ApprovedCount switch
+    public string ApplyButtonText
     {
-        0 => "Apply approved changes (none selected)",
-        1 => "Apply 1 approved change",
-        _ => $"Apply {ApprovedCount} approved changes"
-    };
+        get
+        {
+            if (PendingApprovedCount > 0)
+            {
+                return PendingApprovedCount == 1
+                    ? "Apply 1 approved change"
+                    : $"Apply {PendingApprovedCount} approved changes";
+            }
+
+            if (AllItems.Any(i => i.IsExecuted))
+            {
+                if (ExecutedFailureCount > 0)
+                {
+                    return "Execution completed with failures";
+                }
+
+                if (WasCancelled)
+                {
+                    return "Execution cancelled";
+                }
+
+                return "All approved changes applied";
+            }
+
+            return "Apply approved changes (none selected)";
+        }
+    }
 
     public bool EnablePreFlightValidation { get; set; }
 
@@ -396,6 +431,7 @@ public partial class PreviewViewModel : ObservableObject
     {
         ArgumentNullException.ThrowIfNull(plan);
 
+        WasCancelled = false;
         ExecutionPlan = plan;
         TotalScannedFiles = plan.TotalScanned;
         TotalMatchedFiles = plan.TotalMatched;
@@ -407,7 +443,10 @@ public partial class PreviewViewModel : ObservableObject
             var itemVm = new PlannedActionItemViewModel(action);
             itemVm.PropertyChanged += (s, e) =>
             {
-                if (e.PropertyName == nameof(PlannedActionItemViewModel.IsApproved))
+                if (e.PropertyName == nameof(PlannedActionItemViewModel.IsApproved) ||
+                    e.PropertyName == nameof(PlannedActionItemViewModel.IsExecuted) ||
+                    e.PropertyName == nameof(PlannedActionItemViewModel.CanBeApplied) ||
+                    e.PropertyName == nameof(PlannedActionItemViewModel.CanToggleApproval))
                 {
                     UpdateApprovedCount();
                     OnPropertyChanged(nameof(CanApplyChanges));
@@ -454,6 +493,7 @@ public partial class PreviewViewModel : ObservableObject
         _simulationCts?.Cancel();
         _simulationCts?.Dispose();
         _simulationCts = null;
+        WasCancelled = false;
         ExecutionPlan = null;
         AllItems.Clear();
         FilteredItems.Clear();
@@ -549,7 +589,7 @@ public partial class PreviewViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanApplyChanges))]
     public async Task ApplyChangesAsync()
     {
-        var approvedItems = AllItems.Where(i => i.IsApproved && !i.HasConflict && !i.IsExecuted).ToList();
+        var approvedItems = AllItems.Where(i => i.CanBeApplied).ToList();
         if (approvedItems.Count == 0)
         {
             StatusMessage = "No approved actions to apply.";
@@ -652,7 +692,10 @@ public partial class PreviewViewModel : ObservableObject
                     itemVm.ExecutionStatus = report.LastActionResult?.ErrorMessage ?? "Failed";
                 }
             }
-            StatusMessage = $"Applying changes: {report.CompletedCount} of {report.TotalCount}...";
+            if (IsExecuting && report.CompletedCount < report.TotalCount)
+            {
+                StatusMessage = $"Applying changes: {report.CompletedCount} of {report.TotalCount}...";
+            }
         });
 
         try
@@ -665,14 +708,36 @@ public partial class PreviewViewModel : ObservableObject
 
             ExecutedSuccessCount = batchResult.SucceededCount;
             ExecutedFailureCount = batchResult.FailedCount;
+            WasCancelled = batchResult.WasCancelled;
 
-            // Update any cancelled / skipped items in viewmodel
-            foreach (var skipped in batchResult.ItemResults.Where(r => r.Skipped))
+            // Ensure authoritative terminal state on all items from batch results
+            foreach (var itemResult in batchResult.ItemResults)
             {
-                if (itemMap.TryGetValue(skipped.Action.Id, out var skippedVm))
+                if (itemMap.TryGetValue(itemResult.Action.Id, out var itemVm))
                 {
-                    skippedVm.IsExecuted = false;
-                    skippedVm.ExecutionStatus = "Cancelled";
+                    if (itemResult.Skipped)
+                    {
+                        itemVm.IsExecuted = false;
+                        itemVm.ExecutionStatus = "Cancelled";
+                    }
+                    else
+                    {
+                        itemVm.IsExecuted = true;
+                        if (itemResult.Result?.Success == true)
+                        {
+                            itemVm.ExecutionFailed = false;
+                            itemVm.ExecutionStatus = "Completed";
+                            if (!string.IsNullOrEmpty(itemResult.Result.ResultPath))
+                            {
+                                itemVm.PlannedAction.TargetPath = itemResult.Result.ResultPath;
+                            }
+                        }
+                        else
+                        {
+                            itemVm.ExecutionFailed = true;
+                            itemVm.ExecutionStatus = itemResult.Result?.ErrorMessage ?? "Failed";
+                        }
+                    }
                 }
             }
 
@@ -682,7 +747,14 @@ public partial class PreviewViewModel : ObservableObject
             }
             else
             {
-                StatusMessage = $"Execution complete: {ExecutedSuccessCount} succeeded, {ExecutedFailureCount} failed.";
+                if (ExecutedFailureCount > 0)
+                {
+                    StatusMessage = $"Execution completed with errors: {ExecutedSuccessCount} succeeded, {ExecutedFailureCount} failed.";
+                }
+                else
+                {
+                    StatusMessage = $"Execution complete: {ExecutedSuccessCount} succeeded, {ExecutedFailureCount} failed.";
+                }
             }
 
             if (_discrepancyAnalyzer != null)
@@ -876,7 +948,10 @@ public partial class PreviewViewModel : ObservableObject
 
     private void UpdateApprovedCount()
     {
-        ApprovedCount = AllItems.Count(i => i.IsApproved && !i.IsExecuted);
+        ApprovedCount = AllItems.Count(i => i.CanBeApplied);
+        OnPropertyChanged(nameof(PendingApprovedCount));
+        OnPropertyChanged(nameof(CanApplyChanges));
+        OnPropertyChanged(nameof(ApplyButtonText));
     }
 }
 
