@@ -480,4 +480,28 @@ public class MainWindowRulesListTests : IDisposable
         vm.StatusMessage.Should().Contain("Simulated SQLite constraint violation");
         vm.Rules.Should().BeEmpty();
     }
+    #region Preview Plan Invalidation Tests
+
+    [Fact]
+    public void SelectedRule_WhenChanged_ClearsCachedPreviewPlan()
+    {
+        // Arrange
+        var rule1 = new Rule { Name = "Rule 1" };
+        var rule2 = new Rule { Name = "Rule 2" };
+        _viewModel.Rules.Add(rule1);
+        _viewModel.Rules.Add(rule2);
+
+        _viewModel.SelectedRule = rule1;
+        _viewModel.PreviewViewModel.LoadPlan(new ExecutionPlan { RuleName = "Rule 1 Plan" });
+        _viewModel.PreviewViewModel.ExecutionPlan.Should().NotBeNull();
+
+        // Act: switch selected rule
+        _viewModel.SelectedRule = rule2;
+
+        // Assert: preview plan must be invalidated/cleared
+        _viewModel.PreviewViewModel.ExecutionPlan.Should().BeNull();
+        _viewModel.PreviewViewModel.AllItems.Should().BeEmpty();
+    }
+
+    #endregion
 }

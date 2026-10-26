@@ -221,6 +221,21 @@ public partial class PreviewViewModel : ObservableObject
     [ObservableProperty]
     private string? _scanWarningMessage;
 
+    /// <summary>
+    /// Displays rule identity and simulation timestamp for the active plan.
+    /// </summary>
+    public string PlanHeaderInfo
+    {
+        get
+        {
+            if (ExecutionPlan == null)
+                return "Dry-run simulation of planned operations. Review impacts and evaluate condition breakdowns before applying.";
+
+            var timeStr = ExecutionPlan.CreatedAt.ToLocalTime().ToString("HH:mm:ss");
+            return $"Plan for '{ExecutionPlan.RuleName}' generated at {timeStr} • {AllItems.Count} planned action(s)";
+        }
+    }
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyChanges))]
     private bool _isLoading;
@@ -428,6 +443,48 @@ public partial class PreviewViewModel : ObservableObject
 
         OnPropertyChanged(nameof(CanApplyChanges));
         ApplyChangesCommand.NotifyCanExecuteChanged();
+        OnPropertyChanged(nameof(PlanHeaderInfo));
+    }
+
+    /// <summary>
+    /// Explicitly clears any cached execution plan and resets preview items and status.
+    /// </summary>
+    public void ClearPlan()
+    {
+        _simulationCts?.Cancel();
+        _simulationCts?.Dispose();
+        _simulationCts = null;
+        ExecutionPlan = null;
+        AllItems.Clear();
+        FilteredItems.Clear();
+        TotalScannedFiles = 0;
+        TotalMatchedFiles = 0;
+        ConflictCount = 0;
+        HasScanWarnings = false;
+        ScanWarningMessage = null;
+        StatusMessage = "No execution plan generated. Click 'Refresh' to run simulation.";
+        OnPropertyChanged(nameof(CanApplyChanges));
+        OnPropertyChanged(nameof(PlanHeaderInfo));
+        OnPropertyChanged(nameof(MoveCount));
+        OnPropertyChanged(nameof(CopyCount));
+        OnPropertyChanged(nameof(RenameCount));
+        OnPropertyChanged(nameof(DeleteCount));
+        ApplyChangesCommand.NotifyCanExecuteChanged();
+    }
+
+    /// <summary>
+    /// Re-runs preview simulation for the active rule against monitored folders.
+    /// </summary>
+    [RelayCommand]
+    public async Task RefreshPreviewAsync()
+    {
+        if (CurrentRule == null)
+        {
+            StatusMessage = "Cannot refresh: no rule selected for preview.";
+            return;
+        }
+
+        await SimulateRuleAsync(CurrentRule);
     }
 
     /// <summary>

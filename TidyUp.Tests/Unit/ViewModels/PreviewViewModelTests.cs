@@ -518,4 +518,84 @@ public class PreviewViewModelTests : IDisposable
     }
 
     #endregion
+    #region ClearPlan & Refresh Command Tests
+
+    [Fact]
+    public void ClearPlan_ResetsAllItemsAndPlanState()
+    {
+        // Arrange
+        var plan = new ExecutionPlan
+        {
+            RuleName = "Test Rule",
+            PlannedActions = new List<PlannedFileAction>
+            {
+                new PlannedFileAction
+                {
+                    SourcePath = "file1.txt",
+                    ActionType = ActionType.Move,
+                    HasConflict = false
+                }
+            }
+        };
+
+        _viewModel.LoadPlan(plan);
+        _viewModel.ExecutionPlan.Should().NotBeNull();
+        _viewModel.AllItems.Should().HaveCount(1);
+        _viewModel.MoveCount.Should().Be(1);
+
+        // Act
+        _viewModel.ClearPlan();
+
+        // Assert
+        _viewModel.ExecutionPlan.Should().BeNull();
+        _viewModel.AllItems.Should().BeEmpty();
+        _viewModel.MoveCount.Should().Be(0);
+        _viewModel.CanApplyChanges.Should().BeFalse();
+        _viewModel.StatusMessage.Should().Contain("No execution plan generated");
+    }
+
+    [Fact]
+    public async Task RefreshPreviewAsync_WithActiveRule_ReRunsSimulation()
+    {
+        // Arrange
+        var rule = new Rule { Name = "Refreshable Rule" };
+        var freshPlan = new ExecutionPlan
+        {
+            RuleName = "Refreshable Rule",
+            PlannedActions = new List<PlannedFileAction>()
+        };
+
+        _planGeneratorMock
+            .Setup(g => g.GeneratePlanAsync(rule, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(freshPlan);
+
+        _viewModel.CurrentRule = rule;
+
+        // Act
+        await _viewModel.RefreshPreviewCommand.ExecuteAsync(null);
+
+        // Assert
+        _planGeneratorMock.Verify(g => g.GeneratePlanAsync(rule, It.IsAny<CancellationToken>()), Times.Once);
+        _viewModel.ExecutionPlan.Should().BeSameAs(freshPlan);
+    }
+
+    [Fact]
+    public void PlanHeaderInfo_WhenPlanLoaded_ContainsRuleNameAndTimestamp()
+    {
+        // Arrange
+        var plan = new ExecutionPlan
+        {
+            RuleName = "HeaderRule",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // Act
+        _viewModel.LoadPlan(plan);
+
+        // Assert
+        _viewModel.PlanHeaderInfo.Should().Contain("HeaderRule");
+        _viewModel.PlanHeaderInfo.Should().Contain("generated at");
+    }
+
+    #endregion
 }

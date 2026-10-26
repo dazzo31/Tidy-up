@@ -22,7 +22,7 @@
         <!-- Header and Action Breakdown Badges -->
         <controls:PageHeader Grid.Row="0" Margin="0,0,0,12"
                              Title="Preview &amp; Review"
-                             Subtitle="Dry-run simulation of planned operations. Review impacts and evaluate condition breakdowns before applying.">
+                             Subtitle="{Binding PlanHeaderInfo}">
             <!-- Operation Breakdown Summary Bar -->
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                 <Border Background="{DynamicResource Win11InfoBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
@@ -37,9 +37,19 @@
                 <Border Background="{DynamicResource Win11ErrorBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,6,0">
                     <TextBlock Text="{Binding DeleteCount, StringFormat='Recycle: {0}'}" Foreground="{DynamicResource Win11ErrorBrush}" FontWeight="SemiBold" FontSize="11"/>
                 </Border>
-                <Border Background="{DynamicResource Win11WarningBackgroundBrush}" CornerRadius="4" Padding="8,4">
+                <Border Background="{DynamicResource Win11WarningBackgroundBrush}" CornerRadius="4" Padding="8,4" Margin="0,0,8,0">
                     <TextBlock Text="{Binding ConflictCount, StringFormat='Conflicts: {0}'}" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="Bold" FontSize="11"/>
                 </Border>
+                <Button Command="{Binding RefreshPreviewCommand}"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Height="28" Padding="8,0" FontSize="11"
+                        ToolTip="Refresh preview simulation against monitored folders"
+                        AutomationProperties.Name="Refresh preview">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Refresh" Width="14" Height="14" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                        <TextBlock Text="Refresh" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Button>
             </StackPanel>
         </controls:PageHeader>
 

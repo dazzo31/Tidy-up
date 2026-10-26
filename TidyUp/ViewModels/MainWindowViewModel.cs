@@ -282,6 +282,7 @@ public partial class MainWindowViewModel : ObservableObject
                 if (SetProperty(ref _selectedRule, value))
                 {
                     IsRuleDirty = false;
+                    PreviewViewModel?.ClearPlan();
                     // Unsubscribe from old rule
                     if (oldRule != null)
                     {
@@ -412,6 +413,7 @@ public partial class MainWindowViewModel : ObservableObject
 
         IsRuleDirty = false;
         SelectedRule.IsDirty = false;
+        PreviewViewModel?.ClearPlan();
     }
 
     private void RestoreRuleFromBaseline(Rule baseline)
@@ -941,6 +943,7 @@ public partial class MainWindowViewModel : ObservableObject
             _activeRuleDraft?.CommitBaseline(SelectedRule);
             IsRuleDirty = false;
             SelectedRule.IsDirty = false;
+            PreviewViewModel?.ClearPlan();
             UpdateRuleMetadata(SelectedRule);
             FilterRules();
             StateManager.NotifyRuleSaved();
@@ -1116,7 +1119,11 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             CurrentView = NavigationView.PreviewReview;
-            await PreviewViewModel.SimulateRuleAsync(SelectedRule);
+            PreviewViewModel?.ClearPlan();
+            if (PreviewViewModel != null && SelectedRule != null)
+            {
+                await PreviewViewModel.SimulateRuleAsync(SelectedRule);
+            }
             StateManager.NotifyRuleSimulated();
         }
         catch
