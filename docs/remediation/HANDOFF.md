@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ dee8400  
+**Repository / Branch / Current SHA:** TidyUp on main @ e198ea1  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (TASK-REM-29 Complete)  
-**Active Task & Current State:** TASK-REM-29 (DONE) -> Next: TASK-REM-30 (Aggregate Tray Icon Health & Native Handle Management)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed (All 6 tasks complete: 25 -> 26 -> 24 -> 07 -> 29 -> 30)  
+**Active Task & Current State:** Phase 5 Complete -> Next: TASK-REM-31 (Operation stream convergence for Dashboard & Logs)  
 **Completed Changes & Files:**
+- TASK-REM-30 (SHA: e198ea1):
+  - ITrayIconService.cs & TrayIconService.cs: Implemented per-folder health tracking in `ConcurrentDictionary<string, WatcherHealthStatus>`. `RecomputeAggregateStatus` calculates aggregate status prioritizing Disconnected/Error/Degraded over Healthy; a healthy event on one folder never clears an active warning or error on another folder.
+  - Retained branded base application icon with subtle 6x6 anti-aliased badge overlay dot in bottom-right corner instead of replacing the entire icon with a solid colored circle.
+  - Added native P/Invoke `DestroyIcon` to explicitly clean up unmanaged HICON handles allocated via `bitmap.GetHicon()` on every icon swap and on `Dispose()`, preventing GDI handle resource leaks.
+  - TrayIconAndToastNotificationTests.cs: Unit tests verify multi-folder health aggregation (healthy sibling does not clear warning) and native HICON creation and disposal. 757 tests passing.
 - TASK-REM-29 (SHA: dee8400):
   - IWindowCloseCoordinator.cs & WindowCloseCoordinator.cs: Implemented unified window close coordinator eliminating event-handler races between MainWindow and App. Evaluates close actions (CloseAndExit, MinimizeToTray, Cancel) across active batches, dirty drafts, explicit exit, and tray preferences.
   - App.xaml.cs: On startup, preserves restored WindowState (e.g. Maximized) without forcing WindowState.Normal; RequestApplicationExitAsync polls IApplicationStateManager to wait for active batch completion with timeout protection; static TrayIcon and IsExiting properties exposed for coordination.
@@ -95,11 +100,11 @@
 - `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-27` as `DONE` and `TU-04` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 703 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 757 passed, 0 failed, 0 skipped (3.0s).
 - Zero compilation errors or styling guard warnings across solution.
 
 **Evidence Paths & Tested SHA:**
-- SHA: `87ca750`
+- SHA: `e198ea1`
 - Tracking: `docs/remediation/TRACKER.md`
 - Finding Matrix: `docs/remediation/FINDING_MATRIX.md`
 
@@ -112,4 +117,4 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Phase 2 complete. Await user review/confirmation to proceed to Phase 3 (`TASK-REM-22`: Two-Phase Durable Journaling & Rule Metadata Tracking).
+- Phase 5 complete. Await user review/confirmation to proceed to Phase 6 (`TASK-REM-31`: Operation stream convergence for Dashboard & Logs).
