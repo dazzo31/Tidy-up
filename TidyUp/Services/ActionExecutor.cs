@@ -291,6 +291,8 @@ public class ActionExecutor(
         int? counter,
         string? destinationOverride = null)
     {
+        string? fullDestPath = null;
+        string? displacedBackupPath = null;
         try
         {
             if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
@@ -321,8 +323,7 @@ public class ActionExecutor(
                 }
             }
 
-            string fullDestPath;
-            string? displacedBackupPath = null;
+
             if (!string.IsNullOrEmpty(destinationOverride))
             {
                 fullDestPath = destinationOverride;
@@ -340,8 +341,10 @@ public class ActionExecutor(
                         return new ActionResult
                         {
                             Success = false,
-                            Type = ActionResultType.Skipped,
-                            ErrorMessage = "Operation skipped due to conflict"
+                            Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                            ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                                ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                                : "Operation skipped due to conflict"
                         };
                     }
                     fullDestPath = resolvedDest;
@@ -373,8 +376,10 @@ public class ActionExecutor(
                     return new ActionResult
                     {
                         Success = false,
-                        Type = ActionResultType.Skipped,
-                        ErrorMessage = "Operation skipped due to conflict"
+                        Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                        ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                            ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                            : "Operation skipped due to conflict"
                     };
                 }
                 fullDestPath = resolvedDest;
@@ -395,6 +400,10 @@ public class ActionExecutor(
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrEmpty(displacedBackupPath) && File.Exists(displacedBackupPath) && !File.Exists(fullDestPath))
+            {
+                try { File.Move(displacedBackupPath, fullDestPath); } catch { }
+            }
             return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
@@ -405,6 +414,8 @@ public class ActionExecutor(
         int? counter,
         string? destinationOverride = null)
     {
+        string? fullDestPath = null;
+        string? displacedBackupPath = null;
         try
         {
             if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
@@ -435,8 +446,7 @@ public class ActionExecutor(
                 }
             }
 
-            string fullDestPath;
-            string? displacedBackupPath = null;
+
             if (!string.IsNullOrEmpty(destinationOverride))
             {
                 fullDestPath = destinationOverride;
@@ -454,8 +464,10 @@ public class ActionExecutor(
                         return new ActionResult
                         {
                             Success = false,
-                            Type = ActionResultType.Skipped,
-                            ErrorMessage = "Operation skipped due to conflict"
+                            Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                            ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                                ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                                : "Operation skipped due to conflict"
                         };
                     }
                     fullDestPath = resolvedDest;
@@ -487,8 +499,10 @@ public class ActionExecutor(
                     return new ActionResult
                     {
                         Success = false,
-                        Type = ActionResultType.Skipped,
-                        ErrorMessage = "Operation skipped due to conflict"
+                        Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                        ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                            ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                            : "Operation skipped due to conflict"
                     };
                 }
                 fullDestPath = resolvedDest;
@@ -508,6 +522,10 @@ public class ActionExecutor(
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrEmpty(displacedBackupPath) && File.Exists(displacedBackupPath) && !File.Exists(fullDestPath))
+            {
+                try { File.Move(displacedBackupPath, fullDestPath); } catch { }
+            }
             return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
@@ -518,6 +536,8 @@ public class ActionExecutor(
         int? counter,
         string? targetPathOverride = null)
     {
+        string? newPath = null;
+        string? displacedBackupPath = null;
         try
         {
             if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
@@ -548,7 +568,7 @@ public class ActionExecutor(
                 }
             }
 
-            string newPath;
+
             if (!string.IsNullOrEmpty(targetPathOverride))
             {
                 newPath = targetPathOverride;
@@ -570,14 +590,18 @@ public class ActionExecutor(
             }
 
             // Handle conflicts
-            var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+            var (resolvedPath, displaced) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+
+            displacedBackupPath = displaced;
             if (resolvedPath is null)
             {
                 return new ActionResult
                 {
                     Success = false,
-                    Type = ActionResultType.Skipped,
-                    ErrorMessage = "Operation skipped due to conflict"
+                    Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                    ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                        ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                        : "Operation skipped due to conflict"
                 };
             }
             newPath = resolvedPath;
@@ -592,6 +616,10 @@ public class ActionExecutor(
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrEmpty(displacedBackupPath) && File.Exists(displacedBackupPath) && !File.Exists(newPath))
+            {
+                try { File.Move(displacedBackupPath, newPath); } catch { }
+            }
             return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }
@@ -601,6 +629,8 @@ public class ActionExecutor(
         FileInfo fileInfo,
         string? targetPathOverride = null)
     {
+        string? newPath = null;
+        string? displacedBackupPath = null;
         try
         {
             if (_fileLockDetector.IsTemporaryOrIncompleteFile(fileInfo.FullName))
@@ -631,7 +661,7 @@ public class ActionExecutor(
                 }
             }
 
-            string newPath;
+
             if (!string.IsNullOrEmpty(targetPathOverride))
             {
                 newPath = targetPathOverride;
@@ -649,14 +679,18 @@ public class ActionExecutor(
             }
 
             // Handle conflicts
-            var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+            var (resolvedPath, displaced) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+
+            displacedBackupPath = displaced;
             if (resolvedPath is null)
             {
                 return new ActionResult
                 {
                     Success = false,
-                    Type = ActionResultType.Skipped,
-                    ErrorMessage = "Operation skipped due to conflict"
+                    Type = action.ConflictResolution == ConflictResolution.Prompt ? ActionResultType.Warning : ActionResultType.Skipped,
+                    ErrorMessage = action.ConflictResolution == ConflictResolution.Prompt
+                        ? "Interactive prompt conflict resolution not supported in automated batch; operation skipped."
+                        : "Operation skipped due to conflict"
                 };
             }
             newPath = resolvedPath;
@@ -671,6 +705,10 @@ public class ActionExecutor(
         }
         catch (Exception ex)
         {
+            if (!string.IsNullOrEmpty(displacedBackupPath) && File.Exists(displacedBackupPath) && !File.Exists(newPath))
+            {
+                try { File.Move(displacedBackupPath, newPath); } catch { }
+            }
             return new ActionResult { Success = false, ErrorMessage = ex.Message, Type = ActionResultType.Error };
         }
     }

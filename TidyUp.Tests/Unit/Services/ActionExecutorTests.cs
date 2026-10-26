@@ -587,4 +587,88 @@ public class ActionExecutorTests : IDisposable
     {
         _fileHelper.Dispose();
     }
+
+    #region TASK-REM-04 Overwrite and Prompt Conflict Tests
+
+    [Fact]
+    public async Task ExecuteMoveAsync_ConflictWithPrompt_FailsClosedWithWarning()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("source_prompt.txt", "Source Data");
+        var destDir = _fileHelper.CreateTestDirectory("dest_prompt");
+        var existingTarget = _fileHelper.CreateTestFile(Path.Combine(destDir.Name, "source_prompt.txt"), "Original Target Data");
+
+        var action = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Prompt
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert: TU-17 resolved - fail closed with Warning, never silently overwrite
+        result.Success.Should().BeFalse();
+        result.Type.Should().Be(ActionResultType.Warning);
+        result.ErrorMessage.Should().Contain("Interactive prompt conflict resolution not supported");
+        File.ReadAllText(existingTarget.FullName).Should().Be("Original Target Data", "existing destination file must be completely untouched");
+    }
+
+    [Fact]
+    public async Task ExecuteMoveAsync_ConflictWithOverwrite_WhenMutationFails_RestoresDisplacedDestinationFile()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("source_fail.txt", "Source Data");
+        var destDir = _fileHelper.CreateTestDirectory("dest_fail");
+        var targetPath = Path.Combine(destDir.FullName, "source_fail.txt");
+        await File.WriteAllTextAsync(targetPath, "Original Important Destination Content");
+
+        var action = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Overwrite
+        };
+
+        // Lock source file exclusively so File.Move in ActionExecutor fails after conflict resolution
+        using (var lockStream = File.Open(sourceFile.FullName, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            // Act
+            var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+            // Assert
+            result.Success.Should().BeFalse();
+        }
+
+        // Verify destination file was restored immediately and preserved
+        File.Exists(targetPath).Should().BeTrue("displaced destination file must be restored if move mutation fails");
+        File.ReadAllText(targetPath).Should().Be("Original Important Destination Content");
+    }
+
+    [Fact]
+    public async Task ExecuteCopyAsync_ConflictWithOverwrite_RetainsDisplacedFileBackup()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("source_copy.txt", "New Source Content");
+        var destDir = _fileHelper.CreateTestDirectory("dest_copy");
+        var targetPath = Path.Combine(destDir.FullName, "source_copy.txt");
+        await File.WriteAllTextAsync(targetPath, "Old Target Content");
+
+        var action = new CopyFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Overwrite
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.DisplacedBackupPath.Should().NotBeNullOrWhiteSpace();
+        File.ReadAllText(targetPath).Should().Be("New Source Content");
+        File.Exists(result.DisplacedBackupPath).Should().BeTrue();
+        File.ReadAllText(result.DisplacedBackupPath!).Should().Be("Old Target Content");
+    }
+
+    #endregion
 }
