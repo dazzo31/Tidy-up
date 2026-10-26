@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `2ec3b27`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `79b1ac2`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 2 Gate Passed; Phase 3 In Progress (`TASK-REM-22`, `TASK-REM-19` Complete)  
-**Active Task & Current State:** `TASK-REM-19` (`DONE`) -> Next: `TASK-REM-20` (Atomic Batch Lifetime Lease & State Machine Guarding)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed (Tasks 22, 19, 20 Complete)  
+**Active Task & Current State:** `TASK-REM-20` (`DONE`) -> Phase 3 Gate Passed -> Next: Phase 4 Gate / `TASK-REM-03` (Permanent Deletion Authorization Decoupling)  
 **Completed Changes & Files:**
+- `TASK-REM-20` (SHA: `79b1ac2`):
+  - `IApplicationStateManager.cs` & `ApplicationStateManager.cs`: Added `TryAcquireBatchLease` and `ReleaseBatchLease`. State machine holds `ExecutingBatch` lifecycle state across all files during a batch; `NotifyOperationCompleted()` no longer prematurely transitions state back to `Idle` while an active batch lease is held.
+  - `BatchProcessingCoordinator.cs`: Added atomic admission guard via `Interlocked.CompareExchange(ref _executingFlag, 1, 0)` rejecting concurrent batch executions; acquires exclusive batch lease at batch startup and releases lease in `finally` without leaking state or leaving application locked.
+  - `BatchCancellationAndPauseTests.cs`: Unit tests verify continuous `ExecutingBatch` state across serial files with zero intermediate flickering, and confirm atomic rejection of concurrent batch executions. 711 tests passing.
+
 - `TASK-REM-19` (SHA: `2ec3b27`):
   - `PlannedFileAction.cs`: Added `TargetFileName` and `PlannedCounter` properties to store pre-resolved immutable parameters.
   - `ExecutionPlanGenerator.cs`: Populated `PlannedCounter` and `TargetFileName` during simulation.
