@@ -34,7 +34,11 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         foreach (var folder in rule.MonitoredFolders)
         {
             if (cancellationToken.IsCancellationRequested)
+            {
+                combinedPlan.IsIncomplete = true;
+                combinedPlan.ScanErrors.Add("Scan was cancelled before all monitored folders could be scanned.");
                 break;
+            }
 
             if (string.IsNullOrWhiteSpace(folder.Path) || !Directory.Exists(folder.Path))
                 continue;
@@ -50,6 +54,10 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             combinedPlan.TotalScanned += folderPlan.TotalScanned;
             combinedPlan.TotalMatched += folderPlan.TotalMatched;
             combinedPlan.PlannedActions.AddRange(folderPlan.PlannedActions);
+
+            if (folderPlan.IsIncomplete)
+                combinedPlan.IsIncomplete = true;
+            combinedPlan.ScanErrors.AddRange(folderPlan.ScanErrors);
         }
 
         return combinedPlan;
@@ -72,7 +80,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             cancellationToken);
     }
 
-    private Task<ExecutionPlan> GeneratePlanForFolderInternalAsync(
+    private async Task<ExecutionPlan> GeneratePlanForFolderInternalAsync(
         Rule rule,
         string folderPath,
         bool includeSubfolders,
@@ -89,124 +97,181 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         };
 
         if (string.IsNullOrWhiteSpace(folderPath) || !Directory.Exists(folderPath))
-            return Task.FromResult(plan);
+            return plan;
 
         var exclusions = (exclusionPatterns ?? Enumerable.Empty<string>()).ToList();
-        var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
 
-        string[] filePaths;
-        try
-        {
-            filePaths = Directory.GetFiles(folderPath, "*.*", searchOption);
-        }
-        catch (Exception)
-        {
-            // If directory cannot be accessed, return empty plan
-            return Task.FromResult(plan);
-        }
-
-        int fileCounter = 1;
-
-        foreach (var filePath in filePaths)
+        // Offload directory enumeration to background task to keep UI responsive
+        await Task.Run(() =>
         {
             if (cancellationToken.IsCancellationRequested)
-                break;
-
-            plan.TotalScanned++;
-
-            // Check exclusion patterns
-            if (exclusions.Any(p => !string.IsNullOrEmpty(p) && filePath.Contains(p, StringComparison.OrdinalIgnoreCase)))
-                continue;
-
-            FileInfo fileInfo;
-            try
             {
-                fileInfo = new FileInfo(filePath);
-                if (!fileInfo.Exists)
-                    continue;
-            }
-            catch (Exception)
-            {
-                continue;
+                plan.IsIncomplete = true;
+                plan.ScanErrors.Add("Folder scan was cancelled before starting.");
+                return;
             }
 
-            // Evaluate rule conditions in simulation mode (decoupled from live execution eligibility)
-            bool isMatch = _ruleEngine.MatchesConditions(rule, fileInfo);
-            if (!isMatch)
-                continue;
+            var dirQueue = new Queue<string>();
+            dirQueue.Enqueue(folderPath);
+            int fileCounter = 1;
 
-            plan.TotalMatched++;
-
-            // Track the simulated path across multi-action chains
-            string currentVirtualPath = fileInfo.FullName;
-            string currentVirtualName = fileInfo.Name;
-            Guid? previousActionId = null;
-
-            foreach (var action in rule.Actions.OrderBy(a => a.Order))
+            while (dirQueue.Count > 0)
             {
-                var plannedAction = SimulateAction(
-                    action,
-                    rule.Name,
-                    fileInfo,
-                    currentVirtualPath,
-                    currentVirtualName,
-                    fileCounter,
-                    targetReservations,
-                    folderPath);
-
-                plannedAction.InitialSourcePath = fileInfo.FullName;
-                plannedAction.DependsOnActionId = previousActionId;
-
-                plan.PlannedActions.Add(plannedAction);
-                previousActionId = plannedAction.Id;
-
-                // Update virtual path for subsequent chained actions based on action semantics
-                switch (action)
+                if (cancellationToken.IsCancellationRequested)
                 {
-                    case MoveFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
-                        currentVirtualPath = plannedAction.TargetPath;
-                        currentVirtualName = Path.GetFileName(currentVirtualPath);
-                        break;
+                    plan.IsIncomplete = true;
+                    plan.ScanErrors.Add("Folder scan was cancelled before completion.");
+                    break;
+                }
 
-                    case CopyFileAction copyAction:
-                        if (!copyAction.ApplyToSourceFile && !string.IsNullOrEmpty(plannedAction.TargetPath))
+                var currentDir = dirQueue.Dequeue();
+
+                // 1. Enumerate files in currentDir with per-directory fault tolerance
+                IEnumerable<string> filePaths;
+                try
+                {
+                    filePaths = Directory.EnumerateFiles(currentDir, "*.*");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    plan.IsIncomplete = true;
+                    plan.ScanErrors.Add($"Access denied to folder '{currentDir}': {ex.Message}");
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    plan.IsIncomplete = true;
+                    plan.ScanErrors.Add($"Error accessing folder '{currentDir}': {ex.Message}");
+                    continue;
+                }
+
+                foreach (var filePath in filePaths)
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        plan.IsIncomplete = true;
+                        plan.ScanErrors.Add("File enumeration was cancelled.");
+                        break;
+                    }
+
+                    plan.TotalScanned++;
+
+                    // Check exclusion patterns
+                    if (exclusions.Any(p => !string.IsNullOrEmpty(p) && filePath.Contains(p, StringComparison.OrdinalIgnoreCase)))
+                        continue;
+
+                    FileInfo fileInfo;
+                    try
+                    {
+                        fileInfo = new FileInfo(filePath);
+                        if (!fileInfo.Exists)
+                            continue;
+                    }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
+
+                    // Evaluate rule conditions in simulation mode (decoupled from live execution eligibility)
+                    bool isMatch = _ruleEngine.MatchesConditions(rule, fileInfo);
+                    if (!isMatch)
+                        continue;
+
+                    plan.TotalMatched++;
+
+                    // Track the simulated path across multi-action chains
+                    string currentVirtualPath = fileInfo.FullName;
+                    string currentVirtualName = fileInfo.Name;
+                    Guid? previousActionId = null;
+
+                    foreach (var action in rule.Actions.OrderBy(a => a.Order))
+                    {
+                        var plannedAction = SimulateAction(
+                            action,
+                            rule.Name,
+                            fileInfo,
+                            currentVirtualPath,
+                            currentVirtualName,
+                            fileCounter,
+                            targetReservations,
+                            folderPath);
+
+                        plannedAction.InitialSourcePath = fileInfo.FullName;
+                        plannedAction.DependsOnActionId = previousActionId;
+
+                        plan.PlannedActions.Add(plannedAction);
+                        previousActionId = plannedAction.Id;
+
+                        // Update virtual path for subsequent chained actions based on action semantics
+                        switch (action)
                         {
-                            currentVirtualPath = plannedAction.TargetPath;
-                            currentVirtualName = Path.GetFileName(currentVirtualPath);
+                            case MoveFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                                currentVirtualPath = plannedAction.TargetPath;
+                                currentVirtualName = Path.GetFileName(currentVirtualPath);
+                                break;
+
+                            case CopyFileAction copyAction:
+                                if (!copyAction.ApplyToSourceFile && !string.IsNullOrEmpty(plannedAction.TargetPath))
+                                {
+                                    currentVirtualPath = plannedAction.TargetPath;
+                                    currentVirtualName = Path.GetFileName(currentVirtualPath);
+                                }
+                                break;
+
+                            case RenameFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                                currentVirtualPath = plannedAction.TargetPath;
+                                currentVirtualName = Path.GetFileName(currentVirtualPath);
+                                break;
+
+                            case ChangeExtensionAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                                currentVirtualPath = plannedAction.TargetPath;
+                                currentVirtualName = Path.GetFileName(currentVirtualPath);
+                                break;
+
+                            case DeleteFileAction:
+                                currentVirtualPath = string.Empty;
+                                currentVirtualName = string.Empty;
+                                break;
+
+                            case ExtractArchiveAction:
+                                break;
+
+                            case RunCommandAction:
+                                break;
                         }
-                        // If ApplyToSourceFile is true, retain currentVirtualPath pointing to the source file
-                        break;
+                    }
 
-                    case RenameFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
-                        currentVirtualPath = plannedAction.TargetPath;
-                        currentVirtualName = Path.GetFileName(currentVirtualPath);
-                        break;
+                    fileCounter++;
+                }
 
-                    case ChangeExtensionAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
-                        currentVirtualPath = plannedAction.TargetPath;
-                        currentVirtualName = Path.GetFileName(currentVirtualPath);
-                        break;
+                // 2. If includeSubfolders, enqueue accessible child subdirectories
+                if (includeSubfolders)
+                {
+                    try
+                    {
+                        foreach (var subDir in Directory.EnumerateDirectories(currentDir))
+                        {
+                            if (cancellationToken.IsCancellationRequested)
+                                break;
 
-                    case DeleteFileAction:
-                        // Delete terminates file continuation
-                        currentVirtualPath = string.Empty;
-                        currentVirtualName = string.Empty;
-                        break;
-
-                    case ExtractArchiveAction:
-                        // Extraction directory is not a file; retain current archive file path
-                        break;
-
-                    case RunCommandAction:
-                        // Command text is not a file path; retain current file path
-                        break;
+                            dirQueue.Enqueue(subDir);
+                        }
+                    }
+                    catch (UnauthorizedAccessException ex)
+                    {
+                        plan.IsIncomplete = true;
+                        plan.ScanErrors.Add($"Access denied to subdirectories in '{currentDir}': {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        plan.IsIncomplete = true;
+                        plan.ScanErrors.Add($"Error scanning subdirectories in '{currentDir}': {ex.Message}");
+                    }
                 }
             }
+        });
 
-            fileCounter++;
-        }
-
-        return Task.FromResult(plan);
+        return plan;
     }
 
     private PlannedFileAction SimulateAction(

@@ -444,5 +444,78 @@ public class PreviewViewModelTests : IDisposable
     }
 
     #endregion
-}
+    #region Incomplete Scan Warnings & Partial Plan Tests
 
+    [Fact]
+    public void LoadPlan_WithIncompletePlan_ExposesScanWarnings()
+    {
+        // Arrange
+        var plan = new ExecutionPlan
+        {
+            IsIncomplete = true,
+            ScanErrors = new List<string> { "Access denied to folder X" }
+        };
+
+        // Act
+        _viewModel.LoadPlan(plan);
+
+        // Assert
+        _viewModel.HasScanWarnings.Should().BeTrue();
+        _viewModel.ScanWarningMessage.Should().Contain("partially completed");
+        _viewModel.StatusMessage.Should().Contain("partially completed");
+    }
+
+    [Fact]
+    public async Task ApplyChangesAsync_WithIncompletePlan_DecliningConfirmation_AbortsApply()
+    {
+        // Arrange
+        var tempFile = Path.GetTempFileName();
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = Path.GetTempPath(),
+            ConflictResolution = ConflictResolution.Skip
+        };
+
+        var plan = new ExecutionPlan
+        {
+            IsIncomplete = true,
+            ScanErrors = new List<string> { "Inaccessible subfolder" },
+            PlannedActions = new List<PlannedFileAction>
+            {
+                new PlannedFileAction
+                {
+                    SourcePath = tempFile,
+                    TargetPath = Path.Combine(Path.GetTempPath(), Path.GetFileName(tempFile)),
+                    FileAction = moveAction,
+                    HasConflict = false
+                }
+            }
+        };
+
+        _viewModel.LoadPlan(plan);
+        _viewModel.AllItems[0].IsApproved = true;
+
+        bool partialWarningPrompted = false;
+        _viewModel.ConfirmApplyHandler = (msg, title) =>
+        {
+            if (title == "Partial Scan Warning")
+            {
+                partialWarningPrompted = true;
+                return false; // User declines proceeding with partial scan
+            }
+            return true;
+        };
+
+        // Act
+        await _viewModel.ApplyChangesAsync();
+
+        // Assert
+        partialWarningPrompted.Should().BeTrue();
+        _viewModel.StatusMessage.Should().Contain("partial scan acknowledgment declined");
+        _viewModel.ExecutedSuccessCount.Should().Be(0);
+
+        try { File.Delete(tempFile); } catch { }
+    }
+
+    #endregion
+}

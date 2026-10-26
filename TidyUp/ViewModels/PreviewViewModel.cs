@@ -216,6 +216,12 @@ public partial class PreviewViewModel : ObservableObject
     private ExecutionPlan? _executionPlan;
 
     [ObservableProperty]
+    private bool _hasScanWarnings;
+
+    [ObservableProperty]
+    private string? _scanWarningMessage;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanApplyChanges))]
     private bool _isLoading;
 
@@ -405,9 +411,20 @@ public partial class PreviewViewModel : ObservableObject
         OnPropertyChanged(nameof(RenameCount));
         OnPropertyChanged(nameof(DeleteCount));
 
-        StatusMessage = ConflictCount > 0
-            ? $"Plan generated: {AllItems.Count} planned action(s), {ConflictCount} conflict(s) detected."
-            : $"Plan generated: {AllItems.Count} planned action(s). Ready to apply.";
+        if (plan.IsIncomplete || plan.ScanErrors.Count > 0)
+        {
+            HasScanWarnings = true;
+            ScanWarningMessage = "Scan partially completed. Some directories were inaccessible. Showing results for accessible files only.";
+            StatusMessage = $"Scan partially completed ({plan.ScanErrors.Count} warning(s)). Showing results for accessible files only.";
+        }
+        else
+        {
+            HasScanWarnings = false;
+            ScanWarningMessage = null;
+            StatusMessage = ConflictCount > 0
+                ? $"Plan generated: {AllItems.Count} planned action(s), {ConflictCount} conflict(s) detected."
+                : $"Plan generated: {AllItems.Count} planned action(s). Ready to apply.";
+        }
 
         OnPropertyChanged(nameof(CanApplyChanges));
         ApplyChangesCommand.NotifyCanExecuteChanged();
@@ -416,6 +433,9 @@ public partial class PreviewViewModel : ObservableObject
     /// <summary>
     /// Runs a simulation for the specified rule and displays the resulting impact plan.
     /// </summary>
+    private CancellationTokenSource? _simulationCts;
+    private int _simulationGenerationId;
+
     [RelayCommand]
     public async Task SimulateRuleAsync(Rule rule)
     {
@@ -425,25 +445,44 @@ public partial class PreviewViewModel : ObservableObject
             return;
         }
 
+        _simulationCts?.Cancel();
+        _simulationCts?.Dispose();
+        _simulationCts = new CancellationTokenSource();
+        var token = _simulationCts.Token;
+        int genId = Interlocked.Increment(ref _simulationGenerationId);
+
         CurrentRule = rule;
         IsLoading = true;
         StatusMessage = $"Simulating rule '{rule.Name}' across monitored folders...";
 
         try
         {
-            var plan = await _planGenerator.GeneratePlanAsync(rule);
-            LoadPlan(plan);
+            var plan = await _planGenerator.GeneratePlanAsync(rule, token);
+            if (genId == _simulationGenerationId && !token.IsCancellationRequested)
+            {
+                LoadPlan(plan);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Superseded by newer simulation
         }
         catch (Exception ex)
         {
-            ExecutionPlan = null;
-            StatusMessage = $"Simulation error: {ex.Message}";
+            if (genId == _simulationGenerationId)
+            {
+                ExecutionPlan = null;
+                StatusMessage = $"Simulation error: {ex.Message}";
+            }
         }
         finally
         {
-            IsLoading = false;
-            OnPropertyChanged(nameof(CanApplyChanges));
-            ApplyChangesCommand.NotifyCanExecuteChanged();
+            if (genId == _simulationGenerationId)
+            {
+                IsLoading = false;
+                OnPropertyChanged(nameof(CanApplyChanges));
+                ApplyChangesCommand.NotifyCanExecuteChanged();
+            }
         }
     }
 
@@ -468,6 +507,17 @@ public partial class PreviewViewModel : ObservableObject
             {
                 StatusMessage = $"Pre-flight validation failed: {preFlightIssues.Count} file(s) changed on disk. Please refresh preview.";
                 ApplyFilter();
+                return;
+            }
+        }
+
+        // Step 1b: Verify partial scan acknowledgment if incomplete
+        if (ExecutionPlan?.IsIncomplete == true)
+        {
+            var partialMsg = "The preview scan was partially completed because some directories were inaccessible or enumeration was interrupted.\n\nDo you want to proceed and apply changes for the accessible files only?";
+            if (!ConfirmApplyHandler(partialMsg, "Partial Scan Warning"))
+            {
+                StatusMessage = "Apply cancelled: partial scan acknowledgment declined.";
                 return;
             }
         }

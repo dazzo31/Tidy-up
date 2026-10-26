@@ -57,5 +57,15 @@ public class ExecutionPlan
     /// Indicates whether any actions in this plan face conflicts.
     /// </summary>
     public bool HasConflicts => ConflictCount > 0;
+
+    /// <summary>
+    /// Indicates whether the folder scan was incomplete due to cancellation or inaccessible directories.
+    /// </summary>
+    public bool IsIncomplete { get; set; }
+
+    /// <summary>
+    /// Errors encountered during folder enumeration (e.g., unauthorized access or inaccessible paths).
+    /// </summary>
+    public List<string> ScanErrors { get; set; } = new();
 }
 

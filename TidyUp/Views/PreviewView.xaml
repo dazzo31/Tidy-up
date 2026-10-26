@@ -14,6 +14,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -42,8 +43,17 @@
             </StackPanel>
         </controls:PageHeader>
 
+        <!-- Warning Banner for Incomplete / Partial Scans -->
+        <Border Grid.Row="1" Margin="0,0,0,12" Background="{DynamicResource Win11WarningBackgroundBrush}" BorderBrush="{DynamicResource Win11WarningBrush}" BorderThickness="1" CornerRadius="6" Padding="12,8"
+                Visibility="{Binding HasScanWarnings, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <materialDesign:PackIcon Kind="AlertCircleOutline" Foreground="{DynamicResource Win11WarningBrush}" Width="20" Height="20" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                <TextBlock Text="{Binding ScanWarningMessage}" Foreground="{DynamicResource Win11WarningBrush}" FontWeight="SemiBold" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
         <!-- Filter & Control Toolbar -->
-        <materialDesign:Card Grid.Row="1" Margin="0,0,0,12" Padding="10,6" UniformCornerRadius="6">
+        <materialDesign:Card Grid.Row="2" Margin="0,0,0,12" Padding="10,6" UniformCornerRadius="6">
             <DockPanel>
                 <!-- Quick Selection Controls -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
@@ -99,7 +109,7 @@
         </materialDesign:Card>
 
         <!-- Central Workspace with Side-by-Side DataGrid and Explainability Drawer -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="3">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
@@ -276,7 +286,7 @@
         </Grid>
 
         <!-- Footer Apply Action Bar & Progress -->
-        <Border Grid.Row="3" Margin="0,12,0,0">
+        <Border Grid.Row="4" Margin="0,12,0,0">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

@@ -729,4 +729,80 @@ public class ExecutionPlanGeneratorTests : IDisposable
         var action = plan.PlannedActions[0];
         action.TargetPath.Should().Be(Path.Combine(destDir, "flattened.pdf"));
     }
+    #region Resilient Asynchronous Scan Tests
+
+    [Fact]
+    public async Task GeneratePlanForFolderAsync_WithCancellationToken_AbortsAndFlagsIncomplete()
+    {
+        // Arrange
+        var rootDir = Path.Combine(_testRoot, "CancelScanRoot");
+        Directory.CreateDirectory(rootDir);
+        for (int i = 0; i < 20; i++)
+        {
+            await File.WriteAllTextAsync(Path.Combine(rootDir, $"file_{i}.txt"), "sample data");
+        }
+
+        var rule = new Rule
+        {
+            Name = "Cancellation Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = Path.Combine(_testRoot, "CancelDest"),
+                    ConflictResolution = ConflictResolution.Skip
+                }
+            }
+        };
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel(); // Pre-cancel token
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, rootDir, includeSubfolders: true, cancellationToken: cts.Token);
+
+        // Assert
+        plan.IsIncomplete.Should().BeTrue();
+        plan.ScanErrors.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task GeneratePlanForFolderAsync_ContinuesAccessibleSiblings_WhenScanning()
+    {
+        // Arrange
+        var rootDir = Path.Combine(_testRoot, "SiblingScanRoot");
+        var subA = Path.Combine(rootDir, "AccessibleA");
+        var subB = Path.Combine(rootDir, "AccessibleB");
+        Directory.CreateDirectory(subA);
+        Directory.CreateDirectory(subB);
+
+        await File.WriteAllTextAsync(Path.Combine(subA, "docA.txt"), "data A");
+        await File.WriteAllTextAsync(Path.Combine(subB, "docB.txt"), "data B");
+
+        var rule = new Rule
+        {
+            Name = "Sibling Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = Path.Combine(_testRoot, "SiblingDest"),
+                    ConflictResolution = ConflictResolution.Skip
+                }
+            }
+        };
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, rootDir, includeSubfolders: true);
+
+        // Assert
+        plan.PlannedActions.Should().HaveCount(2);
+        plan.TotalMatched.Should().Be(2);
+        plan.IsIncomplete.Should().BeFalse();
+        plan.ScanErrors.Should().BeEmpty();
+    }
+
+    #endregion
 }
