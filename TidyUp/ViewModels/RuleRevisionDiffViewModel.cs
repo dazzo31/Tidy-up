@@ -34,7 +34,7 @@ public partial class RuleRevisionDiffViewModel : ObservableObject
 
     public Action? OnRestoredCallback { get; set; }
 
-    public RuleRevisionDiffViewModel(IRuleRevisionManager revisionManager, Guid ruleId)
+    public RuleRevisionDiffViewModel(IRuleRevisionManager revisionManager, Guid ruleId = default)
     {
         _revisionManager = revisionManager ?? throw new ArgumentNullException(nameof(revisionManager));
         _ruleId = ruleId;
@@ -108,4 +108,3 @@ public partial class RuleRevisionDiffViewModel : ObservableObject
         }
     }
 }
-

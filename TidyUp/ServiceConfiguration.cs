@@ -49,9 +49,19 @@ public static class ServiceConfiguration
         services.AddSingleton<IDbIntegrityChecker, DbIntegrityChecker>();
         services.AddSingleton<IDatabaseMigrator, DatabaseMigrator>();
         services.AddSingleton<IThemeService>(_ => new ThemeService(
-            Application.Current.Resources,
+            Application.Current?.Resources ?? new ResourceDictionary(),
             () => new ResourceDictionary { Source = new Uri("pack://application:,,,/TidyUp;component/Styles/Colors.Dark.xaml", UriKind.Absolute) },
-            marshal: action => Application.Current.Dispatcher.BeginInvoke(action),
+            marshal: action =>
+            {
+                if (Application.Current?.Dispatcher != null)
+                {
+                    Application.Current.Dispatcher.BeginInvoke(action);
+                }
+                else
+                {
+                    action();
+                }
+            },
             watchSystemChanges: true));
 
         // Repositories � scoped so they share a DbContext within a logical operation

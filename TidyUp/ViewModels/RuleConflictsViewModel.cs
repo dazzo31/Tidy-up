@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
+using TidyUp.Models.Domain;
 using TidyUp.Services.Rules;
 
 namespace TidyUp.ViewModels;
@@ -11,7 +11,7 @@ public partial class RuleConflictsViewModel : ObservableObject
     private MultiRuleConflictReport _report;
 
     [ObservableProperty]
-    private ObservableCollection<RuleConflict> _conflicts = new();
+    private ObservableCollection<RuleConflict> _conflicts;
 
     [ObservableProperty]
     private RuleConflict? _selectedConflict;
@@ -22,10 +22,9 @@ public partial class RuleConflictsViewModel : ObservableObject
         ? $"Found {Report.Conflicts.Count} rule conflict(s) across {Report.TotalRulesAnalyzed} active rules."
         : $"No conflicts detected across {Report.TotalRulesAnalyzed} active rules. Rules execute harmoniously.";
 
-    public RuleConflictsViewModel(MultiRuleConflictReport report)
+    public RuleConflictsViewModel(MultiRuleConflictReport? report = null)
     {
-        _report = report ?? throw new ArgumentNullException(nameof(report));
-        _conflicts = new ObservableCollection<RuleConflict>(report.Conflicts);
+        _report = report ?? new MultiRuleConflictReport();
+        _conflicts = new ObservableCollection<RuleConflict>(_report.Conflicts);
     }
 }
-
