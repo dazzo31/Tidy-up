@@ -1,10 +1,16 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 10f995e  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `f118035`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (TASK-REM-04 Complete)  
-**Active Task & Current State:** TASK-REM-04 (DONE) -> Next: TASK-REM-02 (Archive Extraction Safeguards & Overwrite Containment)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-02` Complete)  
+**Active Task & Current State:** `TASK-REM-02` (`DONE`) -> Next: `TASK-REM-05` (Monitored Root Boundary Clamping for Empty Folder Cleanup)  
 **Completed Changes & Files:**
+- `TASK-REM-02` (SHA: `f118035`):
+  - `FileAction.cs` (`ExtractArchiveAction`): Added `UseRecycleBinForArchiveDeletion` (default true) and `ConfirmBeforeDelete` (default true).
+  - `ActionExecutor.cs` (`ExecuteExtractArchiveAsync`): Switched post-extraction archive deletion from raw `File.Delete` to `_safeFileSystem.DeleteFileSafelyAsync(..., useRecycleBin: action.UseRecycleBinForArchiveDeletion, allowPermanentFallback: allowPermanentFallback)`, preventing unrecoverable data loss.
+  - `ExecutionPlanGenerator.cs` (`SimulateAction`): Flags extraction conflict when `OverwriteExisting == true` and destination directory already contains files.
+  - `SafeguardConfirmationViewModel.cs` (`EvaluatePlannedActions`): Flags permanent deletion/archive deletion risk for `ExtractArchiveAction` with `DeleteAfterExtraction`, and flags overwrite risk for `ExtractArchiveAction` with `OverwriteExisting`.
+  - `ActionExecutorTests.cs` & `SafeguardConfirmationViewModelTests.cs`: Unit tests verify safe deletion routing via `ISafeFileSystem` and safeguard risk evaluation. 721 tests passing.
 - TASK-REM-04 (SHA: 10f995e):
   - ActionExecutor.cs: Overwrite conflict strategy stages displaced backups of existing destination files before mutation across ExecuteMoveAsync, ExecuteCopyAsync, ExecuteRenameAsync, and ExecuteChangeExtensionAsync. If mutation throws, displaced backup is restored automatically to prevent data loss. ConflictResolution.Prompt returns ActionResultType.Warning with fail-closed message in automated batch runs instead of silently overwriting.
   - ActionExecutorTests.cs: Unit tests verify safe displaced backup creation and restore on mutation failure, as well as Prompt conflict strategy fail-closed behavior. 717 tests passing.
