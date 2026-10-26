@@ -158,6 +158,27 @@ public class FolderScanAvailabilityTests
     }
 
     [Fact]
+    public void FoldersItem_CanScan_IsFalseWhileScanning_AndRaisesChangeNotifications()
+    {
+        var item = new MonitoredFolderItemViewModel { Exists = true, HasReadPermission = true, HasWritePermission = true };
+        item.RefreshStatus();
+        item.CanScan.Should().BeTrue();
+
+        var changed = new List<string?>();
+        item.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        item.IsScanning = true;
+
+        item.CanScan.Should().BeFalse();
+        item.ScanTooltip.Should().Be("Scan in progress");
+        changed.Should().Contain(nameof(MonitoredFolderItemViewModel.CanScan));
+        changed.Should().Contain(nameof(MonitoredFolderItemViewModel.ScanTooltip));
+
+        item.IsScanning = false;
+        item.CanScan.Should().BeTrue();
+    }
+
+    [Fact]
     public void FoldersItem_CanScan_IsTrueForAHealthyAndForAPausedFolder()
     {
         var item = new MonitoredFolderItemViewModel { Exists = true, HasReadPermission = true, HasWritePermission = true };

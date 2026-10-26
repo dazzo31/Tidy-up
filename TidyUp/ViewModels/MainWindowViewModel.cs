@@ -19,6 +19,7 @@ using TidyUp.Services.Rules;
 using TidyUp.Services.Simulation;
 using TidyUp.Services.State;
 using TidyUp.Services.Validation;
+using TidyUp.Services.Watcher;
 using TidyUp.ViewModels.RuleEditor;
 
 namespace TidyUp.ViewModels;
@@ -582,7 +583,7 @@ public partial class MainWindowViewModel : ObservableObject
         ActionEditor.Actions.CollectionChanged += (s, e) => MarkRuleDirty();
 
         FoldersViewModel = (FoldersViewModel?)serviceProvider.GetService(typeof(FoldersViewModel))
-            ?? new FoldersViewModel(_ruleRepository, _healthMonitor, _folderCatalog, _pathNormalizer);
+            ?? new FoldersViewModel(_ruleRepository, _healthMonitor, _folderCatalog, _pathNormalizer, (IWatcherReconciler?)serviceProvider.GetService(typeof(IWatcherReconciler)));
 
         FoldersViewModel.RequestEditRuleCallback = ruleId =>
         {

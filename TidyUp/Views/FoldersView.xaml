@@ -218,6 +218,13 @@
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <!-- Scan Progress -->
+                                        <ProgressBar IsIndeterminate="True"
+                                                     Width="16" Height="16"
+                                                     Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                                     Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                     Margin="0,0,4,0"/>
+
                                         <!-- Scan Now -->
                                         <Button Style="{StaticResource MaterialDesignIconButton}"
                                                 Command="{Binding DataContext.ScanFolderNowCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"

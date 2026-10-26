@@ -73,15 +73,20 @@ public partial class MonitoredFolderItemViewModel : ObservableObject
 
     public bool IsHealthy => Exists && HasReadPermission && HasWritePermission && !IsSystemProtected;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanScan))]
+    [NotifyPropertyChangedFor(nameof(ScanTooltip))]
+    private bool _isScanning;
+
     /// <summary>The same status the Dashboard shows for this folder.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanScan))]
     [NotifyPropertyChangedFor(nameof(ScanTooltip))]
     private FolderStatus _status = FolderStatus.Healthy;
 
-    public bool CanScan => FolderStatusPresentation.CanScan(Status);
+    public bool CanScan => !IsScanning && FolderStatusPresentation.CanScan(Status);
 
-    public string ScanTooltip => FolderStatusPresentation.ScanTooltip(Status);
+    public string ScanTooltip => IsScanning ? "Scan in progress" : FolderStatusPresentation.ScanTooltip(Status);
 
     /// <summary>Recomputes <see cref="Status"/> from the inspected flags (used when there is no catalog state).</summary>
     public void RefreshStatus()
@@ -103,6 +108,7 @@ public partial class FoldersViewModel : ObservableObject
     private readonly IWatcherHealthMonitor? _healthMonitor;
     private readonly IMonitoredFolderCatalog? _monitoredFolderCatalog;
     private readonly IFolderPathNormalizer _pathNormalizer;
+    private readonly IWatcherReconciler? _watcherReconciler;
 
     [ObservableProperty]
     private ObservableCollection<MonitoredFolderItemViewModel> _monitoredFolders = new();
@@ -158,12 +164,14 @@ public partial class FoldersViewModel : ObservableObject
         IRuleRepository ruleRepository,
         IWatcherHealthMonitor? healthMonitor = null,
         IMonitoredFolderCatalog? monitoredFolderCatalog = null,
-        IFolderPathNormalizer? pathNormalizer = null)
+        IFolderPathNormalizer? pathNormalizer = null,
+        IWatcherReconciler? watcherReconciler = null)
     {
         _ruleRepository = ruleRepository;
         _healthMonitor = healthMonitor;
         _monitoredFolderCatalog = monitoredFolderCatalog;
         _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
+        _watcherReconciler = watcherReconciler;
 
         if (_monitoredFolderCatalog != null)
         {
@@ -579,9 +587,18 @@ public partial class FoldersViewModel : ObservableObject
             return;
         }
 
+        folder.IsScanning = true;
         StatusMessage = $"Scanning '{folder.Path}'...";
         try
         {
+            if (_watcherReconciler != null)
+            {
+                await _watcherReconciler.ReconcileFolderAsync(
+                    folder.Path,
+                    folder.IncludeSubfolders,
+                    folder.ExclusionPatterns.ToList());
+            }
+
             int count = await Task.Run(() =>
             {
                 var searchOption = folder.IncludeSubfolders
@@ -602,6 +619,10 @@ public partial class FoldersViewModel : ObservableObject
         catch (Exception ex)
         {
             StatusMessage = $"Scan error: {ex.Message}";
+        }
+        finally
+        {
+            folder.IsScanning = false;
         }
     }
 

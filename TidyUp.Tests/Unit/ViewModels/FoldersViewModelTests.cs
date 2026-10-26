@@ -1,4 +1,6 @@
+using System.Collections.ObjectModel;
 using System.IO;
+using TidyUp.Services.Watcher;
 using FluentAssertions;
 using Moq;
 using TidyUp.Data.Repositories;
@@ -181,5 +183,53 @@ public class FoldersViewModelTests : IDisposable
         _viewModel.AddMonitoredFolderCommand.Execute(null);
         _viewModel.NewFolderPathInput.Should().BeEmpty();
         _viewModel.AddMonitoredFolderCommand.CanExecute(null).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task ScanFolderNowAsync_InvokesWatcherReconciler_WhenAvailable()
+    {
+        var reconcilerMock = new Mock<IWatcherReconciler>();
+        var viewModel = new FoldersViewModel(_ruleRepoMock.Object, null, null, null, reconcilerMock.Object);
+
+        File.WriteAllText(Path.Combine(_tempTestDir, "item1.txt"), "data");
+
+        var item = new MonitoredFolderItemViewModel
+        {
+            Path = _tempTestDir,
+            IncludeSubfolders = true,
+            ExclusionPatterns = new ObservableCollection<string> { "*.bak" }
+        };
+
+        await viewModel.ScanFolderNowAsync(item);
+
+        reconcilerMock.Verify(r => r.ReconcileFolderAsync(
+            _tempTestDir,
+            true,
+            It.Is<IReadOnlyList<string>>(p => p.Contains("*.bak")),
+            default), Times.Once);
+
+        item.IsScanning.Should().BeFalse();
+        viewModel.StatusMessage.Should().Contain("Scan complete: found 1 active files");
+    }
+
+    [Fact]
+    public async Task ScanFolderNowAsync_DoesNotScan_WhenFolderCannotBeScanned()
+    {
+        var reconcilerMock = new Mock<IWatcherReconciler>();
+        var viewModel = new FoldersViewModel(_ruleRepoMock.Object, null, null, null, reconcilerMock.Object);
+
+        var item = new MonitoredFolderItemViewModel
+        {
+            Path = _tempTestDir,
+            Status = FolderStatus.AccessDenied
+        };
+
+        await viewModel.ScanFolderNowAsync(item);
+
+        reconcilerMock.Verify(r => r.ReconcileFolderAsync(
+            It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<IReadOnlyList<string>>(), It.IsAny<CancellationToken>()), Times.Never);
+
+        item.IsScanning.Should().BeFalse();
+        viewModel.StatusMessage.Should().Contain("Cannot scan");
     }
 }
