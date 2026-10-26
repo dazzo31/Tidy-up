@@ -29,17 +29,38 @@ public partial class HistoryView : UserControl
         if (DataContext is not HistoryViewModel vm)
             return;
 
+        await PromptAndExportCsvAsync(vm, filteredOnly: vm.IsFilterActive);
+    }
+
+    private async void ExportFilteredCsv_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HistoryViewModel vm)
+            return;
+
+        await PromptAndExportCsvAsync(vm, filteredOnly: true);
+    }
+
+    private async void ExportAllCsv_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HistoryViewModel vm)
+            return;
+
+        await PromptAndExportCsvAsync(vm, filteredOnly: false);
+    }
+
+    private static async Task PromptAndExportCsvAsync(HistoryViewModel vm, bool filteredOnly)
+    {
         var dialog = new SaveFileDialog
         {
-            Title = "Export History to CSV",
+            Title = filteredOnly ? "Export Filtered History to CSV" : "Export All History to CSV",
             Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*",
             DefaultExt = "csv",
-            FileName = $"TidyUp_History_{DateTime.Now:yyyyMMdd_HHmmss}.csv"
+            FileName = $"TidyUp_History_{(filteredOnly ? "Filtered_" : "All_")}{DateTime.Now:yyyyMMdd_HHmmss}.csv"
         };
 
         if (dialog.ShowDialog() == true)
         {
-            await vm.ExportToCsvAsync(dialog.FileName);
+            await vm.ExportToCsvAsync(dialog.FileName, filteredOnly);
         }
     }
 
@@ -48,17 +69,38 @@ public partial class HistoryView : UserControl
         if (DataContext is not HistoryViewModel vm)
             return;
 
+        await PromptAndExportJsonAsync(vm, filteredOnly: vm.IsFilterActive);
+    }
+
+    private async void ExportFilteredJson_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HistoryViewModel vm)
+            return;
+
+        await PromptAndExportJsonAsync(vm, filteredOnly: true);
+    }
+
+    private async void ExportAllJson_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not HistoryViewModel vm)
+            return;
+
+        await PromptAndExportJsonAsync(vm, filteredOnly: false);
+    }
+
+    private static async Task PromptAndExportJsonAsync(HistoryViewModel vm, bool filteredOnly)
+    {
         var dialog = new SaveFileDialog
         {
-            Title = "Export History to JSON",
+            Title = filteredOnly ? "Export Filtered History to JSON" : "Export All History to JSON",
             Filter = "JSON Files (*.json)|*.json|All Files (*.*)|*.*",
             DefaultExt = "json",
-            FileName = $"TidyUp_History_{DateTime.Now:yyyyMMdd_HHmmss}.json"
+            FileName = $"TidyUp_History_{(filteredOnly ? "Filtered_" : "All_")}{DateTime.Now:yyyyMMdd_HHmmss}.json"
         };
 
         if (dialog.ShowDialog() == true)
         {
-            await vm.ExportToJsonAsync(dialog.FileName);
+            await vm.ExportToJsonAsync(dialog.FileName, filteredOnly);
         }
     }
 }

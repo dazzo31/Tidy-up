@@ -200,19 +200,33 @@
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
                     <Button Click="ExportCsv_Click"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Height="30" Padding="12,0" Margin="0,0,8,0">
+                            Height="30" Padding="12,0" Margin="0,0,8,0"
+                            ToolTip="Click to export filtered records, or right-click for options">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{Binding FilteredExportCsvLabel}" Click="ExportFilteredCsv_Click"/>
+                                <MenuItem Header="Export All History (CSV)" Click="ExportAllCsv_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="FileDelimited" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Export CSV" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBlock Text="{Binding FilteredExportCsvLabel}" VerticalAlignment="Center" FontSize="11"/>
                         </StackPanel>
                     </Button>
 
                     <Button Click="ExportJson_Click"
                             Style="{StaticResource MaterialDesignOutlinedButton}"
-                            Height="30" Padding="12,0">
+                            Height="30" Padding="12,0"
+                            ToolTip="Click to export filtered records, or right-click for options">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="{Binding FilteredExportJsonLabel}" Click="ExportFilteredJson_Click"/>
+                                <MenuItem Header="Export All History (JSON)" Click="ExportAllJson_Click"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="CodeJson" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                            <TextBlock Text="Export JSON" VerticalAlignment="Center" FontSize="11"/>
+                            <TextBlock Text="{Binding FilteredExportJsonLabel}" VerticalAlignment="Center" FontSize="11"/>
                         </StackPanel>
                     </Button>
                 </StackPanel>

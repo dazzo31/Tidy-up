@@ -209,6 +209,8 @@ public partial class HistoryViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPreviousPage))]
     [NotifyPropertyChangedFor(nameof(HasNextPage))]
     [NotifyPropertyChangedFor(nameof(PageSummary))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
     [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
     private int _totalRecords;
@@ -237,21 +239,36 @@ public partial class HistoryViewModel : ObservableObject
 
     // Filters
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private string _searchText = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private DateTime? _startDate;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private DateTime? _endDate;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private string _selectedRuleFilter = "All Rules";
 
     [ObservableProperty]
     private ObservableCollection<string> _ruleFilterOptions = new() { "All Rules" };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private string _selectedActionTypeFilter = "All Actions";
 
     [ObservableProperty]
@@ -268,7 +285,26 @@ public partial class HistoryViewModel : ObservableObject
     };
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsFilterActive))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportCsvLabel))]
+    [NotifyPropertyChangedFor(nameof(FilteredExportJsonLabel))]
     private string _selectedStatusFilter = "All Statuses";
+
+    public bool IsFilterActive =>
+        !string.IsNullOrWhiteSpace(SearchText) ||
+        StartDate.HasValue ||
+        EndDate.HasValue ||
+        (SelectedRuleFilter != "All Rules" && !string.IsNullOrEmpty(SelectedRuleFilter)) ||
+        (SelectedActionTypeFilter != "All Actions" && !string.IsNullOrEmpty(SelectedActionTypeFilter)) ||
+        (SelectedStatusFilter != "All Statuses" && !string.IsNullOrEmpty(SelectedStatusFilter));
+
+    public string FilteredExportCsvLabel => IsFilterActive
+        ? $"Export Filtered CSV ({TotalRecords})"
+        : "Export CSV";
+
+    public string FilteredExportJsonLabel => IsFilterActive
+        ? $"Export Filtered JSON ({TotalRecords})"
+        : "Export JSON";
 
     [ObservableProperty]
     private ObservableCollection<string> _statusFilterOptions = new()
@@ -343,6 +379,50 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public IQueryable<OperationJournalEntry> BuildFilteredQuery(TidyUpDbContext context)
+    {
+        var query = context.OperationJournal.AsNoTracking().AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(SearchText))
+        {
+            var term = SearchText.Trim().ToLower();
+            query = query.Where(e =>
+                e.OriginalPath.ToLower().Contains(term) ||
+                (e.TargetPath != null && e.TargetPath.ToLower().Contains(term)) ||
+                (e.Details != null && e.Details.ToLower().Contains(term)) ||
+                (e.RuleName != null && e.RuleName.ToLower().Contains(term)));
+        }
+
+        if (StartDate.HasValue)
+        {
+            var startUtc = StartDate.Value.Date.ToUniversalTime();
+            query = query.Where(e => e.Timestamp >= startUtc);
+        }
+
+        if (EndDate.HasValue)
+        {
+            var endUtc = EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
+            query = query.Where(e => e.Timestamp <= endUtc);
+        }
+
+        if (!string.IsNullOrEmpty(SelectedRuleFilter) && SelectedRuleFilter != "All Rules")
+        {
+            query = query.Where(e => e.RuleName == SelectedRuleFilter);
+        }
+
+        if (!string.IsNullOrEmpty(SelectedActionTypeFilter) && SelectedActionTypeFilter != "All Actions")
+        {
+            query = query.Where(e => e.ActionType == SelectedActionTypeFilter);
+        }
+
+        if (!string.IsNullOrEmpty(SelectedStatusFilter) && SelectedStatusFilter != "All Statuses")
+        {
+            query = query.Where(e => e.Status == SelectedStatusFilter);
+        }
+
+        return query;
+    }
+
     /// <summary>
     /// Loads a paginated page of history journal entries applying current filter parameters.
     /// </summary>
@@ -355,45 +435,7 @@ public partial class HistoryViewModel : ObservableObject
         var (context, mustDispose) = await GetContextAsync(cancellationToken);
         try
         {
-            var query = context.OperationJournal.AsNoTracking().AsQueryable();
-
-            // Apply filters
-            if (!string.IsNullOrWhiteSpace(SearchText))
-            {
-                var term = SearchText.Trim().ToLower();
-                query = query.Where(e =>
-                    e.OriginalPath.ToLower().Contains(term) ||
-                    (e.TargetPath != null && e.TargetPath.ToLower().Contains(term)) ||
-                    (e.Details != null && e.Details.ToLower().Contains(term)) ||
-                    (e.RuleName != null && e.RuleName.ToLower().Contains(term)));
-            }
-
-            if (StartDate.HasValue)
-            {
-                var startUtc = StartDate.Value.Date.ToUniversalTime();
-                query = query.Where(e => e.Timestamp >= startUtc);
-            }
-
-            if (EndDate.HasValue)
-            {
-                var endUtc = EndDate.Value.Date.AddDays(1).AddTicks(-1).ToUniversalTime();
-                query = query.Where(e => e.Timestamp <= endUtc);
-            }
-
-            if (!string.IsNullOrEmpty(SelectedRuleFilter) && SelectedRuleFilter != "All Rules")
-            {
-                query = query.Where(e => e.RuleName == SelectedRuleFilter);
-            }
-
-            if (!string.IsNullOrEmpty(SelectedActionTypeFilter) && SelectedActionTypeFilter != "All Actions")
-            {
-                query = query.Where(e => e.ActionType == SelectedActionTypeFilter);
-            }
-
-            if (!string.IsNullOrEmpty(SelectedStatusFilter) && SelectedStatusFilter != "All Statuses")
-            {
-                query = query.Where(e => e.Status == SelectedStatusFilter);
-            }
+            var query = BuildFilteredQuery(context);
 
             // Total count for pagination
             TotalRecords = await query.CountAsync(cancellationToken);
@@ -615,8 +657,9 @@ public partial class HistoryViewModel : ObservableObject
     /// <summary>
     /// Memory-efficient streaming export of history journal records to CSV format.
     /// Queries the SQLite database in chunks to prevent unbounded RAM usage.
+    /// When <paramref name="filteredOnly"/> is true, applies all active search and filter parameters.
     /// </summary>
-    public async Task ExportToCsvAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task ExportToCsvAsync(string filePath, bool filteredOnly = true, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
 
@@ -629,14 +672,15 @@ public partial class HistoryViewModel : ObservableObject
             // Write CSV Header
             await writer.WriteLineAsync("OperationId,BatchId,Timestamp,ActionType,RuleName,OriginalPath,TargetPath,PreActionHash,PostActionHash,Status,RolledBackAt,Details");
 
+            var baseQuery = filteredOnly ? BuildFilteredQuery(context) : context.OperationJournal.AsNoTracking().AsQueryable();
+
             const int chunkSize = 500;
             int offset = 0;
             bool hasMore = true;
 
             while (hasMore && !cancellationToken.IsCancellationRequested)
             {
-                var chunk = await context.OperationJournal
-                    .AsNoTracking()
+                var chunk = await baseQuery
                     .OrderByDescending(e => e.Timestamp)
                     .Skip(offset)
                     .Take(chunkSize)
@@ -675,7 +719,8 @@ public partial class HistoryViewModel : ObservableObject
             }
 
             await writer.FlushAsync();
-            StatusMessage = $"Exported {offset} records to {Path.GetFileName(filePath)}";
+            var mode = filteredOnly ? "filtered" : "all";
+            StatusMessage = $"Exported {offset} {mode} records to {Path.GetFileName(filePath)}";
         }
         finally
         {
@@ -686,10 +731,14 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public Task ExportCsvAsync(string filePath, bool filteredOnly = true, CancellationToken cancellationToken = default)
+        => ExportToCsvAsync(filePath, filteredOnly, cancellationToken);
+
     /// <summary>
     /// Memory-efficient streaming export of history journal records to JSON format.
+    /// When <paramref name="filteredOnly"/> is true, applies all active search and filter parameters.
     /// </summary>
-    public async Task ExportToJsonAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task ExportToJsonAsync(string filePath, bool filteredOnly = true, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(filePath);
 
@@ -701,14 +750,15 @@ public partial class HistoryViewModel : ObservableObject
 
             writer.WriteStartArray();
 
+            var baseQuery = filteredOnly ? BuildFilteredQuery(context) : context.OperationJournal.AsNoTracking().AsQueryable();
+
             const int chunkSize = 500;
             int offset = 0;
             bool hasMore = true;
 
             while (hasMore && !cancellationToken.IsCancellationRequested)
             {
-                var chunk = await context.OperationJournal
-                    .AsNoTracking()
+                var chunk = await baseQuery
                     .OrderByDescending(e => e.Timestamp)
                     .Skip(offset)
                     .Take(chunkSize)
@@ -750,7 +800,8 @@ public partial class HistoryViewModel : ObservableObject
 
             writer.WriteEndArray();
             await writer.FlushAsync();
-            StatusMessage = $"Exported {offset} records to {Path.GetFileName(filePath)}";
+            var mode = filteredOnly ? "filtered" : "all";
+            StatusMessage = $"Exported {offset} {mode} records to {Path.GetFileName(filePath)}";
         }
         finally
         {
@@ -761,8 +812,19 @@ public partial class HistoryViewModel : ObservableObject
         }
     }
 
+    public Task ExportJsonAsync(string filePath, bool filteredOnly = true, CancellationToken cancellationToken = default)
+        => ExportToJsonAsync(filePath, filteredOnly, cancellationToken);
+
     private static string EscapeCsv(string value)
     {
+        if (string.IsNullOrEmpty(value)) return string.Empty;
+
+        // Prevent spreadsheet formula injection (=, +, -, @, tab)
+        if (value.Length > 0 && (value[0] == '=' || value[0] == '+' || value[0] == '-' || value[0] == '@' || value[0] == '\t'))
+        {
+            value = "'" + value;
+        }
+
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n') || value.Contains('\r'))
         {
             return $"\"{value.Replace("\"", "\"\"")}\"";

@@ -348,6 +348,82 @@ public class HistoryViewModelTests : IDisposable
         content.Should().Contain("originalPath");
     }
 
+    [Fact]
+    public async Task ExportToCsvAsync_WhenFilterActive_ExportsOnlyFilteredRecordsUnlessExportAllRequested()
+    {
+        // Arrange: 5 Move entries, 3 Delete entries
+        await SeedJournalEntriesAsync(5, "Move Rule", "Move");
+        await SeedJournalEntriesAsync(3, "Delete Rule", "Delete");
+
+        _viewModel.SelectedActionTypeFilter = "Delete";
+        await _viewModel.LoadPageAsync();
+
+        var filteredPath = Path.Combine(_testTempDir, "filtered.csv");
+        var allPath = Path.Combine(_testTempDir, "all.csv");
+
+        // Act 1: Export filtered only
+        await _viewModel.ExportToCsvAsync(filteredPath, filteredOnly: true);
+
+        // Assert 1: Only the 3 Delete entries exported (+ header)
+        var filteredLines = await File.ReadAllLinesAsync(filteredPath);
+        filteredLines.Length.Should().Be(4); // 1 header + 3 data lines
+        filteredLines.Skip(1).All(l => l.Contains("Delete")).Should().BeTrue();
+
+        // Act 2: Export all
+        await _viewModel.ExportToCsvAsync(allPath, filteredOnly: false);
+
+        // Assert 2: All 8 entries exported (+ header)
+        var allLines = await File.ReadAllLinesAsync(allPath);
+        allLines.Length.Should().Be(9); // 1 header + 8 data lines
+    }
+
+    [Fact]
+    public async Task ExportToCsvAsync_FormulaInjectionValues_AreEscapedWithLeadingQuote()
+    {
+        // Arrange
+        await SeedJournalEntriesAsync(1, "Formula Rule", "Move");
+        var entry = _dbContext.OperationJournal.First();
+        entry.Details = "=SUM(1+1)";
+        entry.OriginalPath = "+cmd.exe";
+        await _dbContext.SaveChangesAsync();
+
+        var exportPath = Path.Combine(_testTempDir, "formula_test.csv");
+
+        // Act
+        await _viewModel.ExportToCsvAsync(exportPath, filteredOnly: false);
+
+        // Assert
+        var content = await File.ReadAllTextAsync(exportPath);
+        content.Should().Contain("'+cmd.exe");
+        content.Should().Contain("'=SUM(1+1)");
+    }
+
+    [Fact]
+    public async Task ExportToJsonAsync_WhenFilterActive_ExportsOnlyMatchingRecords()
+    {
+        // Arrange: 4 entries with Rule Alpha, 2 entries with Rule Beta
+        await SeedJournalEntriesAsync(4, "Alpha Rule", "Move");
+        await SeedJournalEntriesAsync(2, "Beta Rule", "Copy");
+
+        _viewModel.SelectedRuleFilter = "Beta Rule";
+        await _viewModel.LoadPageAsync();
+
+        var filteredJson = Path.Combine(_testTempDir, "filtered.json");
+        var allJson = Path.Combine(_testTempDir, "all.json");
+
+        // Act 1: Filtered export
+        await _viewModel.ExportToJsonAsync(filteredJson, filteredOnly: true);
+        var filteredContent = await File.ReadAllTextAsync(filteredJson);
+        filteredContent.Should().Contain("Beta Rule");
+        filteredContent.Should().NotContain("Alpha Rule");
+
+        // Act 2: Export all
+        await _viewModel.ExportToJsonAsync(allJson, filteredOnly: false);
+        var allContent = await File.ReadAllTextAsync(allJson);
+        allContent.Should().Contain("Beta Rule");
+        allContent.Should().Contain("Alpha Rule");
+    }
+
     #endregion
     [Fact]
     public void CanRollback_PermanentDelete_ReturnsFalse()
