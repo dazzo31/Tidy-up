@@ -3,7 +3,7 @@
 Verification of the complete TidyUp remediation program (Phases 0 through 8, `TASK-BASE-01` through `TASK-REM-39`), resolving all 44 cataloged architectural, data safety, lifecycle, UI/UX, and visual contrast findings.
 
 - **Candidate Version:** `v1.2.1-rc.1`
-- **Candidate Code SHA:** `34fa050`
+- **Candidate Code SHA:** `de7e276`
 - **Historical Tag Provenance:** Tag `v1.2.0` is preserved intact at `43811ca904954c4adb6537eb888dade5f025f3a0` and not overwritten.
 - **Verification Environment:** Windows 11 Build 10.0.26300, .NET SDK 9.0.319 Windows x64, Visual Studio / MSBuild Release configuration.
 
@@ -27,8 +27,8 @@ Automated packaging pipeline executed via `scripts/Package-Release.ps1`:
 
 | Package Artifact | Size (Bytes) | Distribution Type | SHA-256 Checksum |
 | :--- | :---: | :--- | :--- |
-| `TidyUp-1.2.1-rc.1-win-x64.zip` | 8,946,338 | Windows x64 (Framework-Dependent) | `3fc6172c200455acc2ae36e0225c3352aa29f9474f1eafbe99b997ef183c48cf` |
-| `TidyUp-1.2.1-rc.1-win-x64-standalone.zip` | 76,992,924 | Windows x64 (Self-Contained Single-File) | `457614f3cbd867bb9de903f68b577f75515a12ee68b9eac19f026b909c1b874b` |
+| `TidyUp-1.2.1-rc.1-win-x64.zip` | 8,946,338 | Windows x64 (Framework-Dependent) | `b7ed7280243436fbb5abf2eb39284b115c881251d33b09e62f9fc10c4d2c3ab7` |
+| `TidyUp-1.2.1-rc.1-win-x64-standalone.zip` | 76,992,924 | Windows x64 (Self-Contained Single-File) | `f7afb117cf4ea3a421e491dd93f2cdb50f500112b4bc178a01e14284b6a4dbcc` |
 | `SHA256SUMS.txt` | 208 | Authenticity Manifest | Embedded hashes matching generated archives. |
 
 ---

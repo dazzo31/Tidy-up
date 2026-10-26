@@ -1,11 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 34fa050  
+**Repository / Branch / Current SHA:** TidyUp on main @ de7e276  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
 **Last Verified Phase Gate:** Phase 8 Gate Passed — Remediation Program Complete (Phases 0 through 8)  
 **Active Task & Current State:** TASK-REM-39 (DONE) -> Release candidate handoff awaiting user tag/publish authorization  
 **Completed Changes & Files:**
-- TASK-REM-39 (SHA: 34fa050):
+- TASK-REM-39 (SHA: de7e276):
+  - TidyUp/Views/RuleEditor/Stages/Stage1FoldersView.xaml: Promoted `Browse...` to primary raised button with `FolderOpen` icon, changed manual path entry button to outlined `Add Path`, and added direct `Browse for Folder` action button to `EmptyStateControl`.
+  - TidyUp/Controls/ActionEditorControl.xaml: Replaced borderless 20x20 icon button with explicit `[ 📁 Browse... ]` (`MaterialDesignOutlinedButton`) and companion `[ {x} Variable ]` button across `MoveFileAction`, `CopyFileAction`, `ExtractArchiveAction`, `RenameFileAction`, and `RunCommandAction`; unified delete button to `TrashCanOutline` with `Win11ErrorBrush`.
+  - TidyUp/Controls/ConditionEditorControl.xaml: Added `Plus` icon to `Add Condition` (`MaterialDesignRaisedButton`) and `FolderPlus` icon to `Add Group` (`MaterialDesignOutlinedButton`); unified group remove button to `TrashCanOutline` with `Win11ErrorBrush`.
   - TidyUp/MainWindow.xaml: Eliminated duplicate `New Rule (Ctrl+N)` action button and empty state control in the right-hand details pane when 0 rules exist (`FilteredRules.Count == 0`), leaving a single clear call-to-action in the master list pane (Option A).
   - TidyUp/Data/SettingsRepository.cs: Implemented synchronous `LoadWithResult()` for `CurrentSettings` and configured `ConfigureAwait(false)` in `LoadWithResultAsync()`, eliminating a sync-over-async deadlock on the WPF Dispatcher SynchronizationContext when `settings.json` exists.
   - TidyUp/App.xaml.cs: Loaded settings asynchronously prior to database initialization, ensuring `AppSettings` singleton is fully populated before dependent services consume it.
