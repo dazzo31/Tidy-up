@@ -1,10 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `9ed8679`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `f40f44b`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (`TASK-REM-25` Complete)  
-**Active Task & Current State:** `TASK-REM-25` (`DONE`) -> Next: `TASK-REM-26` (Multilateral Watcher Scope Merging for Overlapping Folders)  
+**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (`TASK-REM-26` Complete)  
+**Active Task & Current State:** `TASK-REM-26` (`DONE`) -> Next: `TASK-REM-24` (Application Monitoring Coordinator & Startup Activation)  
 **Completed Changes & Files:**
+- `TASK-REM-26` (SHA: `f40f44b`):
+  - `FileMonitorService.cs`: Merged watcher folder scope across rules watching the same canonical directory. Configures `IncludeSubdirectories = true` if ANY rule requires recursion; filters files against individual rule subfolder and exclusion scopes during dispatch rather than dropping files prematurely at the shared watcher level.
+  - `HardenedFileSystemWatcher.cs`: Exposed `IncludeSubdirectories` property reflecting underlying watcher state.
+  - `FileMonitorServiceTests.cs`: Unit tests verify watcher superset configuration, subfolder dispatch for recursive rules alongside top-level rules, and wildcard exclusion matching. 738 tests passing.
 - `TASK-REM-25` (SHA: `9ed8679`):
   - `FileMonitorService.cs`: Separated external application lifetime token (`_applicationStoppingToken`) from internal run-loop token (`_runCts`). Serialized lifecycle transitions via `SemaphoreSlim`. In `UpdateRulesAsync`, stops internal watchers and re-instantiates a healthy, non-cancelled linked `_runCts` so file monitoring resumes reliably after rule edits.
   - `FileMonitorServiceTests.cs`: Unit tests verify start → update → stop lifecycle, healthy token state after restart, and lifetime cancellation propagation. 735 tests passing.
