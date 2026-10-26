@@ -120,6 +120,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             // Track the simulated path across multi-action chains
             string currentVirtualPath = fileInfo.FullName;
             string currentVirtualName = fileInfo.Name;
+            Guid? previousActionId = null;
 
             foreach (var action in rule.Actions.OrderBy(a => a.Order))
             {
@@ -131,13 +132,52 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                     currentVirtualName,
                     fileCounter);
 
-                plan.PlannedActions.Add(plannedAction);
+                plannedAction.InitialSourcePath = fileInfo.FullName;
+                plannedAction.DependsOnActionId = previousActionId;
 
-                // Update virtual path for subsequent chained actions if applicable
-                if (!string.IsNullOrEmpty(plannedAction.TargetPath))
+                plan.PlannedActions.Add(plannedAction);
+                previousActionId = plannedAction.Id;
+
+                // Update virtual path for subsequent chained actions based on action semantics
+                switch (action)
                 {
-                    currentVirtualPath = plannedAction.TargetPath;
-                    currentVirtualName = Path.GetFileName(currentVirtualPath);
+                    case MoveFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                        currentVirtualPath = plannedAction.TargetPath;
+                        currentVirtualName = Path.GetFileName(currentVirtualPath);
+                        break;
+
+                    case CopyFileAction copyAction:
+                        if (!copyAction.ApplyToSourceFile && !string.IsNullOrEmpty(plannedAction.TargetPath))
+                        {
+                            currentVirtualPath = plannedAction.TargetPath;
+                            currentVirtualName = Path.GetFileName(currentVirtualPath);
+                        }
+                        // If ApplyToSourceFile is true, retain currentVirtualPath pointing to the source file
+                        break;
+
+                    case RenameFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                        currentVirtualPath = plannedAction.TargetPath;
+                        currentVirtualName = Path.GetFileName(currentVirtualPath);
+                        break;
+
+                    case ChangeExtensionAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                        currentVirtualPath = plannedAction.TargetPath;
+                        currentVirtualName = Path.GetFileName(currentVirtualPath);
+                        break;
+
+                    case DeleteFileAction:
+                        // Delete terminates file continuation
+                        currentVirtualPath = string.Empty;
+                        currentVirtualName = string.Empty;
+                        break;
+
+                    case ExtractArchiveAction:
+                        // Extraction directory is not a file; retain current archive file path
+                        break;
+
+                    case RunCommandAction:
+                        // Command text is not a file path; retain current file path
+                        break;
                 }
             }
 

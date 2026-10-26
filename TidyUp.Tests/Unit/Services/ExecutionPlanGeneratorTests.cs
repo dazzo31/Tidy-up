@@ -363,5 +363,141 @@ public class ExecutionPlanGeneratorTests : IDisposable
         // Invariant: Rule must still remain disabled
         disabledRule.IsEnabled.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task MultiActionChain_RenameThenMove_WiresDependenciesAndPassesPreFlight()
+    {
+        // Arrange
+        var sourceDir = Path.Combine(_testRoot, "ChainSource");
+        var destDir = Path.Combine(_testRoot, "ChainDest");
+        Directory.CreateDirectory(sourceDir);
+        Directory.CreateDirectory(destDir);
+
+        var originalFile = Path.Combine(sourceDir, "report.pdf");
+        await File.WriteAllTextAsync(originalFile, "Report content");
+
+        var rule = new Rule
+        {
+            Name = "Rename Then Move Rule",
+            IsEnabled = true,
+            Conditions = new ConditionGroup(),
+            Actions = new ObservableCollection<FileAction>
+            {
+                new RenameFileAction { NamePattern = "report_v2", Order = 0 },
+                new MoveFileAction { DestinationPath = destDir, Order = 1 }
+            }
+        };
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, sourceDir, includeSubfolders: false);
+
+        // Assert
+        plan.PlannedActions.Should().HaveCount(2);
+
+        var renameAction = plan.PlannedActions[0];
+        var moveAction = plan.PlannedActions[1];
+
+        renameAction.ActionType.Should().Be(ActionType.Rename);
+        renameAction.SourcePath.Should().Be(originalFile);
+        renameAction.TargetPath.Should().Be(Path.Combine(sourceDir, "report_v2.pdf"));
+        renameAction.InitialSourcePath.Should().Be(originalFile);
+        renameAction.DependsOnActionId.Should().BeNull();
+
+        moveAction.ActionType.Should().Be(ActionType.Move);
+        moveAction.SourcePath.Should().Be(Path.Combine(sourceDir, "report_v2.pdf"));
+        moveAction.TargetPath.Should().Be(Path.Combine(destDir, "report_v2.pdf"));
+        moveAction.InitialSourcePath.Should().Be(originalFile);
+        moveAction.DependsOnActionId.Should().Be(renameAction.Id);
+
+        // PreFlight check validation
+        var mockExecutor = new Moq.Mock<TidyUp.Services.IActionExecutor>();
+        var previewVm = new TidyUp.ViewModels.PreviewViewModel(_generator, mockExecutor.Object);
+
+        var items = plan.PlannedActions.Select(a => new TidyUp.ViewModels.PlannedActionItemViewModel(a)).ToList();
+        var (success, issues) = previewVm.PerformPreFlightCheck(items);
+
+        success.Should().BeTrue("multi-action chain must pass pre-flight without requiring intermediate paths on disk");
+        issues.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task MultiActionChain_CopyApplyToSourceFile_ControlsSubsequentActionSource()
+    {
+        var sourceDir = Path.Combine(_testRoot, "CopySource");
+        var copyDestDir = Path.Combine(_testRoot, "CopyDest");
+        var moveDestDir = Path.Combine(_testRoot, "MoveDest");
+        Directory.CreateDirectory(sourceDir);
+
+        var testFile = Path.Combine(sourceDir, "data.csv");
+        await File.WriteAllTextAsync(testFile, "1,2,3");
+
+        // 1. Copy with ApplyToSourceFile = true (subsequent Move moves the original source)
+        var ruleOriginal = new Rule
+        {
+            Name = "Copy Original Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new CopyFileAction { DestinationPath = copyDestDir, ApplyToSourceFile = true, Order = 0 },
+                new MoveFileAction { DestinationPath = moveDestDir, Order = 1 }
+            }
+        };
+
+        var plan1 = await _generator.GeneratePlanForFolderAsync(ruleOriginal, sourceDir, includeSubfolders: false);
+        plan1.PlannedActions.Should().HaveCount(2);
+        plan1.PlannedActions[1].SourcePath.Should().Be(testFile, "when ApplyToSourceFile is true, subsequent action operates on original source");
+
+        // 2. Copy with ApplyToSourceFile = false (subsequent Move moves the copied file)
+        var ruleCopy = new Rule
+        {
+            Name = "Copy Target Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new CopyFileAction { DestinationPath = copyDestDir, ApplyToSourceFile = false, Order = 0 },
+                new MoveFileAction { DestinationPath = moveDestDir, Order = 1 }
+            }
+        };
+
+        var plan2 = await _generator.GeneratePlanForFolderAsync(ruleCopy, sourceDir, includeSubfolders: false);
+        plan2.PlannedActions.Should().HaveCount(2);
+        plan2.PlannedActions[1].SourcePath.Should().Be(Path.Combine(copyDestDir, "data.csv"), "when ApplyToSourceFile is false, subsequent action operates on destination copy");
+    }
+
+    [Fact]
+    public void PerformPreFlightCheck_WhenPredecessorDeselected_FailsDependencyClosure()
+    {
+        var id1 = Guid.NewGuid();
+        var id2 = Guid.NewGuid();
+
+        var action1 = new PlannedFileAction
+        {
+            Id = id1,
+            ActionType = ActionType.Rename,
+            SourcePath = @"C:\Test\doc.txt",
+            TargetPath = @"C:\Test\doc_renamed.txt",
+            InitialSourcePath = @"C:\Test\doc.txt"
+        };
+        var action2 = new PlannedFileAction
+        {
+            Id = id2,
+            ActionType = ActionType.Move,
+            SourcePath = @"C:\Test\doc_renamed.txt",
+            TargetPath = @"C:\Dest\doc_renamed.txt",
+            InitialSourcePath = @"C:\Test\doc.txt",
+            DependsOnActionId = id1
+        };
+
+        var item2 = new TidyUp.ViewModels.PlannedActionItemViewModel(action2) { IsApproved = true };
+
+        var mockExecutor = new Moq.Mock<TidyUp.Services.IActionExecutor>();
+        var previewVm = new TidyUp.ViewModels.PreviewViewModel(_generator, mockExecutor.Object);
+
+        // PreFlight only receives item2 (item1 was deselected from batch)
+        var (success, issues) = previewVm.PerformPreFlightCheck(new[] { item2 });
+
+        success.Should().BeFalse("cannot execute dependent action without approved predecessor");
+        issues.Should().ContainSingle().Which.Should().Contain("depends on an unselected preceding action");
+    }
 }
 

@@ -10,9 +10,19 @@ public class PlannedFileAction
     public Guid Id { get; set; } = Guid.NewGuid();
 
     /// <summary>
-    /// The source file path.
+    /// The source file path (may be an intermediate virtual path for chained actions).
     /// </summary>
     public string SourcePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// The original real file path on disk before any preceding actions in the chain.
+    /// </summary>
+    public string InitialSourcePath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// ID of the predecessor planned action that this action depends on in a multi-action chain, or null if independent.
+    /// </summary>
+    public Guid? DependsOnActionId { get; set; }
 
     /// <summary>
     /// The proposed destination or resulting file path, if applicable.
@@ -64,4 +74,3 @@ public class PlannedFileAction
     /// </summary>
     public int Order { get; set; }
 }
-

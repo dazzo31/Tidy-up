@@ -41,6 +41,8 @@ public partial class PlannedActionItemViewModel : ObservableObject
 
     public Guid Id => PlannedAction.Id;
     public string SourcePath => PlannedAction.SourcePath;
+    public string InitialSourcePath => PlannedAction.InitialSourcePath;
+    public Guid? DependsOnActionId => PlannedAction.DependsOnActionId;
     public string? TargetPath => PlannedAction.TargetPath;
     public ActionType ActionType => PlannedAction.ActionType;
     public FileAction FileAction => PlannedAction.FileAction;
@@ -625,27 +627,69 @@ public partial class PreviewViewModel : ObservableObject
     public (bool Success, List<string> Issues) PerformPreFlightCheck(IEnumerable<PlannedActionItemViewModel> items)
     {
         var issues = new List<string>();
-        foreach (var item in items)
-        {
-            if (!File.Exists(item.SourcePath))
-            {
-                issues.Add($"File no longer exists: {item.SourcePath}");
-                item.PlannedAction.HasConflict = true;
-                item.PlannedAction.ConflictDescription = "File missing at pre-flight check";
-                continue;
-            }
+        var approvedList = items.ToList();
+        var approvedIds = new HashSet<Guid>(approvedList.Select(i => i.Id));
 
-            try
+        foreach (var item in approvedList)
+        {
+            // If this action depends on a predecessor in a multi-action chain:
+            if (item.DependsOnActionId.HasValue)
             {
-                var fi = new FileInfo(item.SourcePath);
-                if (Math.Abs((fi.LastWriteTime - item.SourceModifiedDate).TotalSeconds) > 2)
+                // Dependency closure: predecessor action MUST also be approved in the batch
+                if (!approvedIds.Contains(item.DependsOnActionId.Value))
                 {
-                    issues.Add($"File modified since preview: {item.SourcePath}");
+                    issues.Add($"Action '{item.ActionType}' for '{Path.GetFileName(item.SourcePath)}' depends on an unselected preceding action.");
+                    item.PlannedAction.HasConflict = true;
+                    item.PlannedAction.ConflictDescription = "Dependent predecessor action is not selected";
+                    continue;
+                }
+
+                // Verify the initial source file on disk
+                var initialSource = string.IsNullOrEmpty(item.InitialSourcePath) ? item.SourcePath : item.InitialSourcePath;
+                if (!File.Exists(initialSource))
+                {
+                    issues.Add($"Initial source file no longer exists: {initialSource}");
+                    item.PlannedAction.HasConflict = true;
+                    item.PlannedAction.ConflictDescription = "Initial file missing at pre-flight check";
+                    continue;
+                }
+
+                try
+                {
+                    var fi = new FileInfo(initialSource);
+                    if (Math.Abs((fi.LastWriteTime - item.SourceModifiedDate).TotalSeconds) > 2)
+                    {
+                        issues.Add($"File modified since preview: {initialSource}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    issues.Add($"Cannot access initial source file: {initialSource} ({ex.Message})");
                 }
             }
-            catch (Exception ex)
+            else
             {
-                issues.Add($"Cannot access file: {item.SourcePath} ({ex.Message})");
+                // Root action in chain: source path must exist on disk
+                if (!File.Exists(item.SourcePath))
+                {
+                    issues.Add($"File no longer exists: {item.SourcePath}");
+                    item.PlannedAction.HasConflict = true;
+                    item.PlannedAction.ConflictDescription = "File missing at pre-flight check";
+                    continue;
+                }
+
+                try
+                {
+                    var fi = new FileInfo(item.SourcePath);
+                    if (Math.Abs((fi.LastWriteTime - item.SourceModifiedDate).TotalSeconds) > 2)
+                    {
+                        issues.Add($"File modified since preview: {item.SourcePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    issues.Add($"Cannot access file: {item.SourcePath} ({ex.Message})");
+                }
             }
         }
 
