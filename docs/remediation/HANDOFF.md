@@ -1,9 +1,9 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `9abbccd`  
+**Repository / Branch / Current SHA:** TidyUp on main @ 10f995e  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-03` Complete)  
-**Active Task & Current State:** `TASK-REM-03` (`DONE`) -> Next: `TASK-REM-04` (Overwrite & Prompt Safe Staging & Displaced Backup)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (TASK-REM-04 Complete)  
+**Active Task & Current State:** TASK-REM-04 (DONE) -> Next: TASK-REM-02 (Archive Extraction Safeguards & Overwrite Containment)  
 **Completed Changes & Files:**
 - TASK-REM-04 (SHA: 10f995e):
   - ActionExecutor.cs: Overwrite conflict strategy stages displaced backups of existing destination files before mutation across ExecuteMoveAsync, ExecuteCopyAsync, ExecuteRenameAsync, and ExecuteChangeExtensionAsync. If mutation throws, displaced backup is restored automatically to prevent data loss. ConflictResolution.Prompt returns ActionResultType.Warning with fail-closed message in automated batch runs instead of silently overwriting.

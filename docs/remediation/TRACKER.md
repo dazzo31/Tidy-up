@@ -59,7 +59,7 @@
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-03` | Permanent deletion authorization decoupling | DONE | Phase 3 Gate | `9abbccd` | TU-19: scoped ExecutionAuthorizationContext, decoupled from ConfirmBeforeDelete preference, fails closed without auth, 714 tests pass | Proceed to `TASK-REM-04` |
-| `TASK-REM-04` | Overwrite & Prompt safe staging & displaced backup | NOT_STARTED | `TASK-REM-03` | — | Target: TU-17 | Staged atomic replace & displaced backup |
+| TASK-REM-04 | Overwrite & Prompt safe staging & displaced backup | DONE | TASK-REM-03 | 10f995e | TU-17: staged displaced backup on overwrite, restored on mutation failure, Prompt fails closed without data loss, 717 tests pass | Proceed to TASK-REM-02 |
 | `TASK-REM-02` | Archive extraction safeguards & overwrite containment | NOT_STARTED | `TASK-REM-04` | — | Target: TU-18 | Safe archive recycling & manifest check |
 | `TASK-REM-05` | Monitored root boundary clamping for empty cleanup | NOT_STARTED | `TASK-REM-02` | — | Target: TU-32 | StopBoundary clamping at monitored root |
 | `TASK-REM-01` | Truthful rollback & recovery contract | NOT_STARTED | `TASK-REM-05` | — | Targets: TU-20, TU-38 | Restored vs ManualRestoreRequired |
