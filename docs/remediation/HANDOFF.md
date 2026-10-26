@@ -1,6 +1,6 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `0c4cd62` (pending TASK-REM-09 commit)  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `ae9ffd4`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
 **Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-09` completed)  
 **Active Task & Current State:** `TASK-REM-09` (`DONE`) -> Next: `TASK-REM-10` (Unified schema-aware rule serialization & import gate)  
