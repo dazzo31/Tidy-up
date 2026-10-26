@@ -161,5 +161,107 @@ public class SafeDeleteTests : IDisposable
         result.ErrorMessage.Should().Contain("cannot be safely sent to the Recycle Bin");
         File.Exists(testFile).Should().BeTrue("Source file must be preserved on disk");
     }
-}
 
+    [Fact]
+    public async Task ExecutePlannedActionAsync_WhenPermanentDeleteAuthorized_DeletesPermanentlyEvenWhenConfirmBeforeDeleteIsTrue()
+    {
+        // Arrange: Rule specifies UseRecycleBin = false and ConfirmBeforeDelete = true
+        var testFile = Path.Combine(_testRoot, "perm_authorized.txt");
+        await File.WriteAllTextAsync(testFile, "Authorized permanent deletion test");
+
+        var executor = new ActionExecutor(new VariableEngine(), _fileOperations);
+        var deleteAction = new DeleteFileAction
+        {
+            UseRecycleBin = false,
+            ConfirmBeforeDelete = true // Persisted preference to prompt user
+        };
+
+        var plannedAction = new PlannedFileAction
+        {
+            SourcePath = testFile,
+            ActionType = ActionType.Delete,
+            FileAction = deleteAction,
+            IsAuthorizedForPermanentDeletion = true // Scoped authorization granted by user safeguard confirmation
+        };
+
+        // Act
+        var result = await executor.ExecutePlannedActionAsync(plannedAction);
+
+        // Assert: TU-19 resolved - execution succeeds and file is removed despite ConfirmBeforeDelete = true
+        result.Success.Should().BeTrue();
+        File.Exists(testFile).Should().BeFalse("File must be permanently deleted when authorized by confirmation");
+    }
+
+    [Fact]
+    public async Task ExecutePlannedActionAsync_WhenPermanentDeleteUnauthorized_FailsClosedAndPreservesFile()
+    {
+        // Arrange
+        var testFile = Path.Combine(_testRoot, "perm_unauthorized.txt");
+        await File.WriteAllTextAsync(testFile, "Unauthorized permanent deletion test");
+
+        var executor = new ActionExecutor(new VariableEngine(), _fileOperations);
+        var deleteAction = new DeleteFileAction
+        {
+            UseRecycleBin = false,
+            ConfirmBeforeDelete = false // Even if user unchecked preference, lacking execution authorization fails closed
+        };
+
+        var plannedAction = new PlannedFileAction
+        {
+            SourcePath = testFile,
+            ActionType = ActionType.Delete,
+            FileAction = deleteAction,
+            IsAuthorizedForPermanentDeletion = false
+        };
+
+        // Act
+        var result = await executor.ExecutePlannedActionAsync(plannedAction);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Type.Should().Be(ActionResultType.Error);
+        result.ErrorMessage.Should().Contain("without explicit permanent fallback authorization");
+        File.Exists(testFile).Should().BeTrue("File must not be deleted when execution authorization is absent");
+    }
+
+    [Fact]
+    public async Task ExecutePlannedActionAsync_WhenAuthorizationContextHasMismatchedActionId_FailsClosed()
+    {
+        // Arrange
+        var testFile = Path.Combine(_testRoot, "perm_mismatched.txt");
+        await File.WriteAllTextAsync(testFile, "Mismatched context test");
+
+        var executor = new ActionExecutor(new VariableEngine(), _fileOperations);
+        var deleteAction = new DeleteFileAction
+        {
+            UseRecycleBin = false,
+            ConfirmBeforeDelete = true
+        };
+
+        var authContext = new ExecutionAuthorizationContext
+        {
+            AuthorizePermanentDeletion = true,
+            AuthorizedActionIds = { Guid.NewGuid() },
+            AuthorizedPermanentDeletionPaths = { @"C:\Other\Mismatched.txt" }
+        };
+
+        var plannedAction = new PlannedFileAction
+        {
+            Id = Guid.NewGuid(),
+            SourcePath = testFile,
+            ActionType = ActionType.Delete,
+            FileAction = deleteAction,
+            AuthorizationContext = authContext,
+            IsAuthorizedForPermanentDeletion = false
+        };
+
+        // Act
+        var result = await executor.ExecutePlannedActionAsync(plannedAction);
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.Type.Should().Be(ActionResultType.Error);
+        result.ErrorMessage.Should().Contain("without explicit permanent fallback authorization");
+        File.Exists(testFile).Should().BeTrue();
+    }
+}

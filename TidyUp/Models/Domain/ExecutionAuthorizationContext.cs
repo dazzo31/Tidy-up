@@ -1,44 +1,43 @@
 namespace TidyUp.Models.Domain;
 
 /// <summary>
-/// Scoped authorization context binding user consent to a specific plan execution,
-/// approved action IDs, and concrete destructive effects.
-/// Replaces unconstrained boolean authorization flags to prevent consent hijacking.
+/// Scoped execution authorization context issued by confirmation or policy boundary
+/// granting explicit permission for destructive file effects (e.g. permanent deletion, overwrite).
+/// Decouples execution authorization from persisted rule preferences.
 /// </summary>
-public record ExecutionAuthorizationContext
+public class ExecutionAuthorizationContext
 {
-    /// <summary>Unique identifier of the execution plan for which authorization was granted.</summary>
-    public Guid PlanId { get; init; }
-
-    /// <summary>Rule ID governing this execution.</summary>
-    public Guid RuleId { get; init; }
-
-    /// <summary>Specific action IDs explicitly approved by the user.</summary>
+    public Guid? PlanId { get; init; }
+    public Guid? PlanRevisionId { get; init; }
+    public Guid? RuleId { get; init; }
     public HashSet<Guid> AuthorizedActionIds { get; init; } = new();
-
-    /// <summary>Specific file paths explicitly authorized for permanent deletion.</summary>
     public HashSet<string> AuthorizedPermanentDeletionPaths { get; init; } = new(StringComparer.OrdinalIgnoreCase);
-
-    /// <summary>Specific file paths explicitly authorized for overwrite.</summary>
     public HashSet<string> AuthorizedOverwritePaths { get; init; } = new(StringComparer.OrdinalIgnoreCase);
+    public bool AuthorizePermanentDeletion { get; set; } = true;
 
-    /// <summary>UTC timestamp when authorization was granted.</summary>
-    public DateTime IssuedAtUtc { get; init; } = DateTime.UtcNow;
-
-    /// <summary>
-    /// Checks whether execution is authorized for a specific action ID.
-    /// </summary>
     public bool IsActionAuthorized(Guid actionId) => AuthorizedActionIds.Contains(actionId);
 
-    /// <summary>
-    /// Checks whether permanent deletion is authorized for a specific file path.
-    /// </summary>
-    public bool IsPermanentDeleteAuthorized(string path) =>
-        !string.IsNullOrWhiteSpace(path) && AuthorizedPermanentDeletionPaths.Contains(path);
+    public bool IsActionAuthorized(Guid actionId, string path)
+    {
+        if (!IsActionAuthorized(actionId))
+            return false;
 
-    /// <summary>
-    /// Checks whether overwrite is authorized for a specific file path.
-    /// </summary>
-    public bool IsOverwriteAuthorized(string path) =>
-        !string.IsNullOrWhiteSpace(path) && AuthorizedOverwritePaths.Contains(path);
+        return IsPermanentDeleteAuthorized(path);
+    }
+
+    public bool IsPermanentDeleteAuthorized(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        return AuthorizedPermanentDeletionPaths.Contains(path);
+    }
+
+    public bool IsOverwriteAuthorized(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+            return false;
+
+        return AuthorizedOverwritePaths.Contains(path);
+    }
 }

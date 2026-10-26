@@ -612,6 +612,23 @@ public partial class PreviewViewModel : ObservableObject
 
         var batchId = Guid.NewGuid();
         var plannedActions = approvedItems.Select(i => i.PlannedAction).ToList();
+
+        // Issue scoped execution authorization context for confirmed actions
+        var authContext = new ExecutionAuthorizationContext
+        {
+            PlanId = ExecutionPlan?.PlanId,
+            AuthorizePermanentDeletion = true,
+            AuthorizedActionIds = plannedActions.Select(a => a.Id).ToHashSet(),
+            AuthorizedPermanentDeletionPaths = plannedActions.Select(a => a.SourcePath).ToHashSet(StringComparer.OrdinalIgnoreCase),
+            AuthorizedOverwritePaths = plannedActions.Where(a => !string.IsNullOrEmpty(a.TargetPath)).Select(a => a.TargetPath!).ToHashSet(StringComparer.OrdinalIgnoreCase)
+        };
+
+        foreach (var action in plannedActions)
+        {
+            action.AuthorizationContext = authContext;
+            action.IsAuthorizedForPermanentDeletion = true;
+        }
+
         var itemMap = approvedItems.ToDictionary(i => i.PlannedAction.Id);
 
         var progressReporter = new Progress<BatchProgressReport>(report =>

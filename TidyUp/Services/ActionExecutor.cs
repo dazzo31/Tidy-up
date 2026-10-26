@@ -89,7 +89,7 @@ public class ActionExecutor(
             CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, counter),
             RenameFileAction rename => await ExecuteRenameAsync(rename, fileInfo, counter),
             ChangeExtensionAction changeExt => await ExecuteChangeExtensionAsync(changeExt, fileInfo),
-            DeleteFileAction delete => await ExecuteDeleteAsync(delete, fileInfo),
+            DeleteFileAction delete => await ExecuteDeleteAsync(delete, fileInfo, isAuthorizedForPermanentDeletion: !delete.ConfirmBeforeDelete),
             ExtractArchiveAction extract => await ExecuteExtractArchiveAsync(extract, fileInfo, counter),
             RunCommandAction runCmd => await ExecuteRunCommandAsync(runCmd, fileInfo, counter),
             _ => new ActionResult { Success = false, ErrorMessage = "Unknown action type", Type = ActionResultType.Error }
@@ -219,10 +219,16 @@ public class ActionExecutor(
             CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
             RenameFileAction rename => await ExecuteRenameAsync(rename, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
             ChangeExtensionAction changeExt => await ExecuteChangeExtensionAsync(changeExt, fileInfo, plannedAction.TargetPath),
+            DeleteFileAction delete => await ExecuteDeleteAsync(
+                delete,
+                fileInfo,
+                isAuthorizedForPermanentDeletion: plannedAction.AuthorizationContext != null
+                    ? plannedAction.AuthorizationContext.IsPermanentDeleteAuthorized(plannedAction.SourcePath)
+                    : plannedAction.IsAuthorizedForPermanentDeletion),
             _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.PlannedCounter, batchId, plannedAction.RuleId, plannedAction.RuleName, plannedAction.RuleRevisionId)
         };
 
-        if (_rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction || plannedAction.FileAction is RenameFileAction || plannedAction.FileAction is ChangeExtensionAction))
+        if (_rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction || plannedAction.FileAction is RenameFileAction || plannedAction.FileAction is ChangeExtensionAction || plannedAction.FileAction is DeleteFileAction))
         {
             var effectiveBatchId = batchId ?? Guid.NewGuid();
             var actionTypeName = plannedAction.FileAction switch
@@ -231,6 +237,7 @@ public class ActionExecutor(
                 CopyFileAction => "Copy",
                 RenameFileAction => "Rename",
                 ChangeExtensionAction => "ChangeExtension",
+                DeleteFileAction => "Delete",
                 _ => plannedAction.FileAction.GetType().Name
             };
             if (result.Success)
@@ -668,7 +675,10 @@ public class ActionExecutor(
         }
     }
 
-    private async Task<ActionResult> ExecuteDeleteAsync(DeleteFileAction action, FileInfo fileInfo)
+    private async Task<ActionResult> ExecuteDeleteAsync(
+        DeleteFileAction action,
+        FileInfo fileInfo,
+        bool isAuthorizedForPermanentDeletion = false)
     {
         try
         {
@@ -690,12 +700,16 @@ public class ActionExecutor(
                 }
             }
 
+            // allowPermanentFallback is granted if permanent deletion is configured and explicitly authorized by user confirmation.
+            // ConfirmBeforeDelete is strictly a user preference determining whether to prompt, NOT an execution authorization token.
+            bool allowPermanentFallback = !action.UseRecycleBin && isAuthorizedForPermanentDeletion;
+
             await RetryAsync(async () =>
             {
                 await _safeFileSystem.DeleteFileSafelyAsync(
                     fileInfo.FullName,
                     useRecycleBin: action.UseRecycleBin,
-                    allowPermanentFallback: !action.UseRecycleBin && !action.ConfirmBeforeDelete);
+                    allowPermanentFallback: allowPermanentFallback);
             });
 
             // Remove empty parent folders if requested

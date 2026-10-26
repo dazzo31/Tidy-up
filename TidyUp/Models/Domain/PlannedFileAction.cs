@@ -108,4 +108,14 @@ public class PlannedFileAction
     /// Frozen counter sequence number resolved during planning for this action.
     /// </summary>
     public int? PlannedCounter { get; set; }
+
+    /// <summary>
+    /// Explicit execution authorization for destructive operations (e.g. permanent delete).
+    /// </summary>
+    public bool IsAuthorizedForPermanentDeletion { get; set; }
+
+    /// <summary>
+    /// Scoped authorization context issued by confirmation or policy boundary.
+    /// </summary>
+    public ExecutionAuthorizationContext? AuthorizationContext { get; set; }
 }
