@@ -364,6 +364,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 break;
 
             case DeleteFileAction deleteAction:
+                deleteAction.MonitoredSourceRoot ??= monitoredRoot;
                 plannedAction.ActionType = ActionType.Delete;
                 plannedAction.TargetPath = null;
                 plannedAction.HasConflict = false;

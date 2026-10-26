@@ -741,4 +741,62 @@ public class ActionExecutorTests : IDisposable
 
     #endregion
 
+    #region Remove Empty Folders Boundary Clamping Tests
+
+    [Fact]
+    public async Task ExecuteMoveAsync_WithRemoveEmptyFolders_StopsAtMonitoredRootBoundary()
+    {
+        // Arrange: MonitoredRoot / Level1 / Level2 / file.txt
+        var monitoredRoot = _fileHelper.CreateTestDirectory("BoundaryMoveRoot");
+        var level1 = Directory.CreateDirectory(Path.Combine(monitoredRoot.FullName, "Level1"));
+        var level2 = Directory.CreateDirectory(Path.Combine(level1.FullName, "Level2"));
+        var sourceFile = _fileHelper.CreateTestFile(Path.Combine("BoundaryMoveRoot", "Level1", "Level2", "sample.txt"), "hello");
+        var destDir = _fileHelper.CreateTestDirectory("MoveOutput");
+
+        var action = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            RemoveEmptyFolders = true,
+            MonitoredSourceRoot = monitoredRoot.FullName
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        Directory.Exists(level2.FullName).Should().BeFalse("Level2 became empty and should be removed");
+        Directory.Exists(level1.FullName).Should().BeFalse("Level1 became empty and should be removed");
+        Directory.Exists(monitoredRoot.FullName).Should().BeTrue("Monitored root must be clamped and preserved even if empty");
+    }
+
+    [Fact]
+    public async Task ExecuteDeleteAsync_WithRemoveEmptyFolders_StopsAtMonitoredRootBoundary()
+    {
+        // Arrange: MonitoredRoot / SubA / SubB / file.txt
+        var monitoredRoot = _fileHelper.CreateTestDirectory("BoundaryDeleteRoot");
+        var subA = Directory.CreateDirectory(Path.Combine(monitoredRoot.FullName, "SubA"));
+        var subB = Directory.CreateDirectory(Path.Combine(subA.FullName, "SubB"));
+        var sourceFile = _fileHelper.CreateTestFile(Path.Combine("BoundaryDeleteRoot", "SubA", "SubB", "del.txt"), "data");
+
+        var action = new DeleteFileAction
+        {
+            UseRecycleBin = false,
+            ConfirmBeforeDelete = false,
+            RemoveEmptyFolders = true,
+            MonitoredSourceRoot = monitoredRoot.FullName
+        };
+
+        // Act
+        var result = await _executor.ExecuteActionAsync(action, sourceFile);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        Directory.Exists(subB.FullName).Should().BeFalse("SubB became empty and should be removed");
+        Directory.Exists(subA.FullName).Should().BeFalse("SubA became empty and should be removed");
+        Directory.Exists(monitoredRoot.FullName).Should().BeTrue("Monitored root must be clamped and preserved even if empty");
+    }
+
+    #endregion
+
 }

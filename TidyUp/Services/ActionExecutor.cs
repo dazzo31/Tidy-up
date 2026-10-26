@@ -213,6 +213,15 @@ public class ActionExecutor(
         var originalPath = fileInfo.FullName;
         var preActionHash = FileChecksumHelper.ComputeSha256(originalPath);
 
+        if (plannedAction.FileAction is MoveFileAction moveAct && string.IsNullOrEmpty(moveAct.MonitoredSourceRoot))
+        {
+            moveAct.MonitoredSourceRoot = plannedAction.MonitoredSourceRoot;
+        }
+        if (plannedAction.FileAction is DeleteFileAction delAct && string.IsNullOrEmpty(delAct.MonitoredSourceRoot))
+        {
+            delAct.MonitoredSourceRoot = plannedAction.MonitoredSourceRoot;
+        }
+
         ActionResult result = plannedAction.FileAction switch
         {
             MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
@@ -401,7 +410,7 @@ public class ActionExecutor(
 
             // Remove empty source folder if requested
             if (action.RemoveEmptyFolders)
-                await RemoveEmptyFoldersAsync(fileInfo.Directory);
+                await RemoveEmptyFoldersAsync(fileInfo.Directory, action.MonitoredSourceRoot);
 
             return new ActionResult { Success = true, ResultPath = fullDestPath, TargetPath = fullDestPath, DisplacedBackupPath = displacedBackupPath, Type = ActionResultType.Success };
         }
@@ -759,7 +768,7 @@ public class ActionExecutor(
 
             // Remove empty parent folders if requested
             if (action.RemoveEmptyFolders)
-                await RemoveEmptyFoldersAsync(fileInfo.Directory);
+                await RemoveEmptyFoldersAsync(fileInfo.Directory, action.MonitoredSourceRoot);
 
             return new ActionResult { Success = true, Type = ActionResultType.Success };
         }
@@ -1055,18 +1064,21 @@ public class ActionExecutor(
 
         try
         {
-            var normalizedDir = directory.FullName.TrimEnd('\\', '/');
+            var normalizedDir = Path.GetFullPath(directory.FullName).TrimEnd('\\', '/');
 
             // Never delete root drive (e.g. C:\) or any protected system/user directory
             if (directory.Parent is null || ProtectedFolders.Contains(normalizedDir))
                 return;
 
-            // If a stop boundary path is specified, do not delete the boundary folder itself
-            if (!string.IsNullOrEmpty(stopBoundaryPath))
+            // If a stop boundary path is specified, strictly clamp to prevent deleting the boundary itself or anything above it
+            if (!string.IsNullOrWhiteSpace(stopBoundaryPath))
             {
                 var normalizedBoundary = Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/');
-                if (string.Equals(normalizedDir, normalizedBoundary, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(normalizedDir, normalizedBoundary, StringComparison.OrdinalIgnoreCase) ||
+                    !normalizedDir.StartsWith(normalizedBoundary + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                {
                     return;
+                }
             }
 
             // Don't delete if contains files or subdirectories
@@ -1078,16 +1090,7 @@ public class ActionExecutor(
             // Recurse to parent only if parent is not root or protected
             if (directory.Parent is not null)
             {
-                var parentNorm = directory.Parent.FullName.TrimEnd('\\', '/');
-                if (!ProtectedFolders.Contains(parentNorm))
-                {
-                    if (!string.IsNullOrEmpty(stopBoundaryPath) &&
-                        parentNorm.StartsWith(Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) &&
-                        !string.Equals(parentNorm, Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
-                    {
-                        await RemoveEmptyFoldersAsync(directory.Parent, stopBoundaryPath);
-                    }
-                }
+                await RemoveEmptyFoldersAsync(directory.Parent, stopBoundaryPath);
             }
         }
         catch

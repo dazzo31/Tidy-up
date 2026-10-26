@@ -161,6 +161,12 @@ public partial class DeleteFileAction : FileAction
     /// </summary>
     [ObservableProperty]
     private bool _confirmBeforeDelete = true;
+
+    /// <summary>
+    /// The root monitored directory, used as a stop boundary when removing empty folders.
+    /// </summary>
+    [ObservableProperty]
+    private string? _monitoredSourceRoot;
 }
 
 /// <summary>
