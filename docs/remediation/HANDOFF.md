@@ -1,10 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ bad0f7b  
+**Repository / Branch / Current SHA:** TidyUp on main @ 74bd9b9  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-32 Complete)  
-**Active Task & Current State:** TASK-REM-32 (DONE) -> Next: TASK-REM-33 (Context-sensitive filtered history export)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-33 Complete)  
+**Active Task & Current State:** TASK-REM-33 (DONE) -> Next: TASK-REM-06 (Genuine database maintenance & vacuum)  
 **Completed Changes & Files:**
+- TASK-REM-33 (SHA: 74bd9b9):
+  - HistoryViewModel.cs: Unified query building in `BuildFilteredQuery` shared by pagination and streaming exports. Added `filteredOnly` parameter (default true when filters active) to `ExportToCsvAsync` and `ExportToJsonAsync` streaming matching records across all pages. Mitigated CSV spreadsheet formula injection in `EscapeCsv` by escaping leading `=`, `+`, `-`, `@`, and `\t` characters.
+  - HistoryView.xaml & HistoryView.xaml.cs: Updated export buttons to display dynamic labels ("Export Filtered CSV ({n})") and added context menus offering explicit choices between "Export Filtered Records" and "Export All History".
+  - HistoryViewModelTests.cs: Unit tests verify filtered CSV/JSON queries across pages, export-all bypass, and spreadsheet formula escaping. 765 tests passing.
 - TASK-REM-32 (SHA: bad0f7b):
   - HistoryViewModel.cs: Added `[NotifyCanExecuteChangedFor(nameof(NextPageCommand))]` and `[NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]` on `_currentPage`, `_pageSize`, and `_totalRecords`. Added explicit `NotifyCanExecuteChanged()` calls on page change, page size change, total records change, and upon completion of `LoadPageAsync()`.
   - HistoryViewModelTests.cs: Added unit test `PaginationCommands_UpdateCanExecuteEligibilityOnDataLoadAndTraversal` testing command eligibility across zero records, boundary transitions, next/prev executions, and page size modifications. 762 tests passing.
