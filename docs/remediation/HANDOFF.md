@@ -1,6 +1,6 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` (commit pending for `TASK-REM-08`)  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `ac747af`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
 **Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-08` completed)  
 **Active Task & Current State:** `TASK-REM-08` (`DONE`) -> Next: `TASK-REM-09` (Rule list drag-and-drop order persistence)  
