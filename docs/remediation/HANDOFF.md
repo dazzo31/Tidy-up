@@ -1,10 +1,13 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `187eca3`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `9ed8679`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 4 Gate Passed (All 7 Tasks Complete); Ready for Phase 5 (`TASK-REM-25`)  
-**Active Task & Current State:** Phase 4 Complete (All tasks DONE: REM-03, 04, 02, 05, 01, 23, 21) -> Next: `TASK-REM-25` (Watcher Cancellation Token Lifecycle)  
+**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (`TASK-REM-25` Complete)  
+**Active Task & Current State:** `TASK-REM-25` (`DONE`) -> Next: `TASK-REM-26` (Multilateral Watcher Scope Merging for Overlapping Folders)  
 **Completed Changes & Files:**
+- `TASK-REM-25` (SHA: `9ed8679`):
+  - `FileMonitorService.cs`: Separated external application lifetime token (`_applicationStoppingToken`) from internal run-loop token (`_runCts`). Serialized lifecycle transitions via `SemaphoreSlim`. In `UpdateRulesAsync`, stops internal watchers and re-instantiates a healthy, non-cancelled linked `_runCts` so file monitoring resumes reliably after rule edits.
+  - `FileMonitorServiceTests.cs`: Unit tests verify start → update → stop lifecycle, healthy token state after restart, and lifetime cancellation propagation. 735 tests passing.
 - `TASK-REM-21` (SHA: `187eca3`):
   - `PreviewViewModel.cs` & `PlannedActionItemViewModel`: Enforced single domain eligibility predicate `CanBeApplied` (`IsApproved && !HasConflict && !IsExecuted && !IsSkipped`) and `CanToggleApproval`. Introduced `PendingApprovedCount` and wired `CanApplyChanges` directly to `PendingApprovedCount > 0`.
   - Harmonized `ApplyButtonText` to reflect pending approved changes, terminal success ("All approved changes applied"), failures ("Execution completed with failures"), or cancellation without permitting completed actions to be replayed.
