@@ -1,10 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 74bd9b9  
+**Repository / Branch / Current SHA:** TidyUp on main @ 0608e7b  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-33 Complete)  
-**Active Task & Current State:** TASK-REM-33 (DONE) -> Next: TASK-REM-06 (Genuine database maintenance & vacuum)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-06 Complete)  
+**Active Task & Current State:** TASK-REM-06 (DONE) -> Next: TASK-REM-35 (Settings surface audit & inert control containment)  
 **Completed Changes & Files:**
+- TASK-REM-06 (SHA: 0608e7b):
+  - IDbIntegrityChecker.cs & DbIntegrityChecker.cs: Implemented `VacuumDatabaseAsync(string dbPath)` returning `DatabaseMaintenanceResult`. Executes `PRAGMA wal_checkpoint(TRUNCATE);` followed by `VACUUM;` to checkpoint all dirty pages into the main database and truncate the WAL file before vacuuming. Measures pre/post file and WAL/SHM sizes and execution duration.
+  - SettingsViewModel.cs: Injected `IDbIntegrityChecker` and `TidyUpPaths`. Replaced dummy `Task.Delay(300)` simulation in `VacuumDatabaseAsync` with real SQLite vacuum call. Reports exact reclaimed bytes/KB and elapsed duration, or honestly displays "Database already compact (0 bytes reclaimed)".
+  - SettingsCategorizedExperienceTests.cs: Added unit tests verifying pre/post size reduction on populated and deleted SQLite databases, compact database handling, and status message reporting. 767 tests passing.
 - TASK-REM-33 (SHA: 74bd9b9):
   - HistoryViewModel.cs: Unified query building in `BuildFilteredQuery` shared by pagination and streaming exports. Added `filteredOnly` parameter (default true when filters active) to `ExportToCsvAsync` and `ExportToJsonAsync` streaming matching records across all pages. Mitigated CSV spreadsheet formula injection in `EscapeCsv` by escaping leading `=`, `+`, `-`, `@`, and `\t` characters.
   - HistoryView.xaml & HistoryView.xaml.cs: Updated export buttons to display dynamic labels ("Export Filtered CSV ({n})") and added context menus offering explicit choices between "Export Filtered Records" and "Export All History".
