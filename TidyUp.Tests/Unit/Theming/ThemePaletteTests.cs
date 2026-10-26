@@ -22,6 +22,7 @@ public class ThemePaletteTests
         ("Win11TextSecondaryBrush", "Win11SurfaceBrush"),
         ("Win11TextSecondaryBrush", "Win11SubtleSurfaceBrush"),
         ("Win11AccentBrush", "Win11SurfaceBrush"),
+        ("Win11AccentBrush", "Win11SubtleSurfaceBrush"),
         ("Win11AccentBrush", "Win11AccentLightBrush"),
         ("Win11SuccessBrush", "Win11SurfaceBrush"),
         ("Win11SuccessBrush", "Win11SuccessBackgroundBrush"),
@@ -75,6 +76,33 @@ public class ThemePaletteTests
             .ToList();
 
         failures.Should().BeEmpty();
+    }
+
+    [Theory]
+    [MemberData(nameof(Palettes))]
+    public void EmptyStateElements_MeetWcagAa_AndNonTextContrast(string palette)
+    {
+        var colors = ResolveBrushColors(palette);
+
+        // 1. Central glyph (Win11AccentBrush) on circular badge (Win11SubtleSurfaceBrush) - >= 4.5:1
+        var defaultBadgeRatio = ContrastRatio(colors["Win11AccentBrush"], colors["Win11SubtleSurfaceBrush"]);
+        defaultBadgeRatio.Should().BeGreaterThanOrEqualTo(4.5, "default empty state icon must have high contrast against the badge background");
+
+        // 2. Error variant glyph (Win11ErrorBrush) on error badge (Win11ErrorBackgroundBrush) - >= 4.5:1
+        var errorBadgeRatio = ContrastRatio(colors["Win11ErrorBrush"], colors["Win11ErrorBackgroundBrush"]);
+        errorBadgeRatio.Should().BeGreaterThanOrEqualTo(4.5, "error empty state icon must have high contrast against error badge background");
+
+        // 3. Title (Win11TextPrimaryBrush) on card surface (Win11SurfaceBrush) - >= 4.5:1
+        var titleRatio = ContrastRatio(colors["Win11TextPrimaryBrush"], colors["Win11SurfaceBrush"]);
+        titleRatio.Should().BeGreaterThanOrEqualTo(4.5, "empty state title must meet normal text contrast");
+
+        // 4. Description (Win11TextSecondaryBrush) on card surface (Win11SurfaceBrush) - >= 4.5:1
+        var descRatio = ContrastRatio(colors["Win11TextSecondaryBrush"], colors["Win11SurfaceBrush"]);
+        descRatio.Should().BeGreaterThanOrEqualTo(4.5, "empty state description must meet text contrast");
+
+        // 5. Monospace code details (Win11CodeTextBrush) on (Win11CodeSurfaceBrush) - >= 4.5:1
+        var codeRatio = ContrastRatio(colors["Win11CodeTextBrush"], colors["Win11CodeSurfaceBrush"]);
+        codeRatio.Should().BeGreaterThanOrEqualTo(4.5, "technical error details must meet text contrast");
     }
 
     [Fact]

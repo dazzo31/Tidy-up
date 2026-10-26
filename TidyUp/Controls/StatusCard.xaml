@@ -35,7 +35,9 @@
             <!-- Icon -->
             <Border Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
                     Width="44" Height="44" CornerRadius="22"
-                    Background="{DynamicResource MaterialDesignToolBarBackground}"
+                    Background="{DynamicResource Win11SubtleSurfaceBrush}"
+                    BorderBrush="{DynamicResource Win11SubtleBorderBrush}"
+                    BorderThickness="1"
                     VerticalAlignment="Top" HorizontalAlignment="Right"
                     Margin="8,0,0,0">
                 <materialDesign:PackIcon Kind="{Binding Icon, RelativeSource={RelativeSource AncestorType=UserControl}}"
@@ -60,4 +62,3 @@
         </Grid>
     </materialDesign:Card>
 </UserControl>
-

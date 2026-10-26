@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace TidyUp.Controls;
 
@@ -89,6 +90,13 @@ public partial class EmptyStateControl : UserControl
             typeof(EmptyStateControl),
             new PropertyMetadata(null, OnSecondaryActionChanged));
 
+    public static readonly DependencyProperty IconForegroundProperty =
+        DependencyProperty.Register(
+            nameof(IconForeground),
+            typeof(Brush),
+            typeof(EmptyStateControl),
+            new PropertyMetadata(null, OnIconForegroundChanged));
+
     public EmptyStateVariant Variant
     {
         get => (EmptyStateVariant)GetValue(VariantProperty);
@@ -111,6 +119,12 @@ public partial class EmptyStateControl : UserControl
     {
         get => (ICommand?)GetValue(SecondaryActionCommandProperty);
         set => SetValue(SecondaryActionCommandProperty, value);
+    }
+
+    public Brush? IconForeground
+    {
+        get => (Brush?)GetValue(IconForegroundProperty);
+        set => SetValue(IconForegroundProperty, value);
     }
 
     public string IconKind
@@ -196,9 +210,34 @@ public partial class EmptyStateControl : UserControl
     {
         var isError = variant == EmptyStateVariant.Error;
         IconBadge.SetResourceReference(Border.BackgroundProperty,
-            isError ? "Win11ErrorBackgroundBrush" : "MaterialDesignToolBarBackground");
-        IconGlyph.SetResourceReference(System.Windows.Documents.TextElement.ForegroundProperty,
-            isError ? "Win11ErrorBrush" : "PrimaryHueMidBrush");
+            isError ? "Win11ErrorBackgroundBrush" : "Win11SubtleSurfaceBrush");
+        IconBadge.SetResourceReference(Border.BorderBrushProperty,
+            isError ? "Win11ErrorBrush" : "Win11SubtleBorderBrush");
+
+        if (IconForeground != null)
+        {
+            IconGlyph.Foreground = IconForeground;
+        }
+        else
+        {
+            IconGlyph.SetResourceReference(Control.ForegroundProperty,
+                isError ? "Win11ErrorBrush" : "Win11AccentBrush");
+        }
+    }
+
+    private static void OnIconForegroundChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is EmptyStateControl control)
+        {
+            if (e.NewValue is Brush brush)
+            {
+                control.IconGlyph.Foreground = brush;
+            }
+            else
+            {
+                control.ApplyVariant(control.Variant);
+            }
+        }
     }
 
     private static void OnDetailsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -228,4 +267,3 @@ public enum EmptyStateVariant
     Default,
     Error
 }
-

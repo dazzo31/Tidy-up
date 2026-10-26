@@ -9,11 +9,12 @@
     <Grid HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="480">
             <!-- Icon Badge -->
-            <Border x:Name="IconBadge" Width="64" Height="64" CornerRadius="32"
-                    Background="{DynamicResource MaterialDesignToolBarBackground}"
-                    HorizontalAlignment="Center" Margin="0,0,0,16">
+            <Border x:Name="IconBadge"
+                    Style="{DynamicResource AccessibleEmptyStateBadge}"
+                    Margin="0,0,0,16">
                 <materialDesign:PackIcon x:Name="IconGlyph"
                                         Kind="{Binding IconKind, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                        Foreground="{DynamicResource Win11AccentBrush}"
                                         Width="32" Height="32"
                                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
@@ -22,25 +23,27 @@
             <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=UserControl}}"
                        FontSize="16" FontWeight="SemiBold"
                        HorizontalAlignment="Center" TextAlignment="Center"
-                       Foreground="{DynamicResource MaterialDesignBody}"/>
+                       Foreground="{DynamicResource Win11TextPrimaryBrush}"/>
 
             <!-- Description -->
             <TextBlock Text="{Binding Description, RelativeSource={RelativeSource AncestorType=UserControl}}"
                        FontSize="13" TextWrapping="Wrap"
-                       Opacity="0.75" HorizontalAlignment="Center"
+                       HorizontalAlignment="Center"
                        TextAlignment="Center" Margin="0,6,0,16"
                        LineHeight="18"
-                       Foreground="{DynamicResource MaterialDesignBody}"/>
+                       Foreground="{DynamicResource Win11TextSecondaryBrush}"/>
 
             <!-- Optional technical details (error variant) -->
             <Border x:Name="DetailsPanel" Visibility="Collapsed"
-                    Background="{DynamicResource MaterialDesignToolBarBackground}"
+                    Background="{DynamicResource Win11CodeSurfaceBrush}"
+                    BorderBrush="{DynamicResource Win11SubtleBorderBrush}"
+                    BorderThickness="1"
                     CornerRadius="4" Padding="10,8" Margin="0,0,0,16"
                     HorizontalAlignment="Stretch">
                 <TextBlock x:Name="DetailsText" FontSize="11" TextWrapping="Wrap"
                            FontFamily="Consolas, Cascadia Code, monospace"
-                           Foreground="{DynamicResource MaterialDesignBody}"
-                           Opacity="0.85" MaxHeight="120"/>
+                           Foreground="{DynamicResource Win11CodeTextBrush}"
+                           MaxHeight="120"/>
             </Border>
 
             <!-- Optional Action Button -->
@@ -64,4 +67,3 @@
         </StackPanel>
     </Grid>
 </UserControl>
-

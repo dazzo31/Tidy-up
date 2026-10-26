@@ -73,5 +73,16 @@
         <Setter Property="KeyboardNavigation.IsTabStop" Value="True"/>
     </Style>
 
-</ResourceDictionary>
+    <!-- Accessible Empty State Badge Style -->
+    <Style x:Key="AccessibleEmptyStateBadge" TargetType="Border">
+        <Setter Property="Width" Value="64"/>
+        <Setter Property="Height" Value="64"/>
+        <Setter Property="CornerRadius" Value="32"/>
+        <Setter Property="Background" Value="{DynamicResource Win11SubtleSurfaceBrush}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Win11SubtleBorderBrush}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True"/>
+    </Style>
 
+</ResourceDictionary>
