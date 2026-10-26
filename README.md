@@ -2,7 +2,9 @@
 
 # TidyUp
 
+[![Latest Release](https://img.shields.io/github/v/release/dazzo31/Tidy-up?logo=github&color=blue)](https://github.com/dazzo31/Tidy-up/releases/latest)
 [![Build & Test](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml/badge.svg)](https://github.com/dazzo31/Tidy-up/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-777%20passed-brightgreen.svg)](docs/release-verification-1.2.1.md)
 [![Target .NET](https://img.shields.io/badge/.NET-9.0--windows-blue.svg)](https://dotnet.microsoft.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Sponsor on GitHub](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?style=flat&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/dazzo31)
@@ -16,17 +18,30 @@ Every destination is captured in both themes under [`docs/screenshots/`](docs/sc
 
 ---
 
+## 🚀 Downloads (Latest: v1.2.1)
+
+Download pre-built Windows x64 packages directly from the [Latest Release](https://github.com/dazzo31/Tidy-up/releases/latest):
+
+| Package | Format | Description | Prerequisites |
+| :--- | :--- | :--- | :--- |
+| **[TidyUp-1.2.1-win-x64-standalone.zip](https://github.com/dazzo31/Tidy-up/releases/download/v1.2.1/TidyUp-1.2.1-win-x64-standalone.zip)** | Standalone Portable | **Recommended:** Self-contained single-file executable. Extract and run `TidyUp.exe`. | None (Zero install) |
+| **[TidyUp-1.2.1-win-x64.zip](https://github.com/dazzo31/Tidy-up/releases/download/v1.2.1/TidyUp-1.2.1-win-x64.zip)** | Framework-Dependent | Lightweight distribution archive. | [.NET 9 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) |
+
+Cryptographic authenticity checksums are provided in [SHA256SUMS.txt](https://github.com/dazzo31/Tidy-up/releases/download/v1.2.1/SHA256SUMS.txt).
+
+---
+
 ## Key Features
 
-- 🖥️ **Modern Windows 11 User Experience:** Persistent left navigation rail across 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) plus a "More" group for Logs and Help, with accessible focus and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`).
-- 🪄 **4-Stage Guided Rule Wizard:** Seamless step-by-step rule creation (Folders, Conditions, Actions, Review) with lossless synchronization to advanced tabbed editing.
-- 📁 **Dedicated Folders Management Hub:** Centralized monitored folders workspace with real-time directory permission auditing (`Read/Write`, `Read Only`, `Access Denied`), system-protected path detection, and exclusion patterns (`.git`, `node_modules`).
-- 👁️ **Full-Page Preview & Review Workspace:** First-class dry-run simulation workspace with operation breakdown counters, virtualized DataGrid, side-by-side impact review, and cooperative in-flight batch cancellation.
+- 🖥️ **Modern Windows 11 User Experience:** Persistent left navigation rail across 6 core destinations (Dashboard, Rules, Folders, Preview & Review, History, Settings) plus a "More" group for Logs and Help, with accessible focus and keyboard shortcuts (`Ctrl+1` through `Ctrl+6`). WCAG AA compliant dark theme contrast across all screens and badges.
+- 🪄 **4-Stage Guided Rule Wizard:** Seamless step-by-step rule creation (Folders, Conditions, Actions, Review) with prominent folder browsing, tactile action controls, and lossless synchronization to advanced tabbed editing.
+- 📁 **Dedicated Folders Management Hub:** Centralized monitored folders workspace with real-time directory permission auditing (`Read/Write`, `Read Only`, `Access Denied`), system-protected path detection, persistent folder catalog, and exclusion patterns (`.git`, `node_modules`).
+- 👁️ **Full-Page Preview & Review Workspace:** First-class dry-run simulation workspace with operation breakdown counters, virtualized DataGrid, side-by-side impact review, stale plan invalidation, and cooperative in-flight batch cancellation.
 - 💡 **Explainability Inspector:** "Why Did This File Match?" inspection drawer evaluating and displaying condition-by-condition pass/fail evaluation breakdowns.
-- 🛡️ **Zero-Loss Safety Model & Two-Step Apply:** Deletions route to the Windows Shell Recycle Bin by default. Two-step guarded Apply workflow verifies file existence and re-checks for disk mutations before applying changes.
-- ⏪ **1-Click Rollback Engine & Actionable History:** Full historical SQLite journaling tracks every operation with SHA-256 hashes, user-actionable error explanations, technical diagnostic drawers, and anti-clobbering pre-rollback verification.
-- ⚡ **Hardened File Watcher & Health Monitoring:** Bounded 64KB buffers, multi-event debouncing (500ms), real-time status bar health badge, and automated degraded state recovery.
-- ⚙️ **Categorized 5-Section Settings:** Structured preferences across General, Safety, Performance, Storage & Logs, and Advanced sections with contextual risk explanations and database VACUUM optimization.
+- 🛡️ **Zero-Loss Safety Model & Guarded Apply:** Deletions route to the Windows Shell Recycle Bin by default. Scoped execution authorization context protects permanent deletions; safe overwrite staging takes displaced backups before mutation; boundary clamping protects monitored roots during empty directory cleanup.
+- ⏪ **1-Click Rollback Engine & Actionable History:** Two-phase durable SQLite journaling tracks every operation with SHA-256 hashes, rule metadata, user-actionable error explanations, technical diagnostic drawers, and anti-clobbering pre-rollback verification.
+- ⚡ **Background Monitoring Coordinator & Tray Lifecycle:** Serialized watcher lifecycle with linked restart resilience, multilateral scope merging, aggregate tray icon health monitoring, native GDI handle cleanup, and clean window minimize/close-to-tray handling.
+- ⚙️ **Categorized 5-Section Settings:** Structured preferences across General, Safety, Performance, Storage & Logs, and Advanced sections with atomic file replacement, corrupt profile recovery, and genuine database VACUUM optimization.
 - 🔍 **Hash-Based Duplicate Detector:** High-speed 3-step duplicate detection (file-size bucketing $\rightarrow$ 4KB partial hash $\rightarrow$ full SHA-256 verification) with automated isolation into `_Duplicates`.
 - 🌙 **Scheduled Execution & Quiet Hours:** Schedule background jobs by time of day, configure quiet hours (e.g. 22:00–06:00), and automatically throttle when running on battery ($\le 20\%$).
 - 📄 **Deep Content & Metadata Inspection:** Match files by plain text/regex keywords (safe streaming up to 1MB), image EXIF metadata (dimensions, Date Taken, camera model), and audio/video tags (MP3 ID3, WAV duration).
@@ -51,7 +66,7 @@ TidyUp is engineered with non-negotiable architectural safeguards:
 ## System Requirements
 
 - **Operating System:** Windows 10 (Build 19041+) or Windows 11 (x64, ARM64)
-- **Runtime:** [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) (Windows Desktop pack)
+- **Runtime:** [.NET 9.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/9.0) (included in standalone portable distribution)
 
 ---
 
@@ -82,7 +97,7 @@ dotnet run --project TidyUp -c Release
 ```
 
 ### 4. Run the Test Suite
-The solution contains 426 comprehensive unit and integration tests:
+The solution contains **777** comprehensive unit, integration, and acceptance tests (100% passing):
 ```powershell
 dotnet test -c Release --verbosity normal
 ```
@@ -91,11 +106,13 @@ dotnet test -c Release --verbosity normal
 
 ## Documentation
 
+- 📋 [Release Verification Report](docs/release-verification-1.2.1.md) - Authoritative verification gates, cryptographic provenance, and remediation finding matrix.
+- 📝 [Changelog](CHANGELOG.md) - Full version release history and detailed change log.
 - 🏛️ [Architecture & Technical Design](docs/ARCHITECTURE.md) - Subsystem details, sequence diagrams, and design principles.
 - 📋 [Feature Verification Matrix](docs/FEATURE_MATRIX.md) - Authoritative verification status and test coverage for all requirements.
 - 📑 [Task Catalog](TASK_CATALOG.md) - Work breakdown structure, task specifications, and governance log.
 - 📜 [Specifications](docs/spec/) - Original architectural plan and GUI design specifications.
-- 🛠️ [Helper Scripts](scripts/) - Standalone utilities for Google Takeout photo organization.
+- 🛠️ [Helper Scripts](scripts/) - Standalone utilities for Google Takeout photo organization and release packaging.
 - 📂 [Historical Archive](docs/historical/) - Pre-v1.0 milestone logs and session notes.
 
 ---
