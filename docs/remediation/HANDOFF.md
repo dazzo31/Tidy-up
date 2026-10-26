@@ -1,6 +1,6 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ pending  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ d871dce  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
 **Last Verified Phase Gate:** Phase 1 Gate Passed (`TASK-REM-28` completed) -> Proceeding to Phase 2  
 **Active Task & Current State:** `TASK-REM-28` (`DONE`) -> Next: `TASK-REM-12` (XAML converter & visibility binding repairs)  
