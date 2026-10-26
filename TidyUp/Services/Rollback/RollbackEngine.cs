@@ -1,3 +1,4 @@
+using TidyUp.Models.Enums;
 using System.IO;
 using Microsoft.EntityFrameworkCore;
 using TidyUp.Data;
@@ -75,6 +76,7 @@ public class RollbackEngine : IRollbackEngine
                 {
                     OperationId = operationId,
                     Success = false,
+                    Outcome = RollbackOutcome.Failed,
                     Message = $"Operation '{operationId}' was not found in the journal.",
                     ConflictReason = RollbackConflictReason.EntryNotFound
                 };
@@ -90,6 +92,7 @@ public class RollbackEngine : IRollbackEngine
                     OriginalPath = entry.OriginalPath,
                     TargetPath = entry.TargetPath,
                     Success = false,
+                    Outcome = RollbackOutcome.NotRecoverable,
                     Message = "Operation has already been rolled back.",
                     ConflictReason = RollbackConflictReason.AlreadyRolledBack
                 };
@@ -105,6 +108,7 @@ public class RollbackEngine : IRollbackEngine
                     OriginalPath = entry.OriginalPath,
                     TargetPath = entry.TargetPath,
                     Success = false,
+                    Outcome = RollbackOutcome.NotRecoverable,
                     Message = "Operation failed during execution and cannot be rolled back.",
                     ConflictReason = RollbackConflictReason.TargetMissing
                 };
@@ -129,6 +133,7 @@ public class RollbackEngine : IRollbackEngine
                     OriginalPath = entry.OriginalPath,
                     TargetPath = entry.TargetPath,
                     Success = false,
+                    Outcome = RollbackOutcome.NotRecoverable,
                     Message = $"Action type '{entry.ActionType}' is not supported for automatic rollback.",
                     ConflictReason = RollbackConflictReason.UnsupportedActionType
                 }
@@ -156,6 +161,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = false,
+                Outcome = RollbackOutcome.NotRecoverable,
                 Message = $"Target file '{entry.TargetPath}' no longer exists on disk.",
                 ConflictReason = RollbackConflictReason.TargetMissing
             };
@@ -175,6 +181,7 @@ public class RollbackEngine : IRollbackEngine
                     OriginalPath = entry.OriginalPath,
                     TargetPath = entry.TargetPath,
                     Success = false,
+                    Outcome = RollbackOutcome.NotRecoverable,
                     Message = $"Target file '{entry.TargetPath}' was modified by an external process after operation. Rollback aborted to protect user changes.",
                     ConflictReason = RollbackConflictReason.TargetModifiedByExternalProcess
                 };
@@ -192,6 +199,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = false,
+                Outcome = RollbackOutcome.NotRecoverable,
                 Message = $"Original path '{entry.OriginalPath}' is occupied by another file. Rollback aborted to prevent clobbering.",
                 ConflictReason = RollbackConflictReason.OriginalDestinationOccupied
             };
@@ -223,6 +231,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = true,
+                Outcome = RollbackOutcome.Restored,
                 Message = $"File successfully restored to '{entry.OriginalPath}'."
             };
         }
@@ -236,6 +245,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = false,
+                Outcome = RollbackOutcome.Failed,
                 Message = $"Filesystem error during rollback: {ex.Message}",
                 ConflictReason = RollbackConflictReason.FileSystemError
             };
@@ -262,6 +272,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = true,
+                Outcome = RollbackOutcome.Restored,
                 Message = "Target copy was already removed."
             };
         }
@@ -280,6 +291,7 @@ public class RollbackEngine : IRollbackEngine
                     OriginalPath = entry.OriginalPath,
                     TargetPath = entry.TargetPath,
                     Success = false,
+                    Outcome = RollbackOutcome.NotRecoverable,
                     Message = $"Target copy '{entry.TargetPath}' was modified by user. Rollback aborted to prevent data loss.",
                     ConflictReason = RollbackConflictReason.TargetModifiedByExternalProcess
                 };
@@ -306,6 +318,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = true,
+                Outcome = RollbackOutcome.Restored,
                 Message = $"Copied file '{entry.TargetPath}' was removed."
             };
         }
@@ -319,6 +332,7 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = false,
+                Outcome = RollbackOutcome.Failed,
                 Message = $"Filesystem error during copy removal: {ex.Message}",
                 ConflictReason = RollbackConflictReason.FileSystemError
             };
@@ -340,8 +354,26 @@ public class RollbackEngine : IRollbackEngine
                 OriginalPath = entry.OriginalPath,
                 TargetPath = entry.TargetPath,
                 Success = false,
+                Outcome = RollbackOutcome.NotRecoverable,
                 Message = $"Original destination '{entry.OriginalPath}' is occupied by another file.",
                 ConflictReason = RollbackConflictReason.OriginalDestinationOccupied
+            };
+        }
+
+        bool isPermanent = entry.Details != null && (entry.Details.Contains("Permanently Deleted", StringComparison.OrdinalIgnoreCase) || entry.Details.Contains("Permanent", StringComparison.OrdinalIgnoreCase));
+        if (isPermanent)
+        {
+            return new RollbackOperationResult
+            {
+                OperationId = entry.OperationId,
+                BatchId = entry.BatchId,
+                ActionType = entry.ActionType,
+                OriginalPath = entry.OriginalPath,
+                TargetPath = entry.TargetPath,
+                Success = false,
+                Outcome = RollbackOutcome.NotRecoverable,
+                Message = "File was permanently deleted and cannot be recovered from the Recycle Bin.",
+                ConflictReason = RollbackConflictReason.UnsupportedActionType
             };
         }
 
@@ -358,8 +390,9 @@ public class RollbackEngine : IRollbackEngine
             ActionType = entry.ActionType,
             OriginalPath = entry.OriginalPath,
             TargetPath = entry.TargetPath,
-            Success = true,
-            Message = "Deletion documented with Windows Recycle Bin restoration instructions.",
+            Success = false,
+            Outcome = RollbackOutcome.ManualRestoreRequired,
+            Message = "File was sent to the Windows Recycle Bin and requires manual restoration via Windows Shell.",
             ConflictReason = RollbackConflictReason.RecycleBinRestorationGuidance,
             RestorationInstructions = instructions
         };
@@ -390,9 +423,9 @@ public class RollbackEngine : IRollbackEngine
         {
             BatchId = batchId,
             TotalOperations = results.Count,
-            RolledBackCount = results.Count(r => r.Success),
-            FailedCount = results.Count(r => !r.Success),
-            OverallSuccess = results.All(r => r.Success),
+            RolledBackCount = results.Count(r => r.Outcome == RollbackOutcome.Restored),
+            FailedCount = results.Count(r => r.Outcome != RollbackOutcome.Restored),
+            OverallSuccess = results.All(r => r.Outcome == RollbackOutcome.Restored),
             OperationResults = results
         };
     }

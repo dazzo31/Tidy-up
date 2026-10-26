@@ -205,12 +205,40 @@ public class RollbackEngineTests : IDisposable
         var rollbackResult = await _rollbackEngine.RollbackOperationAsync(entry.OperationId);
 
         // Assert
-        rollbackResult.Success.Should().BeTrue();
+        rollbackResult.Success.Should().BeFalse();
+        rollbackResult.Outcome.Should().Be(RollbackOutcome.ManualRestoreRequired);
         rollbackResult.ConflictReason.Should().Be(RollbackConflictReason.RecycleBinRestorationGuidance);
         rollbackResult.RestorationInstructions.Should().NotBeNullOrWhiteSpace();
         rollbackResult.RestorationInstructions.Should().Contain("Recycle Bin");
         rollbackResult.RestorationInstructions.Should().Contain("Restore");
         rollbackResult.RestorationInstructions.Should().Contain("safe_to_trash.docx");
+
+        var updatedEntry = await _rollbackEngine.GetEntryAsync(entry.OperationId);
+        updatedEntry.Should().NotBeNull();
+        updatedEntry!.Status.Should().Be("Completed", "Undo Delete must never mark the database entry as RolledBack");
+    }
+
+    [Fact]
+    public async Task RollbackDelete_WithPermanentDelete_ReturnsNotRecoverable()
+    {
+        // Arrange
+        var filePath = Path.Combine(_fileHelper.TestRootDirectory, "perm_del.docx");
+        var entry = new OperationJournalEntry
+        {
+            ActionType = "Delete",
+            OriginalPath = filePath,
+            Status = "Completed",
+            Details = "Permanently Deleted"
+        };
+        await _rollbackEngine.RecordOperationAsync(entry);
+
+        // Act
+        var rollbackResult = await _rollbackEngine.RollbackOperationAsync(entry.OperationId);
+
+        // Assert
+        rollbackResult.Success.Should().BeFalse();
+        rollbackResult.Outcome.Should().Be(RollbackOutcome.NotRecoverable);
+        rollbackResult.ConflictReason.Should().Be(RollbackConflictReason.UnsupportedActionType);
     }
 
     [Fact]

@@ -315,5 +315,68 @@ public class HistoryViewModelTests : IDisposable
     }
 
     #endregion
-}
+    [Fact]
+    public void CanRollback_PermanentDelete_ReturnsFalse()
+    {
+        var entry = new OperationJournalEntry
+        {
+            ActionType = "Delete",
+            Status = "Completed",
+            Details = "Permanently Deleted"
+        };
+        var row = new HistoryRowItemViewModel(entry);
+        row.CanRollback.Should().BeFalse();
+    }
 
+    [Fact]
+    public void CanRollback_ExtractArchiveAndRunCommand_ReturnsFalse()
+    {
+        var extractRow = new HistoryRowItemViewModel(new OperationJournalEntry
+        {
+            ActionType = "ExtractArchive",
+            Status = "Completed"
+        });
+        var cmdRow = new HistoryRowItemViewModel(new OperationJournalEntry
+        {
+            ActionType = "RunCommand",
+            Status = "Completed"
+        });
+
+        extractRow.CanRollback.Should().BeFalse();
+        cmdRow.CanRollback.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RollbackOperation_WhenRecycleBin_SetsStatusToManualActionRequired()
+    {
+        // Arrange
+        await SeedJournalEntriesAsync(1, "Delete Rule", "Delete");
+        await _viewModel.LoadPageAsync();
+        var item = _viewModel.HistoryEntries[0];
+
+        _rollbackEngineMock
+            .Setup(x => x.RollbackOperationAsync(item.OperationId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new RollbackOperationResult
+            {
+                OperationId = item.OperationId,
+                BatchId = item.BatchId,
+                ActionType = "Delete",
+                Success = false,
+                Outcome = TidyUp.Models.Enums.RollbackOutcome.ManualRestoreRequired,
+                ConflictReason = RollbackConflictReason.RecycleBinRestorationGuidance,
+                RestorationInstructions = "Restore from Recycle Bin."
+            });
+
+        _viewModel.ConfirmRollbackHandler = (_, _) => true;
+
+        // Act
+        await _viewModel.RollbackOperationAsync(item);
+
+        // Assert
+        item.Status.Should().Be("Manual Action Required");
+        item.RolledBackAt.Should().BeNull();
+        item.RollbackMessage.Should().Be("Restore from Recycle Bin.");
+        _viewModel.StatusMessage.Should().Contain("Manual action required");
+    }
+
+}

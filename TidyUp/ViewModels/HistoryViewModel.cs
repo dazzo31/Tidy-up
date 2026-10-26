@@ -120,7 +120,8 @@ public partial class HistoryRowItemViewModel : ObservableObject
     public bool CanRollback => string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase) 
         && RolledBackAt == null 
         && !string.Equals(ActionType, "ExtractArchive", StringComparison.OrdinalIgnoreCase) 
-        && !string.Equals(ActionType, "RunCommand", StringComparison.OrdinalIgnoreCase);
+        && !string.Equals(ActionType, "RunCommand", StringComparison.OrdinalIgnoreCase)
+        && !(string.Equals(ActionType, "Delete", StringComparison.OrdinalIgnoreCase) && Details != null && (Details.Contains("Permanently Deleted", StringComparison.OrdinalIgnoreCase) || Details.Contains("Permanent", StringComparison.OrdinalIgnoreCase)));
 
     public string ActionBadgeBackground => ActionType switch
     {
@@ -534,12 +535,13 @@ public partial class HistoryViewModel : ObservableObject
         try
         {
             var result = await _rollbackEngine.RollbackOperationAsync(item.OperationId);
-            if (result.ConflictReason == RollbackConflictReason.RecycleBinRestorationGuidance)
+            if (result.Outcome == Models.Enums.RollbackOutcome.ManualRestoreRequired || result.ConflictReason == RollbackConflictReason.RecycleBinRestorationGuidance)
             {
+                item.Status = "Manual Action Required";
                 item.RollbackMessage = result.RestorationInstructions ?? result.Message;
                 StatusMessage = "Manual action required: restore file from Windows Recycle Bin.";
             }
-            else if (result.Success)
+            else if (result.Outcome == Models.Enums.RollbackOutcome.Restored || result.Success)
             {
                 item.Status = "RolledBack";
                 item.RolledBackAt = DateTime.UtcNow;
@@ -548,6 +550,10 @@ public partial class HistoryViewModel : ObservableObject
             }
             else
             {
+                if (result.Outcome == Models.Enums.RollbackOutcome.NotRecoverable)
+                {
+                    item.Status = "Not Recoverable";
+                }
                 var explanation = ActionableErrorExplainer.ExplainError(result.Message);
                 item.RollbackMessage = $"Rollback blocked: {explanation}";
                 StatusMessage = $"Rollback conflict: {result.Message}";
