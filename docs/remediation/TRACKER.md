@@ -71,7 +71,7 @@
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-25` | Watcher cancellation token lifecycle & restart resilience | DONE | Phase 4 Gate | `9ed8679` | TU-34: serialized lifecycle, separate applicationStoppingToken and runCts, fresh linked token on UpdateRulesAsync, 735 tests pass | Proceed to `TASK-REM-26` |
 | `TASK-REM-26` | Multilateral watcher scope merging for overlapping folders | DONE | `TASK-REM-25` | `f40f44b` | TU-35: merged watcher superset scope, per-folder subfolder recursion & wildcard exclusion preservation, 738 tests pass | Proceed to `TASK-REM-24` |
-| `TASK-REM-24` | Application monitoring coordinator & startup activation | NOT_STARTED | `TASK-REM-26` | — | Target: TU-01 | Startup watching via shared pipeline |
+| `TASK-REM-24` | Application monitoring coordinator & startup activation | DONE | `TASK-REM-26` | `cf4f107` | TU-01: MonitoringCoordinator orchestrates background watcher events, generates single-file plans, processes through BatchProcessingCoordinator; wired into App.OnStartup, 739 tests pass | Proceed to `TASK-REM-07` |
 | `TASK-REM-07` | Truthful folders management & persistent catalog actions | NOT_STARTED | `TASK-REM-24` | — | Targets: TU-02, TU-03 | Standalone folder persistence & pause |
 | `TASK-REM-29` | Window lifecycle & close/minimize conflict resolution | NOT_STARTED | `TASK-REM-07` | — | Target: TU-41 | Respect e.Cancel & restore window state |
 | `TASK-REM-30` | Aggregate tray icon health & native handle management | NOT_STARTED | `TASK-REM-29` | — | Target: TU-43 | Aggregate status & DestroyIcon cleanup |
