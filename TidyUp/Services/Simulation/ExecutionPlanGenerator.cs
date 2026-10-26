@@ -1,13 +1,12 @@
 using System.IO;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
-using TidyUp.Services;
 
 namespace TidyUp.Services.Simulation;
 
 /// <summary>
-/// Implements read-only dry-run simulation of rules against target file paths.
-/// Produces an in-memory ExecutionPlan without modifying or creating any files or database state.
+/// Generates an in-memory execution plan predicting what will happen when rules execute.
+/// Maintains an in-memory batch target reservation ledger to detect collisions and project policy resolutions.
 /// </summary>
 public class ExecutionPlanGenerator : IExecutionPlanGenerator
 {
@@ -30,6 +29,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             RuleName = rule.Name
         };
 
+        var targetReservations = new Dictionary<string, PlannedFileAction>(StringComparer.OrdinalIgnoreCase);
+
         foreach (var folder in rule.MonitoredFolders)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -38,11 +39,12 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             if (string.IsNullOrWhiteSpace(folder.Path) || !Directory.Exists(folder.Path))
                 continue;
 
-            var folderPlan = await GeneratePlanForFolderAsync(
+            var folderPlan = await GeneratePlanForFolderInternalAsync(
                 rule,
                 folder.Path,
                 folder.IncludeSubfolders,
                 folder.ExclusionPatterns,
+                targetReservations,
                 cancellationToken);
 
             combinedPlan.TotalScanned += folderPlan.TotalScanned;
@@ -59,6 +61,24 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         bool includeSubfolders,
         IEnumerable<string>? exclusionPatterns = null,
         CancellationToken cancellationToken = default)
+    {
+        var targetReservations = new Dictionary<string, PlannedFileAction>(StringComparer.OrdinalIgnoreCase);
+        return GeneratePlanForFolderInternalAsync(
+            rule,
+            folderPath,
+            includeSubfolders,
+            exclusionPatterns,
+            targetReservations,
+            cancellationToken);
+    }
+
+    private Task<ExecutionPlan> GeneratePlanForFolderInternalAsync(
+        Rule rule,
+        string folderPath,
+        bool includeSubfolders,
+        IEnumerable<string>? exclusionPatterns,
+        Dictionary<string, PlannedFileAction> targetReservations,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(rule);
 
@@ -130,7 +150,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                     fileInfo,
                     currentVirtualPath,
                     currentVirtualName,
-                    fileCounter);
+                    fileCounter,
+                    targetReservations);
 
                 plannedAction.InitialSourcePath = fileInfo.FullName;
                 plannedAction.DependsOnActionId = previousActionId;
@@ -193,7 +214,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         FileInfo fileInfo,
         string currentVirtualPath,
         string currentVirtualName,
-        int counter)
+        int counter,
+        Dictionary<string, PlannedFileAction> targetReservations)
     {
         var plannedAction = new PlannedFileAction
         {
@@ -212,7 +234,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 plannedAction.ConflictResolution = moveAction.ConflictResolution;
                 var moveDestDir = _variableEngine.Resolve(moveAction.DestinationPath, fileInfo, counter);
                 plannedAction.TargetPath = Path.Combine(moveDestDir, currentVirtualName);
-                CheckConflict(plannedAction, currentVirtualPath);
+                CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
 
             case CopyFileAction copyAction:
@@ -220,7 +242,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 plannedAction.ConflictResolution = copyAction.ConflictResolution;
                 var copyDestDir = _variableEngine.Resolve(copyAction.DestinationPath, fileInfo, counter);
                 plannedAction.TargetPath = Path.Combine(copyDestDir, currentVirtualName);
-                CheckConflict(plannedAction, currentVirtualPath);
+                CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
 
             case RenameFileAction renameAction:
@@ -233,7 +255,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 }
                 var parentDir = Path.GetDirectoryName(currentVirtualPath) ?? string.Empty;
                 plannedAction.TargetPath = Path.Combine(parentDir, newName);
-                CheckConflict(plannedAction, currentVirtualPath);
+                CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
 
             case ChangeExtensionAction changeExtAction:
@@ -243,7 +265,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 var nameWithoutExt = Path.GetFileNameWithoutExtension(currentVirtualName);
                 var dir = Path.GetDirectoryName(currentVirtualPath) ?? string.Empty;
                 plannedAction.TargetPath = Path.Combine(dir, $"{nameWithoutExt}.{newExt}");
-                CheckConflict(plannedAction, currentVirtualPath);
+                CheckAndResolveConflict(plannedAction, currentVirtualPath, targetReservations);
                 break;
 
             case DeleteFileAction deleteAction:
@@ -276,20 +298,112 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
         return plannedAction;
     }
 
-    private static void CheckConflict(PlannedFileAction plannedAction, string sourcePath)
+    private static void CheckAndResolveConflict(
+        PlannedFileAction plannedAction,
+        string sourcePath,
+        Dictionary<string, PlannedFileAction> targetReservations)
     {
         if (string.IsNullOrWhiteSpace(plannedAction.TargetPath))
             return;
 
+        string normalizedTarget;
+        try
+        {
+            normalizedTarget = Path.GetFullPath(plannedAction.TargetPath);
+        }
+        catch
+        {
+            normalizedTarget = plannedAction.TargetPath;
+        }
+
         // If destination path is identical to source, not a destination conflict
-        if (string.Equals(plannedAction.TargetPath, sourcePath, StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(normalizedTarget, sourcePath, StringComparison.OrdinalIgnoreCase))
             return;
 
-        if (File.Exists(plannedAction.TargetPath))
+        bool existsOnDisk = File.Exists(normalizedTarget);
+        bool hasBatchReservation = targetReservations.TryGetValue(normalizedTarget, out var existingReservation);
+
+        // Check if existing reservation is from the same chain (e.g. this action depends on it or has same initial source)
+        bool isChainedPredecessor = hasBatchReservation &&
+            (plannedAction.DependsOnActionId == existingReservation!.Id ||
+             string.Equals(plannedAction.InitialSourcePath, existingReservation.InitialSourcePath, StringComparison.OrdinalIgnoreCase));
+
+        bool isConflict = existsOnDisk || (hasBatchReservation && !isChainedPredecessor);
+
+        if (!isConflict)
         {
-            plannedAction.HasConflict = true;
-            plannedAction.ConflictDescription = $"Target file already exists: {plannedAction.TargetPath}";
+            plannedAction.HasConflict = false;
+            targetReservations[normalizedTarget] = plannedAction;
+            return;
+        }
+
+        // Handle conflict according to policy
+        switch (plannedAction.ConflictResolution)
+        {
+            case ConflictResolution.RenameNew:
+                // Auto-rename by projecting next available (1), (2), ...
+                var dir = Path.GetDirectoryName(normalizedTarget) ?? string.Empty;
+                var fileNameWithoutExt = Path.GetFileNameWithoutExtension(normalizedTarget);
+                var ext = Path.GetExtension(normalizedTarget);
+                string candidate = normalizedTarget;
+                int counter = 1;
+
+                while (File.Exists(candidate) || targetReservations.ContainsKey(candidate))
+                {
+                    candidate = Path.Combine(dir, $"{fileNameWithoutExt} ({counter}){ext}");
+                    counter++;
+                }
+
+                plannedAction.TargetPath = candidate;
+                plannedAction.HasConflict = false;
+                plannedAction.ResolutionNote = $"Auto-renamed due to conflict from '{Path.GetFileName(normalizedTarget)}'";
+                targetReservations[candidate] = plannedAction;
+                break;
+
+            case ConflictResolution.Skip:
+                plannedAction.IsSkipped = true;
+                plannedAction.HasConflict = false;
+                plannedAction.ConflictDescription = existsOnDisk
+                    ? $"Skipped by policy: destination file already exists ({Path.GetFileName(normalizedTarget)})"
+                    : $"Skipped by policy: destination reserved by another action in batch ({Path.GetFileName(normalizedTarget)})";
+                break;
+
+            case ConflictResolution.Overwrite:
+                if (hasBatchReservation && !isChainedPredecessor)
+                {
+                    // Two independent actions in the same batch claiming the identical target is an unresolvable collision!
+                    plannedAction.HasConflict = true;
+                    plannedAction.ConflictDescription = $"Batch conflict: multiple actions in batch target identical destination '{Path.GetFileName(normalizedTarget)}'";
+                }
+                else
+                {
+                    plannedAction.HasConflict = false;
+                    plannedAction.ResolutionNote = "Overwrites existing file on disk (requires execution authorization)";
+                    targetReservations[normalizedTarget] = plannedAction;
+                }
+                break;
+
+            case ConflictResolution.RenameOld:
+                if (hasBatchReservation && !isChainedPredecessor)
+                {
+                    plannedAction.HasConflict = true;
+                    plannedAction.ConflictDescription = $"Batch conflict: multiple actions in batch target identical destination '{Path.GetFileName(normalizedTarget)}'";
+                }
+                else
+                {
+                    plannedAction.HasConflict = false;
+                    plannedAction.ResolutionNote = "Existing destination will be backed up with timestamp suffix before replacement";
+                    targetReservations[normalizedTarget] = plannedAction;
+                }
+                break;
+
+            case ConflictResolution.Prompt:
+            default:
+                plannedAction.HasConflict = true;
+                plannedAction.ConflictDescription = existsOnDisk
+                    ? $"Target file already exists: {normalizedTarget}"
+                    : $"Batch conflict: target already reserved by another action: {normalizedTarget}";
+                break;
         }
     }
 }
-

@@ -55,7 +55,7 @@ public class PlannedFileAction
     public DateTime SourceModifiedDate { get; set; }
 
     /// <summary>
-    /// Whether this action encounters a conflict (e.g., target already exists).
+    /// Whether this action encounters an unresolvable conflict (e.g., target already exists under Prompt policy or batch collision).
     /// </summary>
     public bool HasConflict { get; set; }
 
@@ -63,6 +63,16 @@ public class PlannedFileAction
     /// Description of the conflict if one exists.
     /// </summary>
     public string? ConflictDescription { get; set; }
+
+    /// <summary>
+    /// Indicates whether this action is skipped by conflict policy (e.g. ConflictResolution.Skip).
+    /// </summary>
+    public bool IsSkipped { get; set; }
+
+    /// <summary>
+    /// Informational note regarding policy resolution (e.g., "Auto-renamed due to conflict").
+    /// </summary>
+    public string? ResolutionNote { get; set; }
 
     /// <summary>
     /// Conflict resolution strategy associated with this action.

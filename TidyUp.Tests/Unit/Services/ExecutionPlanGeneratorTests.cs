@@ -138,7 +138,7 @@ public class ExecutionPlanGeneratorTests : IDisposable
                 new MoveFileAction
                 {
                     DestinationPath = targetDir,
-                    ConflictResolution = ConflictResolution.Overwrite,
+                    ConflictResolution = ConflictResolution.Prompt,
                     Order = 0
                 }
             }
@@ -498,6 +498,148 @@ public class ExecutionPlanGeneratorTests : IDisposable
 
         success.Should().BeFalse("cannot execute dependent action without approved predecessor");
         issues.Should().ContainSingle().Which.Should().Contain("depends on an unselected preceding action");
+    }
+
+    [Fact]
+    public async Task BatchCollision_TwoFilesTargetingSameDestination_UnderRenameNew_ProjectsUniqueTargetsWithoutConflict()
+    {
+        var sourceDir = Path.Combine(_testRoot, "CollisionSource");
+        var destDir = Path.Combine(_testRoot, "CollisionDest");
+        Directory.CreateDirectory(sourceDir);
+        Directory.CreateDirectory(destDir);
+
+        var f1 = Path.Combine(sourceDir, "doc1.txt");
+        var f2 = Path.Combine(sourceDir, "doc2.txt");
+        await File.WriteAllTextAsync(f1, "1");
+        await File.WriteAllTextAsync(f2, "2");
+
+        // Rule renames any txt file to "consolidated.txt" and moves to destDir with RenameNew
+        var rule = new Rule
+        {
+            Name = "Consolidate Files",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = destDir,
+                    ConflictResolution = ConflictResolution.RenameNew,
+                    Order = 0
+                }
+            }
+        };
+
+        // Pre-create consolidated.txt on disk so the first file also collides with disk
+        var existingFile = Path.Combine(destDir, "doc1.txt");
+        await File.WriteAllTextAsync(existingFile, "Existing doc1 on disk");
+
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, sourceDir, includeSubfolders: false);
+
+        plan.PlannedActions.Should().HaveCount(2);
+
+        var a1 = plan.PlannedActions.First(a => a.SourcePath == f1);
+        var a2 = plan.PlannedActions.First(a => a.SourcePath == f2);
+
+        // a1 collided with disk file -> projected to doc1 (1).txt
+        a1.TargetPath.Should().Be(Path.Combine(destDir, "doc1 (1).txt"));
+        a1.HasConflict.Should().BeFalse();
+        a1.ResolutionNote.Should().Contain("Auto-renamed");
+
+        // a2 had no disk collision -> target is doc2.txt
+        a2.TargetPath.Should().Be(Path.Combine(destDir, "doc2.txt"));
+        a2.HasConflict.Should().BeFalse();
+
+        // Overall plan has 0 unresolvable conflicts
+        plan.ConflictCount.Should().Be(0);
+        plan.HasConflicts.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task BatchCollision_TwoIndependentFilesSameTarget_UnderOverwrite_FlagsBatchConflict()
+    {
+        var sourceDir = Path.Combine(_testRoot, "OverwriteCollisionSource");
+        var destDir = Path.Combine(_testRoot, "OverwriteCollisionDest");
+        Directory.CreateDirectory(sourceDir);
+        Directory.CreateDirectory(destDir);
+
+        var f1 = Path.Combine(sourceDir, "file1.txt");
+        var f2 = Path.Combine(sourceDir, "file2.txt");
+        await File.WriteAllTextAsync(f1, "Data 1");
+        await File.WriteAllTextAsync(f2, "Data 2");
+
+        var rule = new Rule
+        {
+            Name = "Collision Overwrite Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new RenameFileAction
+                {
+                    NamePattern = "same_output",
+                    ConflictResolution = ConflictResolution.Overwrite,
+                    Order = 0
+                }
+            }
+        };
+
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, sourceDir, includeSubfolders: false);
+
+        plan.PlannedActions.Should().HaveCount(2);
+
+        var a1 = plan.PlannedActions[0];
+        var a2 = plan.PlannedActions[1];
+
+        // First action reserves target
+        a1.HasConflict.Should().BeFalse();
+
+        // Second independent action in same batch targeting same output is an unresolvable collision
+        a2.HasConflict.Should().BeTrue();
+        a2.ConflictDescription.Should().Contain("Batch conflict");
+    }
+
+    [Fact]
+    public async Task PolicyResolution_Skip_WhenTargetExists_MarksIsSkippedAndClearsConflict()
+    {
+        var sourceDir = Path.Combine(_testRoot, "SkipSource");
+        var destDir = Path.Combine(_testRoot, "SkipDest");
+        Directory.CreateDirectory(sourceDir);
+        Directory.CreateDirectory(destDir);
+
+        var src = Path.Combine(sourceDir, "photo.jpg");
+        var existing = Path.Combine(destDir, "photo.jpg");
+        await File.WriteAllTextAsync(src, "New Photo");
+        await File.WriteAllTextAsync(existing, "Existing Photo");
+
+        var rule = new Rule
+        {
+            Name = "Skip Existing Rule",
+            IsEnabled = true,
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction
+                {
+                    DestinationPath = destDir,
+                    ConflictResolution = ConflictResolution.Skip,
+                    Order = 0
+                }
+            }
+        };
+
+        var plan = await _generator.GeneratePlanForFolderAsync(rule, sourceDir, includeSubfolders: false);
+
+        plan.PlannedActions.Should().ContainSingle();
+        var action = plan.PlannedActions[0];
+
+        action.IsSkipped.Should().BeTrue();
+        action.HasConflict.Should().BeFalse();
+        action.ConflictDescription.Should().Contain("Skipped by policy");
+
+        var mockExecutor = new Moq.Mock<TidyUp.Services.IActionExecutor>();
+        var previewVm = new TidyUp.ViewModels.PreviewViewModel(_generator, mockExecutor.Object);
+        var item = new TidyUp.ViewModels.PlannedActionItemViewModel(action);
+
+        item.IsApproved.Should().BeFalse("skipped actions must default to unapproved");
+        item.IsSkipped.Should().BeTrue();
     }
 }
 

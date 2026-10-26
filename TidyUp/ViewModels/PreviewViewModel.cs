@@ -35,8 +35,8 @@ public partial class PlannedActionItemViewModel : ObservableObject
     public PlannedActionItemViewModel(PlannedFileAction plannedAction)
     {
         PlannedAction = plannedAction;
-        // Default to approved only if there are no conflicts
-        _isApproved = !plannedAction.HasConflict;
+        // Default to approved only if there are no conflicts and not skipped
+        _isApproved = !plannedAction.HasConflict && !plannedAction.IsSkipped;
     }
 
     public Guid Id => PlannedAction.Id;
@@ -44,6 +44,8 @@ public partial class PlannedActionItemViewModel : ObservableObject
     public string InitialSourcePath => PlannedAction.InitialSourcePath;
     public Guid? DependsOnActionId => PlannedAction.DependsOnActionId;
     public string? TargetPath => PlannedAction.TargetPath;
+    public bool IsSkipped => PlannedAction.IsSkipped;
+    public string? ResolutionNote => PlannedAction.ResolutionNote;
     public ActionType ActionType => PlannedAction.ActionType;
     public FileAction FileAction => PlannedAction.FileAction;
     public string RuleName => PlannedAction.RuleName;
