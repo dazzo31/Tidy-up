@@ -30,6 +30,7 @@ Comprehensive remediation and stability release resolving all 44 cataloged archi
 - **Subfolder directory hierarchy preservation (`TU-12`, `TASK-REM-16`):** Preserves relative folder hierarchies relative to monitored roots with path confinement validation.
 - **History pagination command notifications (`TU-36`, `TASK-REM-32`):** `NotifyCanExecuteChanged` wired across page controls and data load events for proper button enablement.
 - **Dark theme glyph & empty state contrast (`TASK-REM-37`):** `AccessibleEmptyStateBadge` style sets central glyphs to `Win11AccentBrush` (7.04:1 contrast ratio against `#2B2B2B` subtle surface, meeting WCAG AA requirements).
+- **Rules view empty state coordination:** Eliminated redundant duplicate `New Rule (Ctrl+N)` action button and right-hand placeholder when zero rules exist, keeping focus on the primary master-list empty state call-to-action.
 - **Settings surface audit & inert control containment (`TU-26`, `TASK-REM-35`):** Locked concurrent operations to 1 (ADR-01), added directory browser for backups, contained inert network polling with `[Integration Pending]`, and wired debounce/batch-size options.
 - **Component vs feature honesty (`TU-33`, `TASK-REM-36`):** Disclosed pending integrations in Schedule, Diff, and Folders views; updated `FEATURE_MATRIX.md` to truthfully reflect production status.
 

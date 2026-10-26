@@ -95,4 +95,4 @@
 ### Phase 8: Candidate Packaging & Handoff
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-39` | Release candidate packaging, provenance & handoff | **DONE** | Phase 7 Gate | `84bc438` | Startup deadlock resolved; packaging workflow (scripts/Package-Release.ps1), runtime smoke test (scripts/Test-PackagedBinary.ps1), win-x64 framework-dependent & self-contained zips, SHA-256 manifest, release verification doc; ready for publication | Phase 8 Gate Passed → Release Candidate Handoff |
+| `TASK-REM-39` | Release candidate packaging, provenance & handoff | **DONE** | Phase 7 Gate | `34fa050` | Startup deadlock resolved; empty state action duplication resolved (Option A); packaging workflow (scripts/Package-Release.ps1), runtime smoke test (scripts/Test-PackagedBinary.ps1), win-x64 framework-dependent & self-contained zips, SHA-256 manifest, release verification doc; ready for publication | Phase 8 Gate Passed → Release Candidate Handoff |

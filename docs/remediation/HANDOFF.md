@@ -1,11 +1,12 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 84bc438  
+**Repository / Branch / Current SHA:** TidyUp on main @ 34fa050  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
 **Last Verified Phase Gate:** Phase 8 Gate Passed — Remediation Program Complete (Phases 0 through 8)  
 **Active Task & Current State:** TASK-REM-39 (DONE) -> Release candidate handoff awaiting user tag/publish authorization  
 **Completed Changes & Files:**
-- TASK-REM-39 (SHA: 84bc438):
+- TASK-REM-39 (SHA: 34fa050):
+  - TidyUp/MainWindow.xaml: Eliminated duplicate `New Rule (Ctrl+N)` action button and empty state control in the right-hand details pane when 0 rules exist (`FilteredRules.Count == 0`), leaving a single clear call-to-action in the master list pane (Option A).
   - TidyUp/Data/SettingsRepository.cs: Implemented synchronous `LoadWithResult()` for `CurrentSettings` and configured `ConfigureAwait(false)` in `LoadWithResultAsync()`, eliminating a sync-over-async deadlock on the WPF Dispatcher SynchronizationContext when `settings.json` exists.
   - TidyUp/App.xaml.cs: Loaded settings asynchronously prior to database initialization, ensuring `AppSettings` singleton is fully populated before dependent services consume it.
   - scripts/Package-Release.ps1: Automated release packaging script generating win-x64 framework-dependent (`TidyUp-1.2.1-rc.1-win-x64.zip`) and self-contained single-file (`TidyUp-1.2.1-rc.1-win-x64-standalone.zip`) archives with SHA-256 manifest.
