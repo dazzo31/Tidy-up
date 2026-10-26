@@ -25,10 +25,15 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
     private readonly IWatcherHealthMonitor? _watcherHealthMonitor;
     private readonly ConcurrentQueue<(string FilePath, string SourceFolder)> _pausedEventQueue = new();
     private volatile bool _isPaused;
+    private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
+    private CancellationToken _applicationStoppingToken;
+    private CancellationTokenSource? _runCts;
     private List<Rule> _rules = new();
-    private CancellationTokenSource? _cancellationTokenSource;
     private bool _isRunning;
     private bool _disposed;
+
+    public bool IsRunning => _isRunning;
+    public bool IsRunTokenCancelled => _runCts?.IsCancellationRequested ?? true;
 
     public event EventHandler<FileDetectedEventArgs>? FileDetected;
     public event EventHandler<string>? ReconciliationTriggered;
@@ -68,7 +73,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
 
         while (_pausedEventQueue.TryDequeue(out var item))
         {
-            if (_cancellationTokenSource?.IsCancellationRequested == true)
+            if (_runCts?.IsCancellationRequested == true)
                 break;
 
             if (!processedInBatch.Add(item.FilePath))
@@ -93,37 +98,61 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
 
     public async Task StartAsync(List<Rule> rules, CancellationToken cancellationToken = default)
     {
-        if (_isRunning)
-            await StopAsync();
-
-        _rules = rules.Where(r => r.IsEnabled).ToList();
-        _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _isRunning = true;
-
-        _retryQueueManager?.Start();
-        _watcherHealthMonitor?.Start();
-
-        // Set up watchers for all monitored folders
-        var monitoredFolders = _rules
-            .SelectMany(r => r.MonitoredFolders)
-            .DistinctBy(f => f.Path)
-            .ToList();
-
-        foreach (var folder in monitoredFolders)
+        await _lifecycleLock.WaitAsync();
+        try
         {
-            await SetupFolderMonitoringAsync(folder);
-        }
+            if (_isRunning)
+                await StopInternalAsync();
 
-        // Initial scan of all folders
-        await ScanAllFoldersAsync();
+            _applicationStoppingToken = cancellationToken;
+            _runCts?.Dispose();
+            _runCts = CancellationTokenSource.CreateLinkedTokenSource(_applicationStoppingToken);
+
+            _rules = rules.Where(r => r.IsEnabled).ToList();
+            _isRunning = true;
+
+            _retryQueueManager?.Start();
+            _watcherHealthMonitor?.Start();
+
+            // Set up watchers for all monitored folders
+            var monitoredFolders = _rules
+                .SelectMany(r => r.MonitoredFolders)
+                .DistinctBy(f => f.Path)
+                .ToList();
+
+            foreach (var folder in monitoredFolders)
+            {
+                await SetupFolderMonitoringAsync(folder);
+            }
+
+            // Initial scan of all folders
+            await ScanAllFoldersAsync();
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
     }
 
-    public Task StopAsync()
+    public async Task StopAsync()
+    {
+        await _lifecycleLock.WaitAsync();
+        try
+        {
+            await StopInternalAsync();
+        }
+        finally
+        {
+            _lifecycleLock.Release();
+        }
+    }
+
+    private Task StopInternalAsync()
     {
         _isRunning = false;
         _isPaused = false;
         _pausedEventQueue.Clear();
-        _cancellationTokenSource?.Cancel();
+        _runCts?.Cancel();
 
         _retryQueueManager?.Stop();
         _watcherHealthMonitor?.Stop();
@@ -141,23 +170,51 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         _watchers.Clear();
         _fileChangeTimestamps.Clear();
 
+        _runCts?.Dispose();
+        _runCts = null;
+
         return Task.CompletedTask;
     }
 
     public async Task UpdateRulesAsync(List<Rule> rules)
     {
-        var wasRunning = _isRunning;
-        
-        if (wasRunning)
+        await _lifecycleLock.WaitAsync();
+        try
         {
-            await StopAsync();
+            var wasRunning = _isRunning;
+            if (wasRunning)
+            {
+                await StopInternalAsync();
+            }
+
+            _rules = rules.Where(r => r.IsEnabled).ToList();
+
+            if (wasRunning)
+            {
+                // Instantiate fresh uncancelled run-loop token linked to the application lifetime token
+                _runCts?.Dispose();
+                _runCts = CancellationTokenSource.CreateLinkedTokenSource(_applicationStoppingToken);
+                _isRunning = true;
+
+                _retryQueueManager?.Start();
+                _watcherHealthMonitor?.Start();
+
+                var monitoredFolders = _rules
+                    .SelectMany(r => r.MonitoredFolders)
+                    .DistinctBy(f => f.Path)
+                    .ToList();
+
+                foreach (var folder in monitoredFolders)
+                {
+                    await SetupFolderMonitoringAsync(folder);
+                }
+
+                await ScanAllFoldersAsync();
+            }
         }
-
-        _rules = rules.Where(r => r.IsEnabled).ToList();
-
-        if (wasRunning && _cancellationTokenSource is not null)
+        finally
         {
-            await StartAsync(_rules, _cancellationTokenSource.Token);
+            _lifecycleLock.Release();
         }
     }
 
@@ -272,7 +329,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
 
             foreach (var filePath in files)
             {
-                if (_cancellationTokenSource?.IsCancellationRequested == true)
+                if (_runCts?.IsCancellationRequested == true)
                     return;
 
                 if (ShouldProcessFile(filePath, exclusionPatterns))
@@ -399,7 +456,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         _isRunning = false;
         _isPaused = false;
         _pausedEventQueue.Clear();
-        _cancellationTokenSource?.Cancel();
+        _runCts?.Cancel();
         _subscriptions.Dispose();
 
         if (_retryQueueManager is not null)
@@ -419,7 +476,9 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         }
 
         _watchers.Clear();
-        _cancellationTokenSource?.Dispose();
+        _runCts?.Dispose();
+        _runCts = null;
+        _lifecycleLock.Dispose();
         GC.SuppressFinalize(this);
     }
 }
