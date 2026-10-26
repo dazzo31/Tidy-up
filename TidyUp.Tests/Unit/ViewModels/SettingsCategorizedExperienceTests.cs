@@ -6,6 +6,7 @@ using TidyUp.Data.Recovery;
 using TidyUp.Models;
 using TidyUp.Models.Enums;
 using TidyUp.ViewModels;
+using TidyUp.Configuration;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.ViewModels;
@@ -90,13 +91,91 @@ public class SettingsCategorizedExperienceTests : IDisposable
     }
 
     [Fact]
-    public async Task VacuumDatabaseCommand_ExecutesAndUpdatesStatus()
+    public async Task VacuumDatabaseCommand_WhenSpaceReclaimed_ReportsReclaimedBytesAndDuration()
     {
-        var vm = new SettingsViewModel(_settingsRepo, _backupManagerMock.Object);
+        var paths = new TidyUpPaths(_tempTestDir);
+        File.WriteAllText(paths.DatabasePath, "placeholder");
+
+        var integrityCheckerMock = new Mock<TidyUp.Data.Recovery.IDbIntegrityChecker>();
+        integrityCheckerMock
+            .Setup(c => c.VacuumDatabaseAsync(paths.DatabasePath))
+            .ReturnsAsync(new TidyUp.Data.Recovery.DatabaseMaintenanceResult
+            {
+                Success = true,
+                PreSizeBytes = 1048576,
+                PostSizeBytes = 524288,
+                Duration = TimeSpan.FromMilliseconds(45)
+            });
+
+
+        var vm = new SettingsViewModel(_settingsRepo, _backupManagerMock.Object, integrityCheckerMock.Object, paths);
 
         await vm.VacuumDatabaseCommand.ExecuteAsync(null);
 
-        vm.StatusMessage.Should().Contain("Database optimization completed");
+        vm.StatusMessage.Should().Contain("Database optimized successfully. Reclaimed 512.0 KB");
+        vm.StatusMessage.Should().Contain("45 ms");
+    }
+
+    [Fact]
+    public async Task VacuumDatabaseCommand_WhenAlreadyCompact_ReportsZeroBytesReclaimed()
+    {
+        var paths = new TidyUpPaths(_tempTestDir);
+        File.WriteAllText(paths.DatabasePath, "placeholder");
+
+        var integrityCheckerMock = new Mock<TidyUp.Data.Recovery.IDbIntegrityChecker>();
+        integrityCheckerMock
+            .Setup(c => c.VacuumDatabaseAsync(paths.DatabasePath))
+            .ReturnsAsync(new TidyUp.Data.Recovery.DatabaseMaintenanceResult
+            {
+                Success = true,
+                PreSizeBytes = 524288,
+                PostSizeBytes = 524288,
+                Duration = TimeSpan.FromMilliseconds(20)
+            });
+
+
+        var vm = new SettingsViewModel(_settingsRepo, _backupManagerMock.Object, integrityCheckerMock.Object, paths);
+
+        await vm.VacuumDatabaseCommand.ExecuteAsync(null);
+
+        vm.StatusMessage.Should().Contain("Database already compact (0 bytes reclaimed)");
+    }
+
+    [Fact]
+    public async Task DbIntegrityChecker_VacuumDatabaseAsync_ExecutesPragmaAndVacuumsRealDatabase()
+    {
+        var tempDb = Path.Combine(_tempTestDir, "real_vacuum.db");
+        using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={tempDb}"))
+        {
+            await conn.OpenAsync();
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = "CREATE TABLE TestTable (Id INTEGER PRIMARY KEY, Data TEXT);";
+            await cmd.ExecuteNonQueryAsync();
+
+            // Insert 2000 rows to expand database size
+            using var tx = conn.BeginTransaction();
+            cmd.Transaction = tx;
+            for (int i = 0; i < 2000; i++)
+            {
+                cmd.CommandText = $"INSERT INTO TestTable (Data) VALUES ('Large block of padding data for testing vacuum space reclamation {i}');";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            tx.Commit();
+            cmd.Transaction = null;
+
+            // Delete all rows to leave free pages that VACUUM will reclaim
+            cmd.CommandText = "DELETE FROM TestTable;";
+            await cmd.ExecuteNonQueryAsync();
+            await conn.CloseAsync();
+        }
+
+        var checker = new TidyUp.Data.Recovery.DbIntegrityChecker(_backupManagerMock.Object);
+        var result = await checker.VacuumDatabaseAsync(tempDb);
+
+        result.Success.Should().BeTrue();
+        result.PreSizeBytes.Should().BeGreaterThan(0);
+        result.PostSizeBytes.Should().BeLessThan(result.PreSizeBytes);
+        result.ReclaimedBytes.Should().BeGreaterThan(0);
     }
 
     [Fact]

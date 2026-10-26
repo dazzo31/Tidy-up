@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using Microsoft.Data.Sqlite;
 
@@ -137,6 +138,94 @@ public class DbIntegrityChecker : IDbIntegrityChecker
         }
 
         return startupResult;
+    }
+
+    public async Task<DatabaseMaintenanceResult> VacuumDatabaseAsync(string dbPath)
+    {
+        var sw = Stopwatch.StartNew();
+        var result = new DatabaseMaintenanceResult();
+
+        if (string.IsNullOrWhiteSpace(dbPath) || !File.Exists(dbPath))
+        {
+            result.Success = false;
+            result.ErrorMessage = "Database file does not exist.";
+            sw.Stop();
+            result.Duration = sw.Elapsed;
+            return result;
+        }
+
+        var walPath = dbPath + "-wal";
+        var shmPath = dbPath + "-shm";
+
+        long GetTotalSize()
+        {
+            long size = 0;
+            if (File.Exists(dbPath)) size += new FileInfo(dbPath).Length;
+            if (File.Exists(walPath)) size += new FileInfo(walPath).Length;
+            if (File.Exists(shmPath)) size += new FileInfo(shmPath).Length;
+            return size;
+        }
+
+        result.PreSizeBytes = File.Exists(dbPath) ? new FileInfo(dbPath).Length : 0;
+        result.PreWalSizeBytes = File.Exists(walPath) ? new FileInfo(walPath).Length : 0;
+        result.PreShmSizeBytes = File.Exists(shmPath) ? new FileInfo(shmPath).Length : 0;
+        var totalPre = GetTotalSize();
+
+        try
+        {
+            SqliteConnection.ClearAllPools();
+
+            var connectionString = new SqliteConnectionStringBuilder
+            {
+                DataSource = dbPath,
+                Mode = SqliteOpenMode.ReadWrite
+            }.ToString();
+
+            await using (var connection = new SqliteConnection(connectionString))
+            {
+                await connection.OpenAsync();
+
+                // 1. Truncate WAL to write all checkpoint pages into main database
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "PRAGMA wal_checkpoint(TRUNCATE);";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                // 2. Perform VACUUM
+                await using (var cmd = connection.CreateCommand())
+                {
+                    cmd.CommandText = "VACUUM;";
+                    await cmd.ExecuteNonQueryAsync();
+                }
+
+                await connection.CloseAsync();
+            }
+
+            SqliteConnection.ClearAllPools();
+
+            result.PostSizeBytes = File.Exists(dbPath) ? new FileInfo(dbPath).Length : 0;
+            result.PostWalSizeBytes = File.Exists(walPath) ? new FileInfo(walPath).Length : 0;
+            result.PostShmSizeBytes = File.Exists(shmPath) ? new FileInfo(shmPath).Length : 0;
+            var totalPost = GetTotalSize();
+
+            result.PreSizeBytes = totalPre;
+            result.PostSizeBytes = totalPost;
+            result.Success = true;
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.ErrorMessage = ex.Message;
+            SqliteConnection.ClearAllPools();
+        }
+        finally
+        {
+            sw.Stop();
+            result.Duration = sw.Elapsed;
+        }
+
+        return result;
     }
 }
 

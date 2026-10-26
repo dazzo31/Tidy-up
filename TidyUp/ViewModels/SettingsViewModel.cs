@@ -20,6 +20,8 @@ public partial class SettingsViewModel : ObservableObject
 {
     private readonly SettingsRepository _settingsRepository;
     private readonly TidyUp.Data.Recovery.IDatabaseBackupManager? _backupManager;
+    private readonly TidyUp.Data.Recovery.IDbIntegrityChecker? _integrityChecker;
+    private readonly TidyUp.Configuration.TidyUpPaths? _paths;
 
     public enum SettingsCategory
     {
@@ -84,10 +86,16 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private ObservableCollection<string> _availableThemes;
 
-    public SettingsViewModel(SettingsRepository settingsRepository, TidyUp.Data.Recovery.IDatabaseBackupManager? backupManager = null)
+    public SettingsViewModel(
+        SettingsRepository settingsRepository,
+        TidyUp.Data.Recovery.IDatabaseBackupManager? backupManager = null,
+        TidyUp.Data.Recovery.IDbIntegrityChecker? integrityChecker = null,
+        TidyUp.Configuration.TidyUpPaths? paths = null)
     {
         _settingsRepository = settingsRepository;
         _backupManager = backupManager;
+        _integrityChecker = integrityChecker;
+        _paths = paths;
 
         // Initialize dropdowns
         _availableConflictStrategies = new ObservableCollection<ConflictResolution>(
@@ -186,8 +194,32 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             StatusMessage = "Optimizing SQLite database storage (VACUUM)...";
-            await Task.Delay(300); // UI responsiveness yield
-            StatusMessage = "Database optimization completed successfully. Space reclaimed.";
+
+            var dbPath = _paths?.DatabasePath ?? System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tidyup.db");
+            if (_integrityChecker != null && System.IO.File.Exists(dbPath))
+            {
+                var result = await _integrityChecker.VacuumDatabaseAsync(dbPath);
+                if (result.Success)
+                {
+                    if (result.ReclaimedBytes > 0)
+                    {
+                        var kb = result.ReclaimedBytes / 1024.0;
+                        StatusMessage = $"Database optimized successfully. Reclaimed {kb:F1} KB ({result.ReclaimedBytes:N0} bytes) in {result.Duration.TotalMilliseconds:F0} ms.";
+                    }
+                    else
+                    {
+                        StatusMessage = $"Database already compact (0 bytes reclaimed). Optimization completed in {result.Duration.TotalMilliseconds:F0} ms.";
+                    }
+                }
+                else
+                {
+                    StatusMessage = $"Error optimizing database: {result.ErrorMessage}";
+                }
+            }
+            else
+            {
+                StatusMessage = "Database optimization service not available or database file not found.";
+            }
         }
         catch (Exception ex)
         {
