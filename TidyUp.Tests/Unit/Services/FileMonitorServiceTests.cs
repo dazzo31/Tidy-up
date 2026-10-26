@@ -123,5 +123,143 @@ public class FileMonitorServiceTests : IDisposable
             monitorService.IsRunning.Should().BeFalse();
         }
     }
+
+    #region TASK-REM-26 (TU-35): Multilateral Watcher Scope Merging Tests
+
+    [Fact]
+    public async Task StartAsync_MergesWatcherScope_WhenMultipleRulesMonitorSameDirectoryWithDifferentRecursion()
+    {
+        // Arrange: Rule A is top-level only; Rule B monitors recursively
+        using var monitorService = new FileMonitorService();
+
+        var ruleA = new Rule
+        {
+            Name = "Rule A (Top-level only)",
+            IsEnabled = true,
+            MonitoredFolders = { new MonitoredFolder { Path = _testTempDir, IncludeSubfolders = false } }
+        };
+
+        var ruleB = new Rule
+        {
+            Name = "Rule B (Recursive)",
+            IsEnabled = true,
+            MonitoredFolders = { new MonitoredFolder { Path = _testTempDir, IncludeSubfolders = true } }
+        };
+
+        // Act
+        await monitorService.StartAsync(new List<Rule> { ruleA, ruleB });
+
+        // Assert: Merged watcher must have IncludeSubdirectories = true so Rule B receives subfolder events (Fixes TU-35)
+        monitorService.TryGetWatcherIncludeSubdirectories(_testTempDir, out var includeSubdirs).Should().BeTrue();
+        includeSubdirs.Should().BeTrue("Shared watcher must be configured as a superset with IncludeSubdirectories=true when ANY rule requires recursion");
+
+        await monitorService.StopAsync();
+    }
+
+    [Fact]
+    public async Task ScanAllFoldersAsync_DispatchesSubfolderFiles_WhenOneRuleIsRecursiveAndOtherIsTopLevel()
+    {
+        // Arrange:
+        // Rule A is top-level only and excludes .log files
+        // Rule B is recursive and does not exclude .log files
+        var subDir = Path.Combine(_testTempDir, "subfolder");
+        Directory.CreateDirectory(subDir);
+
+        var topTxt = Path.Combine(_testTempDir, "top.txt");
+        var topLog = Path.Combine(_testTempDir, "top.log");
+        var subTxt = Path.Combine(subDir, "nested.txt");
+        var subLog = Path.Combine(subDir, "nested.log");
+
+        File.WriteAllText(topTxt, "top txt");
+        File.WriteAllText(topLog, "top log");
+        File.WriteAllText(subTxt, "sub txt");
+        File.WriteAllText(subLog, "sub log");
+
+        using var monitorService = new FileMonitorService();
+
+        var ruleA = new Rule
+        {
+            Name = "Rule A",
+            IsEnabled = true,
+            MonitoredFolders =
+            {
+                new MonitoredFolder
+                {
+                    Path = _testTempDir,
+                    IncludeSubfolders = false,
+                    ExclusionPatterns = { ".log" }
+                }
+            }
+        };
+
+        var ruleB = new Rule
+        {
+            Name = "Rule B",
+            IsEnabled = true,
+            MonitoredFolders =
+            {
+                new MonitoredFolder
+                {
+                    Path = _testTempDir,
+                    IncludeSubfolders = true
+                }
+            }
+        };
+
+        var detectedFiles = new List<string>();
+        monitorService.FileDetected += (s, e) => detectedFiles.Add(e.FileInfo.FullName);
+
+        // Act
+        await monitorService.StartAsync(new List<Rule> { ruleA, ruleB });
+
+        // Assert:
+        // top.txt is eligible for Rule A and Rule B -> detected
+        // top.log is excluded by Rule A but eligible for Rule B -> detected (Rule A exclusion does not clobber Rule B)
+        // sub/nested.txt is eligible for Rule B -> detected (Rule A top-level setting does not clobber Rule B subfolder watching)
+        // sub/nested.log is eligible for Rule B -> detected
+        detectedFiles.Should().Contain(topTxt);
+        detectedFiles.Should().Contain(topLog);
+        detectedFiles.Should().Contain(subTxt);
+        detectedFiles.Should().Contain(subLog);
+
+        await monitorService.StopAsync();
+    }
+
+    [Fact]
+    public void IsFileEligibleForFolder_RespectsCanonicalSeparatorsAndExclusions()
+    {
+        // Arrange
+        using var monitorService = new FileMonitorService();
+
+        var topFolder = new MonitoredFolder
+        {
+            Path = _testTempDir,
+            IncludeSubfolders = false,
+            ExclusionPatterns = { "*.bak", "ignore" }
+        };
+
+        var recursiveFolder = new MonitoredFolder
+        {
+            Path = _testTempDir,
+            IncludeSubfolders = true,
+            ExclusionPatterns = { "*.bak" }
+        };
+
+        var topFile = Path.Combine(_testTempDir, "document.pdf");
+        var subFile = Path.Combine(_testTempDir, "nested", "document.pdf");
+        var excludedFile = Path.Combine(_testTempDir, "backup.bak");
+
+        // Assert
+        monitorService.IsFileEligibleForFolder(topFile, topFolder).Should().BeTrue();
+        monitorService.IsFileEligibleForFolder(subFile, topFolder).Should().BeFalse("Top-level folder must not match subfolder file");
+
+        monitorService.IsFileEligibleForFolder(topFile, recursiveFolder).Should().BeTrue();
+        monitorService.IsFileEligibleForFolder(subFile, recursiveFolder).Should().BeTrue("Recursive folder must match subfolder file");
+
+        monitorService.IsFileEligibleForFolder(excludedFile, topFolder).Should().BeFalse();
+        monitorService.IsFileEligibleForFolder(excludedFile, recursiveFolder).Should().BeFalse();
+    }
+
+    #endregion
 }
 

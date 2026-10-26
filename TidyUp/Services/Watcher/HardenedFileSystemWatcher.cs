@@ -60,6 +60,11 @@ public class HardenedFileSystemWatcher : IDisposable
     public bool IsRunning => _watcher.EnableRaisingEvents;
 
     /// <summary>
+    /// Whether subdirectories under WatchedPath are being monitored.
+    /// </summary>
+    public bool IncludeSubdirectories => _watcher.IncludeSubdirectories;
+
+    /// <summary>
     /// Event raised when a file change event is debounced and ready for downstream processing.
     /// </summary>
     public event EventHandler<string>? FileDetected;

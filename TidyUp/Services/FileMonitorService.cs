@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Collections.Concurrent;
 using System.IO;
 using System.Reactive.Disposables;
@@ -114,18 +115,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
             _retryQueueManager?.Start();
             _watcherHealthMonitor?.Start();
 
-            // Set up watchers for all monitored folders
-            var monitoredFolders = _rules
-                .SelectMany(r => r.MonitoredFolders)
-                .DistinctBy(f => f.Path)
-                .ToList();
-
-            foreach (var folder in monitoredFolders)
-            {
-                await SetupFolderMonitoringAsync(folder);
-            }
-
-            // Initial scan of all folders
+            await ConfigureWatchersAsync();
             await ScanAllFoldersAsync();
         }
         finally
@@ -199,16 +189,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
                 _retryQueueManager?.Start();
                 _watcherHealthMonitor?.Start();
 
-                var monitoredFolders = _rules
-                    .SelectMany(r => r.MonitoredFolders)
-                    .DistinctBy(f => f.Path)
-                    .ToList();
-
-                foreach (var folder in monitoredFolders)
-                {
-                    await SetupFolderMonitoringAsync(folder);
-                }
-
+                await ConfigureWatchersAsync();
                 await ScanAllFoldersAsync();
             }
         }
@@ -218,69 +199,205 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         }
     }
 
-    public async Task ScanAllFoldersAsync()
+    public static string CanonicalizePath(string path)
     {
-        var monitoredFolders = _rules
-            .SelectMany(r => r.MonitoredFolders)
-            .DistinctBy(f => f.Path)
-            .ToList();
+        if (string.IsNullOrWhiteSpace(path))
+            return string.Empty;
 
-        foreach (var folder in monitoredFolders)
+        try
         {
-            if (!Directory.Exists(folder.Path))
-                continue;
+            var fullPath = Path.GetFullPath(path);
+            var root = Path.GetPathRoot(fullPath);
+            if (!string.IsNullOrEmpty(root) && string.Equals(fullPath, root, StringComparison.OrdinalIgnoreCase))
+                return fullPath;
 
-            await ScanFolderAsync(folder.Path, folder.IncludeSubfolders, folder.ExclusionPatterns.ToList());
+            return fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        }
+        catch
+        {
+            return path.TrimEnd('\\', '/');
         }
     }
 
-    private Task SetupFolderMonitoringAsync(MonitoredFolder folder)
+    public bool TryGetWatcherIncludeSubdirectories(string folderPath, out bool includeSubdirectories)
     {
-        if (!Directory.Exists(folder.Path))
+        var canonical = CanonicalizePath(folderPath);
+        if (_watchers.TryGetValue(canonical, out var watcher))
         {
-            _watcherHealthMonitor?.RegisterFolder(folder.Path);
+            includeSubdirectories = watcher.IncludeSubdirectories;
+            return true;
+        }
+
+        includeSubdirectories = false;
+        return false;
+    }
+
+    public static bool IsInDirectoryScope(string filePath, string folderPath, bool includeSubfolders)
+    {
+        var canonicalFolder = CanonicalizePath(folderPath);
+        var fileDir = Path.GetDirectoryName(filePath);
+        if (string.IsNullOrEmpty(fileDir))
+            return false;
+
+        var canonicalFileDir = CanonicalizePath(fileDir);
+
+        if (!includeSubfolders)
+        {
+            return string.Equals(canonicalFileDir, canonicalFolder, StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (string.Equals(canonicalFileDir, canonicalFolder, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        var folderPrefix = canonicalFolder.EndsWith(Path.DirectorySeparatorChar.ToString())
+            ? canonicalFolder
+            : canonicalFolder + Path.DirectorySeparatorChar;
+
+        return canonicalFileDir.StartsWith(folderPrefix, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public bool IsFileEligibleForFolder(string filePath, MonitoredFolder folder)
+    {
+        if (!IsInDirectoryScope(filePath, folder.Path, folder.IncludeSubfolders))
+            return false;
+
+        foreach (var rawPattern in folder.ExclusionPatterns)
+        {
+            if (string.IsNullOrWhiteSpace(rawPattern))
+                continue;
+
+            var pattern = rawPattern.Trim();
+
+            if (filePath.Contains(pattern, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (pattern.StartsWith("*."))
+            {
+                var ext = pattern.Substring(1);
+                if (filePath.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+            else if (pattern.StartsWith("*") || pattern.EndsWith("*"))
+            {
+                var trimmed = pattern.Trim('*');
+                if (!string.IsNullOrEmpty(trimmed) && filePath.Contains(trimmed, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private bool IsFileEligibleForAnyFolder(string filePath, IEnumerable<MonitoredFolder> folders)
+    {
+        if (_fileLockDetector.IsTemporaryOrIncompleteFile(filePath))
+            return false;
+
+        return folders.Any(f => IsFileEligibleForFolder(filePath, f));
+    }
+
+    private async Task ConfigureWatchersAsync()
+    {
+        var folderGroups = _rules
+            .SelectMany(r => r.MonitoredFolders)
+            .Where(f => !string.IsNullOrWhiteSpace(f.Path))
+            .GroupBy(f => CanonicalizePath(f.Path), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var group in folderGroups)
+        {
+            await SetupFolderMonitoringAsync(group.Key, group.ToList());
+        }
+    }
+
+    private Task SetupFolderMonitoringAsync(string canonicalPath, List<MonitoredFolder> folders)
+    {
+        if (!Directory.Exists(canonicalPath))
+        {
+            _watcherHealthMonitor?.RegisterFolder(canonicalPath);
             return Task.CompletedTask;
         }
 
-        // Check if it's a network drive
-        if (IsNetworkPath(folder.Path))
+        if (IsNetworkPath(canonicalPath))
         {
-            // For network drives, use polling instead of FileSystemWatcher
-            // TODO: Implement periodic polling
-            _watcherHealthMonitor?.RegisterFolder(folder.Path);
+            _watcherHealthMonitor?.RegisterFolder(canonicalPath);
             return Task.CompletedTask;
         }
 
-        var watcher = new HardenedFileSystemWatcher(folder.Path, new HardenedWatcherOptions
+        // Multilateral watcher scope merging (TASK-REM-26):
+        // IncludeSubdirectories is true if ANY rule watching this path requires subfolders
+        bool includeSubfolders = folders.Any(f => f.IncludeSubfolders);
+
+        var watcher = new HardenedFileSystemWatcher(canonicalPath, new HardenedWatcherOptions
         {
-            IncludeSubdirectories = folder.IncludeSubfolders,
+            IncludeSubdirectories = includeSubfolders,
             DebounceDelay = _debounceDelay
         });
 
         watcher.FileDetected += async (s, path) =>
         {
-            if (ShouldProcessFile(path, folder.ExclusionPatterns.ToList()))
+            if (IsFileEligibleForAnyFolder(path, folders))
             {
-                await OnFileDetectedAsync(path, folder.Path);
+                await OnFileDetectedAsync(path, canonicalPath);
             }
         };
 
         watcher.BufferOverflow += (s, e) =>
         {
-            _watcherHealthMonitor?.RecordDegradation(folder.Path, e.GetException()?.Message ?? "Internal buffer overflow");
+            _watcherHealthMonitor?.RecordDegradation(canonicalPath, e.GetException()?.Message ?? "Internal buffer overflow");
         };
 
         watcher.ReconciliationRequested += async (s, path) =>
         {
-            await ReconcileFolderAsync(path, folder.IncludeSubfolders, folder.ExclusionPatterns.ToList());
+            await ReconcileFolderAsync(canonicalPath, includeSubfolders, Array.Empty<string>());
         };
 
         watcher.Start();
-        _watchers[folder.Path] = watcher;
-
-        _watcherHealthMonitor?.RegisterFolder(folder.Path);
+        _watchers[canonicalPath] = watcher;
+        _watcherHealthMonitor?.RegisterFolder(canonicalPath);
 
         return Task.CompletedTask;
+    }
+
+    public async Task ScanAllFoldersAsync()
+    {
+        var folderGroups = _rules
+            .SelectMany(r => r.MonitoredFolders)
+            .Where(f => !string.IsNullOrWhiteSpace(f.Path))
+            .GroupBy(f => CanonicalizePath(f.Path), StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var group in folderGroups)
+        {
+            var canonicalPath = group.Key;
+            if (!Directory.Exists(canonicalPath))
+                continue;
+
+            bool includeSubfolders = group.Any(f => f.IncludeSubfolders);
+            await ScanFolderGroupAsync(canonicalPath, includeSubfolders, group.ToList());
+        }
+    }
+
+    private async Task ScanFolderGroupAsync(string canonicalPath, bool includeSubfolders, List<MonitoredFolder> folders)
+    {
+        try
+        {
+            var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
+            var files = Directory.GetFiles(canonicalPath, "*.*", searchOption);
+
+            foreach (var filePath in files)
+            {
+                if (_runCts?.IsCancellationRequested == true)
+                    return;
+
+                if (IsFileEligibleForAnyFolder(filePath, folders))
+                {
+                    await OnFileDetectedAsync(filePath, canonicalPath);
+                }
+            }
+        }
+        catch (UnauthorizedAccessException) { }
+        catch (DirectoryNotFoundException) { }
     }
 
     public async Task ReconcileFolderAsync(
@@ -290,61 +407,58 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         CancellationToken cancellationToken = default)
     {
         ReconciliationTriggered?.Invoke(this, folderPath);
-        await ScanFolderAsync(folderPath, includeSubfolders, exclusionPatterns.ToList());
+        var canonicalPath = CanonicalizePath(folderPath);
+
+        var matchingFolders = _rules
+            .SelectMany(r => r.MonitoredFolders)
+            .Where(f => string.Equals(CanonicalizePath(f.Path), canonicalPath, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (matchingFolders.Count > 0)
+        {
+            bool effectiveSubfolders = includeSubfolders || matchingFolders.Any(f => f.IncludeSubfolders);
+            await ScanFolderGroupAsync(canonicalPath, effectiveSubfolders, matchingFolders);
+        }
+        else
+        {
+            var folderDef = new MonitoredFolder
+            {
+                Path = folderPath,
+                IncludeSubfolders = includeSubfolders,
+                ExclusionPatterns = new ObservableCollection<string>(exclusionPatterns)
+            };
+            await ScanFolderGroupAsync(canonicalPath, includeSubfolders, new List<MonitoredFolder> { folderDef });
+        }
+
         _watcherHealthMonitor?.ClearDegradation(folderPath);
     }
 
     private async void OnFolderHealthChanged(object? sender, FolderHealthReport e)
     {
-        if (e.Status == WatcherHealthStatus.Healthy && !_watchers.ContainsKey(e.Path) && _isRunning)
+        var canonicalReportPath = CanonicalizePath(e.Path);
+        if (e.Status == WatcherHealthStatus.Healthy && !_watchers.ContainsKey(canonicalReportPath) && _isRunning)
         {
-            if (!_reconnectingFolders.TryAdd(e.Path, true))
+            if (!_reconnectingFolders.TryAdd(canonicalReportPath, true))
                 return;
 
             try
             {
-                var folder = _rules
+                var matchingFolders = _rules
                     .SelectMany(r => r.MonitoredFolders)
-                    .FirstOrDefault(f => string.Equals(f.Path, e.Path, StringComparison.OrdinalIgnoreCase));
+                    .Where(f => string.Equals(CanonicalizePath(f.Path), canonicalReportPath, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-                if (folder != null)
+                if (matchingFolders.Count > 0)
                 {
-                    await SetupFolderMonitoringAsync(folder);
-                    await ScanFolderAsync(folder.Path, folder.IncludeSubfolders, folder.ExclusionPatterns.ToList());
+                    await SetupFolderMonitoringAsync(canonicalReportPath, matchingFolders);
+                    bool includeSubfolders = matchingFolders.Any(f => f.IncludeSubfolders);
+                    await ScanFolderGroupAsync(canonicalReportPath, includeSubfolders, matchingFolders);
                 }
             }
             finally
             {
-                _reconnectingFolders.TryRemove(e.Path, out _);
+                _reconnectingFolders.TryRemove(canonicalReportPath, out _);
             }
-        }
-    }
-
-    private async Task ScanFolderAsync(string folderPath, bool includeSubfolders, List<string> exclusionPatterns)
-    {
-        try
-        {
-            var searchOption = includeSubfolders ? SearchOption.AllDirectories : SearchOption.TopDirectoryOnly;
-            var files = Directory.GetFiles(folderPath, "*.*", searchOption);
-
-            foreach (var filePath in files)
-            {
-                if (_runCts?.IsCancellationRequested == true)
-                    return;
-
-                if (ShouldProcessFile(filePath, exclusionPatterns))
-                {
-                    await OnFileDetectedAsync(filePath, folderPath);
-                }
-            }
-        }
-        catch (UnauthorizedAccessException)
-        {
-            // Log and continue � folder inaccessible
-        }
-        catch (DirectoryNotFoundException) { }
-        {
-            // Folder was removed between check and scan
         }
     }
 
