@@ -1,3 +1,4 @@
+using TidyUp.Services.Processing;
 using System.IO;
 using TidyUp.Data.Entities;
 using TidyUp.Models.Domain;
@@ -69,14 +70,41 @@ public class ExecutionDiscrepancyAnalyzer : IExecutionDiscrepancyAnalyzer
     {
         var plannedList = plannedActions?.ToList() ?? new List<PlannedFileAction>();
         var resultsDict = (executionResults ?? Enumerable.Empty<(PlannedFileAction Action, ActionResult Result)>())
-            .GroupBy(r => r.Action.SourcePath, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(g => g.Key, g => g.Last().Result, StringComparer.OrdinalIgnoreCase);
+            .GroupBy(r => r.Action.Id)
+            .ToDictionary(g => g.Key, g => g.Last().Result);
 
         var items = new List<ActionDiscrepancyItem>();
 
         foreach (var action in plannedList)
         {
-            resultsDict.TryGetValue(action.SourcePath, out var result);
+            resultsDict.TryGetValue(action.Id, out var result);
+            items.Add(EvaluateActionAgainstResult(action, result));
+        }
+
+        return BuildReport(items, batchId ?? Guid.NewGuid());
+    }
+
+    public ExecutionDiscrepancyReport AnalyzeFromResults(
+        IEnumerable<PlannedFileAction> plannedActions,
+        IEnumerable<BatchItemExecutionResult> itemResults,
+        Guid? batchId = null)
+    {
+        var plannedList = plannedActions?.ToList() ?? new List<PlannedFileAction>();
+        var resultsDict = (itemResults ?? Enumerable.Empty<BatchItemExecutionResult>())
+            .GroupBy(r => r.Action.Id)
+            .ToDictionary(g => g.Key, g => g.Last());
+
+        var items = new List<ActionDiscrepancyItem>();
+
+        foreach (var action in plannedList)
+        {
+            ActionResult? result = null;
+            if (resultsDict.TryGetValue(action.Id, out var itemResult))
+            {
+                result = itemResult.Result ?? (itemResult.Skipped
+                    ? new ActionResult { Success = false, Type = ActionResultType.Skipped, ErrorMessage = "Action was cancelled or skipped." }
+                    : null);
+            }
             items.Add(EvaluateActionAgainstResult(action, result));
         }
 

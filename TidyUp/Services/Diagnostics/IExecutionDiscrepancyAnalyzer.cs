@@ -1,3 +1,4 @@
+using TidyUp.Services.Processing;
 using TidyUp.Data.Entities;
 using TidyUp.Models.Domain;
 
@@ -31,6 +32,14 @@ public interface IExecutionDiscrepancyAnalyzer
     ExecutionDiscrepancyReport AnalyzeFromResults(
         IEnumerable<PlannedFileAction> plannedActions,
         IEnumerable<(PlannedFileAction Action, ActionResult Result)> executionResults,
+        Guid? batchId = null);
+
+    /// <summary>
+    /// Analyzes discrepancy between planned actions and batch item execution results, correlating by action ID.
+    /// </summary>
+    ExecutionDiscrepancyReport AnalyzeFromResults(
+        IEnumerable<PlannedFileAction> plannedActions,
+        IEnumerable<BatchItemExecutionResult> itemResults,
         Guid? batchId = null);
 }
 

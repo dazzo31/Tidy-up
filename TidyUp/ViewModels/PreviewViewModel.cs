@@ -641,6 +641,10 @@ public partial class PreviewViewModel : ObservableObject
                 {
                     itemVm.ExecutionFailed = false;
                     itemVm.ExecutionStatus = "Completed";
+                    if (!string.IsNullOrEmpty(report.LastActionResult.ResultPath))
+                    {
+                        itemVm.PlannedAction.TargetPath = report.LastActionResult.ResultPath;
+                    }
                 }
                 else
                 {
@@ -683,18 +687,9 @@ public partial class PreviewViewModel : ObservableObject
 
             if (_discrepancyAnalyzer != null)
             {
-                var executedResults = approvedItems.Select(item =>
-                    (item.PlannedAction, new ActionResult
-                    {
-                        Success = !item.ExecutionFailed && item.IsExecuted,
-                        ErrorMessage = item.ExecutionFailed ? item.ExecutionStatus : (item.IsExecuted ? null : "Cancelled"),
-                        ResultPath = item.TargetPath,
-                        TargetPath = item.TargetPath
-                    })).ToList();
-
                 DiscrepancyReport = _discrepancyAnalyzer.AnalyzeFromResults(
                     approvedItems.Select(i => i.PlannedAction),
-                    executedResults,
+                    batchResult.ItemResults,
                     batchId);
 
                 if (DiscrepancyReport.HasAnyDiscrepancies)

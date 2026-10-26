@@ -1,3 +1,4 @@
+using TidyUp.Services.Processing;
 using FluentAssertions;
 using Moq;
 using TidyUp.Data.Entities;
@@ -257,4 +258,100 @@ public class ExecutionDiscrepancyAnalyzerTests
         capturedReport!.DiscrepancyCount.Should().Be(1);
         capturedReport.Items[0].Outcome.Should().Be(DiscrepancyOutcome.FileDisappeared);
     }
+    [Fact]
+    public void AnalyzeFromResults_BatchItemResults_CorrelatesByActionId_EvenWithIdenticalSourcePaths()
+    {
+        // Arrange: Two distinct actions operating on the same source path
+        var action1 = new PlannedFileAction
+        {
+            Id = Guid.NewGuid(),
+            SourcePath = @"C:\Test\doc.txt",
+            TargetPath = @"C:\Backup\doc.txt",
+            ActionType = ActionType.Copy
+        };
+        var action2 = new PlannedFileAction
+        {
+            Id = Guid.NewGuid(),
+            SourcePath = @"C:\Test\doc.txt",
+            TargetPath = @"C:\Archive\doc.txt",
+            ActionType = ActionType.Move
+        };
+
+        var batchItem1 = new BatchItemExecutionResult
+        {
+            Action = action1,
+            Result = new ActionResult
+            {
+                Success = true,
+                Type = ActionResultType.Success,
+                TargetPath = @"C:\Backup\doc.txt"
+            }
+        };
+
+        var batchItem2 = new BatchItemExecutionResult
+        {
+            Action = action2,
+            Result = new ActionResult
+            {
+                Success = false,
+                Type = ActionResultType.Error,
+                ErrorMessage = "File is locked by another process."
+            }
+        };
+
+        var analyzer = new ExecutionDiscrepancyAnalyzer();
+
+        // Act
+        var report = analyzer.AnalyzeFromResults(
+            new[] { action1, action2 },
+            new[] { batchItem1, batchItem2 });
+
+        // Assert
+        report.TotalPlanned.Should().Be(2);
+        report.DiscrepancyCount.Should().Be(1);
+
+        var item1 = report.Items.Single(i => i.PlannedActionId == action1.Id);
+        item1.Outcome.Should().Be(DiscrepancyOutcome.ExecutedAsPlanned);
+
+        var item2 = report.Items.Single(i => i.PlannedActionId == action2.Id);
+        item2.Outcome.Should().Be(DiscrepancyOutcome.SkippedDueToLock);
+    }
+
+    [Fact]
+    public void AnalyzeFromResults_BatchItemResults_ReflectsActualRenamedTargetPath()
+    {
+        // Arrange
+        var action = new PlannedFileAction
+        {
+            Id = Guid.NewGuid(),
+            SourcePath = @"C:\Test\doc.txt",
+            TargetPath = @"C:\Dest\doc.txt",
+            ActionType = ActionType.Move
+        };
+
+        var batchItem = new BatchItemExecutionResult
+        {
+            Action = action,
+            Result = new ActionResult
+            {
+                Success = true,
+                Type = ActionResultType.Success,
+                ResultPath = @"C:\Dest\doc (1).txt",
+                TargetPath = @"C:\Dest\doc (1).txt"
+            }
+        };
+
+        var analyzer = new ExecutionDiscrepancyAnalyzer();
+
+        // Act
+        var report = analyzer.AnalyzeFromResults(
+            new[] { action },
+            new[] { batchItem });
+
+        // Assert
+        report.TotalPlanned.Should().Be(1);
+        report.Items[0].PlannedTargetPath.Should().Be(@"C:\Dest\doc.txt");
+        report.Items[0].ActualTargetPath.Should().Be(@"C:\Dest\doc (1).txt");
+    }
+
 }
