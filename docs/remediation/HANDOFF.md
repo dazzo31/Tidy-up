@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `993f832`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `187eca3`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-23` Complete)  
-**Active Task & Current State:** `TASK-REM-23` (`DONE`) -> Next: `TASK-REM-21` (Post-Execution Selection & Apply Button Eligibility Predicate)  
+**Last Verified Phase Gate:** Phase 4 Gate Passed (All 7 Tasks Complete); Ready for Phase 5 (`TASK-REM-25`)  
+**Active Task & Current State:** Phase 4 Complete (All tasks DONE: REM-03, 04, 02, 05, 01, 23, 21) -> Next: `TASK-REM-25` (Watcher Cancellation Token Lifecycle)  
 **Completed Changes & Files:**
+- `TASK-REM-21` (SHA: `187eca3`):
+  - `PreviewViewModel.cs` & `PlannedActionItemViewModel`: Enforced single domain eligibility predicate `CanBeApplied` (`IsApproved && !HasConflict && !IsExecuted && !IsSkipped`) and `CanToggleApproval`. Introduced `PendingApprovedCount` and wired `CanApplyChanges` directly to `PendingApprovedCount > 0`.
+  - Harmonized `ApplyButtonText` to reflect pending approved changes, terminal success ("All approved changes applied"), failures ("Execution completed with failures"), or cancellation without permitting completed actions to be replayed.
+  - `PreviewView.xaml`: Bound approval checkbox `IsEnabled` to `CanToggleApproval`, disabling execution re-toggling on completed or conflicted rows.
+  - `PreviewViewModelTests.cs`: Unit tests verify automatic Apply button disabling, terminal caption accuracy, failure handling, and execution immutability. 732 tests passing.
 - `TASK-REM-23` (SHA: `993f832`):
   - `IExecutionDiscrepancyAnalyzer.cs` & `ExecutionDiscrepancyAnalyzer.cs`: Added `AnalyzeFromResults` overload accepting `IEnumerable<BatchItemExecutionResult>`, correlating actions by `PlannedFileAction.Id` (Guid) instead of collapsing duplicates by `SourcePath`. Captures actual renamed target paths in discrepancy reports.
   - `PreviewViewModel.cs`: Feeds actual `batchResult.ItemResults` directly into `_discrepancyAnalyzer.AnalyzeFromResults` instead of fabricating synthetic `ActionResult` records from UI properties. Updates viewmodel target paths upon physical execution completion.
