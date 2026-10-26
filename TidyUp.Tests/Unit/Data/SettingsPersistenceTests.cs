@@ -148,4 +148,113 @@ public sealed class SettingsPersistenceTests : IDisposable
 
         target.Should().BeEquivalentTo(source);
     }
+
+    [Fact]
+    public async Task SaveAsync_FirstSave_CreatesFileAndKnownGoodBackup()
+    {
+        var settings = new AppSettings { Theme = "Dark", ScanBatchSize = 250 };
+
+        await _repo.SaveAsync(settings);
+
+        File.Exists(_appData.Paths.SettingsPath).Should().BeTrue();
+        var backupPath = _appData.Paths.SettingsPath + ".bak";
+        File.Exists(backupPath).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task SaveAsync_SubsequentSave_AtomicallyUpdatesFileAndPreservesPreviousInBackup()
+    {
+        var v1 = new AppSettings { Theme = "Light", ScanBatchSize = 100 };
+        await _repo.SaveAsync(v1);
+
+        var v2 = new AppSettings { Theme = "Dark", ScanBatchSize = 500 };
+        await _repo.SaveAsync(v2);
+
+        var currentJson = await File.ReadAllTextAsync(_appData.Paths.SettingsPath);
+        currentJson.Should().Contain("Dark");
+        currentJson.Should().Contain("500");
+
+        var backupPath = _appData.Paths.SettingsPath + ".bak";
+        File.Exists(backupPath).Should().BeTrue();
+        var backupJson = await File.ReadAllTextAsync(backupPath);
+        backupJson.Should().Contain("Light");
+        backupJson.Should().Contain("100");
+    }
+
+    [Fact]
+    public async Task SaveAsync_CleansAbandonedTempFiles()
+    {
+        Directory.CreateDirectory(_appData.Paths.AppDataRoot);
+        var abandonedTemp = Path.Combine(_appData.Paths.AppDataRoot, "settings.abandoned.tmp");
+        await File.WriteAllTextAsync(abandonedTemp, "abandoned temporary content");
+
+        var settings = new AppSettings { Theme = "System" };
+        await _repo.SaveAsync(settings);
+
+        File.Exists(abandonedTemp).Should().BeFalse("abandoned temporary files must be cleaned up");
+    }
+
+    [Fact]
+    public async Task SaveAsync_ConcurrentSaves_AreSynchronizedWithoutCorruption()
+    {
+        var tasks = Enumerable.Range(1, 20).Select(async i =>
+        {
+            var s = new AppSettings { WindowWidth = 800 + i, ScanBatchSize = 100 + i };
+            await _repo.SaveAsync(s);
+        });
+
+        await Task.WhenAll(tasks);
+
+        var loaded = await _repo.LoadAsync();
+        loaded.Should().NotBeNull();
+        loaded.WindowWidth.Should().BeInRange(801, 820);
+    }
+
+    [Fact]
+    public async Task LoadWithResultAsync_WhenFileCorrupt_PreservesCorruptFileWithTimestamp()
+    {
+        var corruptData = "{ broken json content !!! not valid json }";
+        await WriteSettingsFileAsync(corruptData);
+
+        var result = await _repo.LoadWithResultAsync();
+
+        result.IsCorrupt.Should().BeTrue();
+        result.RecoveredFromBackup.Should().BeFalse();
+        result.CorruptBackupPath.Should().NotBeNull();
+        File.Exists(result.CorruptBackupPath).Should().BeTrue();
+
+        var preservedBytes = await File.ReadAllTextAsync(result.CorruptBackupPath!);
+        preservedBytes.Should().Be(corruptData, "corrupt file contents must be preserved byte-for-byte");
+    }
+
+    [Fact]
+    public async Task LoadWithResultAsync_WhenFileCorruptAndBackupExists_RestoresFromBackup()
+    {
+        Directory.CreateDirectory(_appData.Paths.AppDataRoot);
+        var backupPath = _appData.Paths.SettingsPath + ".bak";
+        var goodBackupJson = """{ "SchemaVersion": 2, "Theme": "Dark", "ScanBatchSize": 333 }""";
+        await File.WriteAllTextAsync(backupPath, goodBackupJson);
+
+        var corruptData = "{ corrupt: true, unclosed json";
+        await WriteSettingsFileAsync(corruptData);
+
+        var result = await _repo.LoadWithResultAsync();
+
+        result.IsCorrupt.Should().BeTrue();
+        result.RecoveredFromBackup.Should().BeTrue();
+        result.Settings.Theme.Should().Be("Dark");
+        result.Settings.ScanBatchSize.Should().Be(333);
+        result.CorruptBackupPath.Should().NotBeNull();
+        File.Exists(result.CorruptBackupPath).Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LoadAsync_SemanticValidation_NormalizesInvalidScanBatchSize()
+    {
+        await WriteSettingsFileAsync("""{ "SchemaVersion": 2, "ScanBatchSize": -99 }""");
+
+        var loaded = await _repo.LoadAsync();
+
+        loaded.ScanBatchSize.Should().Be(100, "invalid non-positive batch size must be normalized to safe default");
+    }
 }

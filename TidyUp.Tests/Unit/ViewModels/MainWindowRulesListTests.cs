@@ -287,8 +287,7 @@ public class MainWindowRulesListTests : IDisposable
             Actions = { new MoveFileAction { DestinationPath = @"C:\DestB" } }
         };
 
-        await repo.AddAsync(r1);
-        await repo.AddAsync(r2);
+        await repo.AddRangeAsync(new[] { r1, r2 });
 
         _viewModel.Rules.Clear();
         _viewModel.Rules.Add(r1);

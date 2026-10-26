@@ -68,6 +68,22 @@ public partial class App : Application
             try
             {
                 AppSettings = await ServiceConfiguration.LoadSettingsAsync(_serviceProvider);
+                var settingsRepo = _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>();
+                if (settingsRepo.LastLoadResult?.IsCorrupt == true)
+                {
+                    if (settingsRepo.LastLoadResult.RecoveredFromBackup)
+                    {
+                        MessageBox.Show(
+                            $"TidyUp's settings file was corrupted and has been restored from backup:\n{settingsRepo.LastLoadResult.BackupPathUsed}\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
+                            "Settings Restored From Backup", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            $"TidyUp's settings file was corrupted and could not be restored from backup. Default settings have been loaded.\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
+                            "Settings Corrupted", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
             }
             catch (Exception ex)
             {
