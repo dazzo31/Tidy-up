@@ -79,7 +79,7 @@
 ### Phase 6: Reporting & Settings Honesty
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-31` | Operation stream convergence for Dashboard & Logs | NOT_STARTED | Phase 5 Gate | — | Target: TU-22 | Live telemetry stream & rule stats |
+| `TASK-REM-31` | Operation stream convergence for Dashboard & Logs | DONE | Phase 5 Gate | `7ad63cb` | TU-22: OperationTelemetryService streams executed actions to ActionLogEntity, updates live metrics/recent activity in Dashboard, feeds LogsViewModel, updates rule stats (FilesProcessedCount distinct files), 761 tests pass | Proceed to `TASK-REM-32` |
 | `TASK-REM-32` | History pagination command notification & eligibility | NOT_STARTED | `TASK-REM-31` | — | Target: TU-36 | NotifyCanExecute on total pages change |
 | `TASK-REM-33` | Context-sensitive filtered history export | NOT_STARTED | `TASK-REM-32` | — | Target: TU-37 | Export filtered matches vs all |
 | `TASK-REM-06` | Genuine database maintenance & vacuum | NOT_STARTED | `TASK-REM-33` | — | Target: TU-27 | Real SQLite PRAGMA & VACUUM |

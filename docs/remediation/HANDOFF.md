@@ -1,10 +1,17 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ e198ea1  
+**Repository / Branch / Current SHA:** TidyUp on main @ 7ad63cb  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed (All 6 tasks complete: 25 -> 26 -> 24 -> 07 -> 29 -> 30)  
-**Active Task & Current State:** Phase 5 Complete -> Next: TASK-REM-31 (Operation stream convergence for Dashboard & Logs)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-31 Complete)  
+**Active Task & Current State:** TASK-REM-31 (DONE) -> Next: TASK-REM-32 (History pagination command notification & eligibility)  
 **Completed Changes & Files:**
+- TASK-REM-31 (SHA: 7ad63cb):
+  - IOperationTelemetryService.cs & OperationTelemetryService.cs: Created operation telemetry service that streams committed executed operations, deduplicates duplicate events by ActionId, and writes durable `ActionLogEntity` records to `IActionLogRepository`.
+  - ActionExecutor.cs: Injected `IOperationTelemetryService` and emits telemetry events across both `ExecuteActionAsync` and `ExecutePlannedActionAsync` on completion/failure.
+  - BatchProcessingCoordinator.cs: Injected `IRuleRepository` / `IServiceScopeFactory`; updates `Rule.LastRunDate = DateTime.UtcNow` and increments `Rule.FilesProcessedCount` by distinct input files processed per rule run (preventing multi-action chains from duplicate counting).
+  - DashboardViewModel.cs: Injected `IOperationTelemetryService` and subscribes to live execution events, immediately updating `TotalFilesProcessed`, `TotalSuccess`, `TotalWarnings`, `TotalErrors`, `SuccessRateFormatted`, and `RecentActivity` feed.
+  - LogsViewModel.cs: Injected `IOperationTelemetryService` and appends incoming execution events matching active filters live into the log feed.
+  - OperationTelemetryConvergenceTests.cs: Unit tests verify telemetry deduplication, durable persistence, live dashboard metrics reactivity, live log streaming, and distinct input file counting. 761 tests passing.
 - TASK-REM-30 (SHA: e198ea1):
   - ITrayIconService.cs & TrayIconService.cs: Implemented per-folder health tracking in `ConcurrentDictionary<string, WatcherHealthStatus>`. `RecomputeAggregateStatus` calculates aggregate status prioritizing Disconnected/Error/Degraded over Healthy; a healthy event on one folder never clears an active warning or error on another folder.
   - Retained branded base application icon with subtle 6x6 anti-aliased badge overlay dot in bottom-right corner instead of replacing the entire icon with a solid colored circle.
