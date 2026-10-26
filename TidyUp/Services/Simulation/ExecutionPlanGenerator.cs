@@ -201,6 +201,11 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                         plannedAction.InitialSourcePath = fileInfo.FullName;
                         plannedAction.DependsOnActionId = previousActionId;
                         plannedAction.RuleId = rule.Id;
+                        plannedAction.PlannedCounter = fileCounter;
+                        if (!string.IsNullOrEmpty(plannedAction.TargetPath))
+                        {
+                            plannedAction.TargetFileName = Path.GetFileName(plannedAction.TargetPath);
+                        }
 
                         plan.PlannedActions.Add(plannedAction);
                         previousActionId = plannedAction.Id;
@@ -295,7 +300,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             FileSizeBytes = fileInfo.Length,
             SourceModifiedDate = fileInfo.LastWriteTime,
             Order = action.Order,
-            MonitoredSourceRoot = monitoredRoot
+            MonitoredSourceRoot = monitoredRoot,
+            PlannedCounter = counter
         };
 
         switch (action)

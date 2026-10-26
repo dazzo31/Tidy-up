@@ -215,15 +215,24 @@ public class ActionExecutor(
 
         ActionResult result = plannedAction.FileAction switch
         {
-            MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, plannedAction.Order, plannedAction.TargetPath),
-            CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, plannedAction.Order, plannedAction.TargetPath),
-            _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.Order, batchId, plannedAction.RuleId, plannedAction.RuleName, plannedAction.RuleRevisionId)
+            MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
+            CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
+            RenameFileAction rename => await ExecuteRenameAsync(rename, fileInfo, plannedAction.PlannedCounter, plannedAction.TargetPath),
+            ChangeExtensionAction changeExt => await ExecuteChangeExtensionAsync(changeExt, fileInfo, plannedAction.TargetPath),
+            _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.PlannedCounter, batchId, plannedAction.RuleId, plannedAction.RuleName, plannedAction.RuleRevisionId)
         };
 
-        if (_rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction))
+        if (_rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction || plannedAction.FileAction is RenameFileAction || plannedAction.FileAction is ChangeExtensionAction))
         {
             var effectiveBatchId = batchId ?? Guid.NewGuid();
-            var actionTypeName = plannedAction.FileAction is MoveFileAction ? "Move" : "Copy";
+            var actionTypeName = plannedAction.FileAction switch
+            {
+                MoveFileAction => "Move",
+                CopyFileAction => "Copy",
+                RenameFileAction => "Rename",
+                ChangeExtensionAction => "ChangeExtension",
+                _ => plannedAction.FileAction.GetType().Name
+            };
             if (result.Success)
             {
                 var postPath = result.TargetPath ?? result.ResultPath ?? originalPath;
@@ -496,7 +505,11 @@ public class ActionExecutor(
         }
     }
 
-    private async Task<ActionResult> ExecuteRenameAsync(RenameFileAction action, FileInfo fileInfo, int? counter)
+    private async Task<ActionResult> ExecuteRenameAsync(
+        RenameFileAction action,
+        FileInfo fileInfo,
+        int? counter,
+        string? targetPathOverride = null)
     {
         try
         {
@@ -528,13 +541,26 @@ public class ActionExecutor(
                 }
             }
 
-            var newName = variableEngine.Resolve(action.NamePattern, fileInfo, counter);
+            string newPath;
+            if (!string.IsNullOrEmpty(targetPathOverride))
+            {
+                newPath = targetPathOverride;
+                var parentDir = Path.GetDirectoryName(newPath);
+                if (!string.IsNullOrEmpty(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+            }
+            else
+            {
+                var newName = variableEngine.Resolve(action.NamePattern, fileInfo, counter);
 
-            // Add extension if not included
-            if (!Path.HasExtension(newName))
-                newName += fileInfo.Extension;
+                // Add extension if not included
+                if (!Path.HasExtension(newName))
+                    newName += fileInfo.Extension;
 
-            var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, newName);
+                newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, newName);
+            }
 
             // Handle conflicts
             var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);
@@ -563,7 +589,10 @@ public class ActionExecutor(
         }
     }
 
-    private async Task<ActionResult> ExecuteChangeExtensionAsync(ChangeExtensionAction action, FileInfo fileInfo)
+    private async Task<ActionResult> ExecuteChangeExtensionAsync(
+        ChangeExtensionAction action,
+        FileInfo fileInfo,
+        string? targetPathOverride = null)
     {
         try
         {
@@ -595,9 +624,22 @@ public class ActionExecutor(
                 }
             }
 
-            var newExtension = action.NewExtension.TrimStart('.');
-            var nameWithoutExt = Path.GetFileNameWithoutExtension(fileInfo.Name);
-            var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, $"{nameWithoutExt}.{newExtension}");
+            string newPath;
+            if (!string.IsNullOrEmpty(targetPathOverride))
+            {
+                newPath = targetPathOverride;
+                var parentDir = Path.GetDirectoryName(newPath);
+                if (!string.IsNullOrEmpty(parentDir))
+                {
+                    Directory.CreateDirectory(parentDir);
+                }
+            }
+            else
+            {
+                var newExtension = action.NewExtension.TrimStart('.');
+                var nameWithoutExt = Path.GetFileNameWithoutExtension(fileInfo.Name);
+                newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, $"{nameWithoutExt}.{newExtension}");
+            }
 
             // Handle conflicts
             var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);

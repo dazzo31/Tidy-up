@@ -98,4 +98,14 @@ public class PlannedFileAction
     /// Execution order of this action within the rule.
     /// </summary>
     public int Order { get; set; }
+
+    /// <summary>
+    /// Fully resolved target file name.
+    /// </summary>
+    public string? TargetFileName { get; set; }
+
+    /// <summary>
+    /// Frozen counter sequence number resolved during planning for this action.
+    /// </summary>
+    public int? PlannedCounter { get; set; }
 }

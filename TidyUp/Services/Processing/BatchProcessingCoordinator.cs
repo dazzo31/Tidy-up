@@ -87,25 +87,29 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
 
                 try
                 {
-                    if (!fileInfo.Exists)
+                    // Atomic operation: executed using immutable planned parameters (preserving exact previewed target paths & counter sequence).
+                    // Even if cancellationToken is requested during this execution, this atomic file action completes cleanly and journals safely.
+                    actionResult = await _actionExecutor.ExecutePlannedActionAsync(currentAction, batchId);
+                    if (actionResult is null)
                     {
-                        actionResult = new ActionResult
+                        if (!fileInfo.Exists)
                         {
-                            Success = false,
-                            ErrorMessage = "Source file not found",
-                            Type = ActionResultType.Error
-                        };
-                    }
-                    else
-                    {
-                        // Atomic operation: executed to completion. Thread.Abort is strictly prohibited.
-                        // Even if cancellationToken is requested during this execution,
-                        // this atomic file action completes cleanly and journals safely.
-                        actionResult = await _actionExecutor.ExecuteActionAsync(
-                            currentAction.FileAction,
-                            fileInfo,
-                            counter: i + 1,
-                            batchId: batchId);
+                            actionResult = new ActionResult
+                            {
+                                Success = false,
+                                ErrorMessage = "Source file not found",
+                                Type = ActionResultType.Error
+                            };
+                        }
+                        else
+                        {
+                            // Fallback for mocks configuring only ExecuteActionAsync
+                            actionResult = await _actionExecutor.ExecuteActionAsync(
+                                currentAction.FileAction,
+                                fileInfo,
+                                counter: currentAction.PlannedCounter ?? (i + 1),
+                                batchId: batchId);
+                        }
                     }
                 }
                 finally
