@@ -575,14 +575,19 @@
                             Description="Pick a rule from the list to edit it here, or create a new one to start automating a folder."
                             ActionText="New Rule (Ctrl+N)"
                             ActionCommand="{Binding CreateNewRuleCommand}"
+                            ActionVisibility="{Binding Rules.Count, Converter={StaticResource CountToVisibilityConverter}}"
                             Margin="0,24,0,0">
                             <controls:EmptyStateControl.Style>
                                 <Style TargetType="controls:EmptyStateControl">
                                     <Setter Property="Visibility" Value="Collapsed"/>
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding SelectedRule}" Value="{x:Null}">
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding SelectedRule}" Value="{x:Null}"/>
+                                                <Condition Binding="{Binding FilteredRules.Count, Converter={StaticResource CountToVisibilityConverter}}" Value="Visible"/>
+                                            </MultiDataTrigger.Conditions>
                                             <Setter Property="Visibility" Value="Visible"/>
-                                        </DataTrigger>
+                                        </MultiDataTrigger>
                                     </Style.Triggers>
                                 </Style>
                             </controls:EmptyStateControl.Style>
