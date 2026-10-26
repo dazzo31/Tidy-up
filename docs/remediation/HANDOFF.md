@@ -1,10 +1,22 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `cf4f107`  
-**Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (`TASK-REM-26` Complete)  
-**Active Task & Current State:** `TASK-REM-26` (`DONE`) -> Next: `TASK-REM-24` (Application Monitoring Coordinator & Startup Activation)  
+**Repository / Branch / Current SHA:** TidyUp on main @ 18afd1d  
+**Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
+**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (TASK-REM-07 Complete)  
+**Active Task & Current State:** TASK-REM-07 (DONE) -> Next: TASK-REM-29 (Window Lifecycle & Close/Minimize Conflict Resolution)  
 **Completed Changes & Files:**
+- TASK-REM-07 (SHA: 18afd1d):
+  - MonitoredFolderCatalog.cs & IMonitoredFolderCatalog.cs: Implemented persistent standalone monitored folder catalog storage in monitored_folders.json with stable GUID identifiers, user exclusions, and recursion preferences. Standalone folders survive catalog refreshes and process restarts without requiring attached rules. Added persistent folder pause overrides surviving restart.
+  - IFileMonitorService.cs & FileMonitorService.cs: Added PauseFolder, ResumeFolder, and IsFolderPaused methods. Watchers ignore and suppress file detection events for paused folders, and automated scans skip paused directories.
+  - FoldersViewModel.cs: AddMonitoredFolderAsync persists added directory to catalog and provides guidance to create rules. TogglePauseWatcherAsync dispatches directly to IFileMonitorService.PauseFolder/ResumeFolder and persists state in catalog; on persistence failure, reverts optimistic UI state and displays a truthful error message.
+  - MonitoredFolderCatalogTests.cs & FoldersViewModelTests.cs: Unit tests verify folder persistence, pause/resume dispatch, optimistic UI revert on failure, and reconstruction across application restarts. 746 tests passing.
+- TASK-REM-24 (SHA: cf4f107):
+  - IMonitoringCoordinator.cs & MonitoringCoordinator.cs: Implemented application monitoring coordinator orchestrating live watcher events from IFileMonitorService. Evaluates active rules, filters manual-only triggers, generates single-file plans via ExecutionPlanGenerator.GeneratePlanForFileAsync, and queues plans to IBatchProcessingCoordinator with automatic fallback authorization for non-destructive actions.
+  - IExecutionPlanGenerator.cs & ExecutionPlanGenerator.cs: Implemented GeneratePlanForFileAsync(string filePath, IEnumerable<Rule> rules, CancellationToken ct) producing scoped single-file execution plans.
+  - ServiceConfiguration.cs: Registered IMonitoringCoordinator as a singleton in the DI container.
+  - App.xaml.cs: Activated IMonitoringCoordinator.StartAsync on startup, and clean asynchronous shutdown in OnExit.
+  - MainWindowViewModel.cs: Injected IMonitoringCoordinator and triggered NotifyRulesChangedAsync() on rule save, delete, and reorder.
+  - MonitoringCoordinatorIntegrationTests.cs: Integration tests prove end-to-end event subscription, plan generation, and safe execution through BatchProcessingCoordinator writing durable journal entries. 739 tests passing.
 - `TASK-REM-26` (SHA: `f40f44b`):
   - `FileMonitorService.cs`: Merged watcher folder scope across rules watching the same canonical directory. Configures `IncludeSubdirectories = true` if ANY rule requires recursion; filters files against individual rule subfolder and exclusion scopes during dispatch rather than dropping files prematurely at the shared watcher level.
   - `HardenedFileSystemWatcher.cs`: Exposed `IncludeSubdirectories` property reflecting underlying watcher state.
