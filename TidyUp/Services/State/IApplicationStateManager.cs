@@ -67,5 +67,16 @@ public interface IApplicationStateManager
     /// Notifies that a file operation has finished execution. Decrements active operation count.
     /// </summary>
     void NotifyOperationCompleted();
+
+    /// <summary>
+    /// Attempts to acquire an exclusive batch execution lease.
+    /// Transitions state to ExecutingBatch if permitted and returns true; otherwise false.
+    /// </summary>
+    bool TryAcquireBatchLease(Guid batchId, string? reason = null);
+
+    /// <summary>
+    /// Releases the previously acquired batch execution lease and transitions state back to pre-execution state or Idle.
+    /// </summary>
+    void ReleaseBatchLease(Guid batchId, string? reason = null);
 }
 

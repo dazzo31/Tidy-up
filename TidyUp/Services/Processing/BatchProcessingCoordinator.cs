@@ -13,9 +13,9 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
 {
     private readonly IActionExecutor _actionExecutor;
     private readonly IApplicationStateManager? _stateManager;
-    private volatile bool _isExecuting;
+    private int _executingFlag;
 
-    public bool IsExecuting => _isExecuting;
+    public bool IsExecuting => Volatile.Read(ref _executingFlag) == 1;
 
     public BatchProcessingCoordinator(
         IActionExecutor actionExecutor,
@@ -46,8 +46,24 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
             return result;
         }
 
-        _isExecuting = true;
-        _stateManager?.TryTransitionTo(ApplicationLifecycleState.ExecutingBatch, "Batch execution started");
+        if (Interlocked.CompareExchange(ref _executingFlag, 1, 0) != 0)
+        {
+            throw new InvalidOperationException("Another batch operation is already executing.");
+        }
+
+        bool acquiredLease = false;
+        if (_stateManager is not null)
+        {
+            acquiredLease = _stateManager.TryAcquireBatchLease(batchId, "Batch execution started");
+            if (!acquiredLease)
+            {
+                if (!_stateManager.TryTransitionTo(ApplicationLifecycleState.ExecutingBatch, "Batch execution started"))
+                {
+                    Interlocked.Exchange(ref _executingFlag, 0);
+                    throw new InvalidOperationException("Cannot transition application state to ExecutingBatch.");
+                }
+            }
+        }
 
         try
         {
@@ -158,8 +174,21 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
         }
         finally
         {
-            _isExecuting = false;
-            _stateManager?.TryTransitionTo(ApplicationLifecycleState.Idle, "Batch execution ended");
+            try
+            {
+                if (acquiredLease && _stateManager is not null)
+                {
+                    _stateManager.ReleaseBatchLease(batchId, "Batch execution ended");
+                }
+                else if (_stateManager is not null && _stateManager.CurrentState == ApplicationLifecycleState.ExecutingBatch)
+                {
+                    _stateManager.TryTransitionTo(ApplicationLifecycleState.Idle, "Batch execution ended");
+                }
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _executingFlag, 0);
+            }
         }
 
         return result;

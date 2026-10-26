@@ -11,6 +11,7 @@ public class ApplicationStateManager : IApplicationStateManager
     private ApplicationLifecycleState _preExecutionState = ApplicationLifecycleState.Idle;
     private int _activeOperationCount;
     private bool _isRuleValidated;
+    private Guid? _activeBatchLeaseId;
 
     public ApplicationLifecycleState CurrentState
     {
@@ -144,7 +145,8 @@ public class ApplicationStateManager : IApplicationStateManager
                 _activeOperationCount--;
             }
 
-            if (_activeOperationCount == 0 && _currentState == ApplicationLifecycleState.ExecutingBatch)
+            // Only transition back if no batch lease is currently holding ExecutingBatch
+            if (!_activeBatchLeaseId.HasValue && _activeOperationCount == 0 && _currentState == ApplicationLifecycleState.ExecutingBatch)
             {
                 // Return to pre-execution state or Idle
                 var returnState = _preExecutionState switch
@@ -156,6 +158,57 @@ public class ApplicationStateManager : IApplicationStateManager
                 };
 
                 TryTransitionTo(returnState, "All in-flight operations completed");
+            }
+        }
+    }
+
+    public bool TryAcquireBatchLease(Guid batchId, string? reason = null)
+    {
+        lock (_syncRoot)
+        {
+            if (_activeBatchLeaseId.HasValue && _activeBatchLeaseId.Value != batchId)
+            {
+                return false;
+            }
+
+            if (_currentState != ApplicationLifecycleState.ExecutingBatch)
+            {
+                if (!CanTransitionTo(ApplicationLifecycleState.ExecutingBatch))
+                {
+                    return false;
+                }
+
+                _preExecutionState = _currentState;
+                TryTransitionTo(ApplicationLifecycleState.ExecutingBatch, reason ?? "Batch lease acquired");
+            }
+
+            _activeBatchLeaseId = batchId;
+            return true;
+        }
+    }
+
+    public void ReleaseBatchLease(Guid batchId, string? reason = null)
+    {
+        lock (_syncRoot)
+        {
+            if (_activeBatchLeaseId != batchId)
+            {
+                return;
+            }
+
+            _activeBatchLeaseId = null;
+
+            if (_activeOperationCount == 0 && _currentState == ApplicationLifecycleState.ExecutingBatch)
+            {
+                var returnState = _preExecutionState switch
+                {
+                    ApplicationLifecycleState.MonitoringRunning => ApplicationLifecycleState.MonitoringRunning,
+                    ApplicationLifecycleState.MonitoringPaused => ApplicationLifecycleState.MonitoringPaused,
+                    ApplicationLifecycleState.PreviewReady => ApplicationLifecycleState.PreviewReady,
+                    _ => ApplicationLifecycleState.Idle
+                };
+
+                TryTransitionTo(returnState, reason ?? "Batch lease released");
             }
         }
     }

@@ -217,4 +217,107 @@ public class BatchCancellationAndPauseTests : IDisposable
         // Events should now have been flushed and delivered
         Assert.True(detectedEvents.Count >= 5);
     }
+
+    [Fact]
+    public async Task BatchCoordinator_HoldsExecutingBatchState_ContinuouslyWithoutFlickeringToIdleBetweenFiles()
+    {
+        // Arrange
+        var stateManager = new ApplicationStateManager();
+        var mockExecutor = new Mock<IActionExecutor>();
+        var coordinator = new BatchProcessingCoordinator(mockExecutor.Object, stateManager);
+
+        var actions = new List<PlannedFileAction>();
+        for (int i = 1; i <= 4; i++)
+        {
+            var filePath = Path.Combine(_testDirectory, $"flicker_test_{i}.txt");
+            File.WriteAllText(filePath, $"content {i}");
+            actions.Add(new PlannedFileAction
+            {
+                SourcePath = filePath,
+                ActionType = ActionType.Move,
+                FileAction = new MoveFileAction()
+            });
+        }
+
+        mockExecutor
+            .Setup(x => x.ExecutePlannedActionAsync(It.IsAny<PlannedFileAction>(), It.IsAny<Guid?>()))
+            .ReturnsAsync(new ActionResult { Success = true, Type = ActionResultType.Success });
+
+        var stateHistory = new List<(ApplicationLifecycleState From, ApplicationLifecycleState To)>();
+        stateManager.StateChanged += (s, e) => stateHistory.Add((e.PreviousState, e.NewState));
+
+        // Act
+        var result = await coordinator.ExecuteBatchAsync(actions, Guid.NewGuid());
+
+        // Assert
+        Assert.Equal(4, result.SucceededCount);
+        Assert.Equal(ApplicationLifecycleState.Idle, stateManager.CurrentState);
+
+        // Crucial verification: Only 2 transitions occurred:
+        // 1. Idle -> ExecutingBatch at the start of the batch
+        // 2. ExecutingBatch -> Idle at the end of the batch
+        // Zero intermediate flickers to Idle between files 1, 2, 3, 4!
+        Assert.Equal(2, stateHistory.Count);
+        Assert.Equal((ApplicationLifecycleState.Idle, ApplicationLifecycleState.ExecutingBatch), stateHistory[0]);
+        Assert.Equal((ApplicationLifecycleState.ExecutingBatch, ApplicationLifecycleState.Idle), stateHistory[1]);
+    }
+
+    [Fact]
+    public async Task BatchCoordinator_RejectsConcurrentBatchExecution_Atomically()
+    {
+        // Arrange
+        var mockExecutor = new Mock<IActionExecutor>();
+        var coordinator = new BatchProcessingCoordinator(mockExecutor.Object);
+        var tcs = new TaskCompletionSource<bool>();
+
+        var action1 = new PlannedFileAction
+        {
+            SourcePath = Path.Combine(_testDirectory, "concurrent_1.txt"),
+            ActionType = ActionType.Move,
+            FileAction = new MoveFileAction()
+        };
+        File.WriteAllText(action1.SourcePath, "data 1");
+
+        mockExecutor
+            .Setup(x => x.ExecutePlannedActionAsync(action1, It.IsAny<Guid?>()))
+            .Returns(async () =>
+            {
+                await tcs.Task;
+                return new ActionResult { Success = true, Type = ActionResultType.Success };
+            });
+
+        // Act: Start first batch execution (will pause inside mock until tcs is signaled)
+        var batch1Task = coordinator.ExecuteBatchAsync([action1], Guid.NewGuid());
+
+        // Assert: While batch 1 is executing, coordinator.IsExecuting is true
+        Assert.True(coordinator.IsExecuting);
+
+        // Attempting to execute a second batch concurrently must be rejected atomically
+        var action2 = new PlannedFileAction
+        {
+            SourcePath = Path.Combine(_testDirectory, "concurrent_2.txt"),
+            ActionType = ActionType.Move,
+            FileAction = new MoveFileAction()
+        };
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            coordinator.ExecuteBatchAsync([action2], Guid.NewGuid()));
+        Assert.Contains("already executing", ex.Message);
+
+        // Release first batch execution
+        tcs.SetResult(true);
+        var result1 = await batch1Task;
+
+        // Verify first batch completed and coordinator flag is reset
+        Assert.Equal(1, result1.SucceededCount);
+        Assert.False(coordinator.IsExecuting);
+
+        // A subsequent batch can now be executed without rejection
+        mockExecutor
+            .Setup(x => x.ExecutePlannedActionAsync(action2, It.IsAny<Guid?>()))
+            .ReturnsAsync(new ActionResult { Success = true, Type = ActionResultType.Success });
+
+        var result2 = await coordinator.ExecuteBatchAsync([action2], Guid.NewGuid());
+        Assert.Equal(1, result2.SucceededCount);
+    }
 }
