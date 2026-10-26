@@ -30,6 +30,7 @@ public class RollbackOperationResult
     public string Message { get; init; } = string.Empty;
     public RollbackConflictReason ConflictReason { get; init; } = RollbackConflictReason.None;
     public string? RestorationInstructions { get; init; }
+    public Models.Enums.RollbackOutcome Outcome { get; init; } = Models.Enums.RollbackOutcome.Failed;
 }
 
 /// <summary>

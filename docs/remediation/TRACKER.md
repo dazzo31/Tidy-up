@@ -24,7 +24,7 @@
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-BASE-01` | Pin baseline, create records, revalidate 44 findings | **DONE** | None | `59d3bb4` | 623 tests green; baseline doc suite created | Proceed to `TASK-BASE-02` |
-| `TASK-BASE-02` | Set shared contracts before touching consumers | NOT_STARTED | `TASK-BASE-01` | — | Target: contracts, draft lifecycle, journal intent | Define contracts & interfaces |
+| `TASK-BASE-02` | Set shared contracts before touching consumers | **DONE** | `TASK-BASE-01` | `a654c32` | RollbackOutcome, ExecutionAuthorizationContext, RuleDraft, ActionContinuationResolver | Proceed to `TASK-BASE-03` |
 | `TASK-BASE-03` | Apply narrow containment before permanent repairs | NOT_STARTED | `TASK-BASE-02` | — | Target: fail-closed safety guards | Implement containment guards |
 
 ### Phase 1: Rule & Configuration Integrity
