@@ -1,10 +1,13 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 7ad63cb  
+**Repository / Branch / Current SHA:** TidyUp on main @ bad0f7b  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-31 Complete)  
-**Active Task & Current State:** TASK-REM-31 (DONE) -> Next: TASK-REM-32 (History pagination command notification & eligibility)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-32 Complete)  
+**Active Task & Current State:** TASK-REM-32 (DONE) -> Next: TASK-REM-33 (Context-sensitive filtered history export)  
 **Completed Changes & Files:**
+- TASK-REM-32 (SHA: bad0f7b):
+  - HistoryViewModel.cs: Added `[NotifyCanExecuteChangedFor(nameof(NextPageCommand))]` and `[NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]` on `_currentPage`, `_pageSize`, and `_totalRecords`. Added explicit `NotifyCanExecuteChanged()` calls on page change, page size change, total records change, and upon completion of `LoadPageAsync()`.
+  - HistoryViewModelTests.cs: Added unit test `PaginationCommands_UpdateCanExecuteEligibilityOnDataLoadAndTraversal` testing command eligibility across zero records, boundary transitions, next/prev executions, and page size modifications. 762 tests passing.
 - TASK-REM-31 (SHA: 7ad63cb):
   - IOperationTelemetryService.cs & OperationTelemetryService.cs: Created operation telemetry service that streams committed executed operations, deduplicates duplicate events by ActionId, and writes durable `ActionLogEntity` records to `IActionLogRepository`.
   - ActionExecutor.cs: Injected `IOperationTelemetryService` and emits telemetry events across both `ExecuteActionAsync` and `ExecutePlannedActionAsync` on completion/failure.
