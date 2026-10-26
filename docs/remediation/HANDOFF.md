@@ -1,10 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `68fdedd`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `761fcfc`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-05` Complete)  
-**Active Task & Current State:** `TASK-REM-05` (`DONE`) -> Next: `TASK-REM-01` (Truthful Rollback & Recovery Contract)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-01` Complete)  
+**Active Task & Current State:** `TASK-REM-01` (`DONE`) -> Next: `TASK-REM-23` (Authoritative Discrepancy Reporting from Batch Results)  
 **Completed Changes & Files:**
+- `TASK-REM-01` (SHA: `761fcfc`):
+  - `RollbackEngine.cs`: Enforced truthful rollback contract by populating `RollbackOutcome` across all operations (`Restored`, `ManualRestoreRequired`, `NotRecoverable`, `Failed`). `RollbackDeleteAsync` returns `ManualRestoreRequired` with instructions for Recycle Bin files and `NotRecoverable` for permanently deleted files, never falsely claiming restoration.
+  - `HistoryViewModel.cs`: `HistoryRowItemViewModel.CanRollback` disables Undo for `ExtractArchive`, `RunCommand`, and permanent deletion entries. `RollbackOperationAsync` transitions status to "Manual Action Required" instead of "RolledBack" when `Outcome == ManualRestoreRequired`.
+  - `RollbackEngineTests.cs` & `HistoryViewModelTests.cs`: Unit tests verify accurate outcomes, database record preservation, and UI button gating. 727 tests passing.
 - `TASK-REM-05` (SHA: `68fdedd`):
   - `ActionExecutor.cs`: Rewrote `RemoveEmptyFoldersAsync` to strictly clamp recursive ascent to `stopBoundaryPath`. Deletes empty subdirectories up to the boundary, but never deletes the boundary itself, its ancestors, or folders outside the boundary.
   - `ActionExecutor.cs` & `ExecutionPlanGenerator.cs`: Propagate `MonitoredSourceRoot` into `MoveFileAction` and `DeleteFileAction` and pass it to `RemoveEmptyFoldersAsync` in `ExecuteMoveAsync` and `ExecuteDeleteAsync`.
