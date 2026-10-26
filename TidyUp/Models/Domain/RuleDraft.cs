@@ -27,11 +27,17 @@ public class RuleDraft
     public Rule BaselineSnapshot { get; private set; }
 
     /// <summary>
+    /// Whether this draft represents a newly created rule not yet persisted to storage.
+    /// </summary>
+    public bool IsNew { get; set; }
+
+    /// <summary>
     /// Initializes a new draft session from an existing rule.
     /// </summary>
-    public RuleDraft(Rule rule)
+    public RuleDraft(Rule rule, bool isNew = false)
     {
         ArgumentNullException.ThrowIfNull(rule);
+        IsNew = isNew;
         BaselineSnapshot = DeepCloneRule(rule);
         WorkingCopy = DeepCloneRule(rule);
     }
@@ -44,6 +50,7 @@ public class RuleDraft
     {
         get
         {
+            if (IsNew) return true;
             var baselineJson = SerializeForComparison(BaselineSnapshot);
             var workingJson = SerializeForComparison(WorkingCopy);
             return !string.Equals(baselineJson, workingJson, StringComparison.Ordinal);
@@ -64,6 +71,7 @@ public class RuleDraft
     public void CommitBaseline(Rule updatedSavedRule)
     {
         ArgumentNullException.ThrowIfNull(updatedSavedRule);
+        IsNew = false;
         BaselineSnapshot = DeepCloneRule(updatedSavedRule);
         WorkingCopy = DeepCloneRule(updatedSavedRule);
     }
@@ -98,3 +106,4 @@ public class RuleDraft
         }, CloneOptions);
     }
 }
+

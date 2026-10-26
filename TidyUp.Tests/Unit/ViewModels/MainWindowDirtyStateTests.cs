@@ -148,15 +148,66 @@ public class MainWindowDirtyStateTests : IDisposable
     }
 
     [Fact]
-    public void MainWindowViewModel_SavingRule_ResetsDirtyFlag()
+    public async Task MainWindowViewModel_SavingRule_ResetsDirtyFlag()
     {
-        var rule = new Rule { Name = "Rule to Save" };
+        var rule = new Rule
+        {
+            Name = "Rule to Save",
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\MonitoredFolder" } },
+            Actions = { new MoveFileAction { DestinationPath = @"C:\Archive" } }
+        };
         _viewModel.SelectedRule = rule;
         rule.Name = "Rule to Save Modified";
         _viewModel.IsRuleDirty.Should().BeTrue();
 
-        _viewModel.SaveRuleCommand.Execute(null);
+        var success = await _viewModel.SaveDraftAsync();
 
+        success.Should().BeTrue();
+        _viewModel.IsRuleDirty.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task MainWindowViewModel_FailedSave_RetainsDirtyFlagAndSetsStatusMessage()
+    {
+        // Rule without monitored folders fails repository validation
+        var rule = new Rule { Name = "Invalid Rule Without Folders" };
+        _viewModel.SelectedRule = rule;
+        rule.Name = "Invalid Rule Modified";
+        _viewModel.IsRuleDirty.Should().BeTrue();
+
+        var success = await _viewModel.SaveDraftAsync();
+
+        success.Should().BeFalse();
+        _viewModel.IsRuleDirty.Should().BeTrue("failed save must retain dirty state");
+        _viewModel.StatusMessage.Should().Contain("Error saving rule");
+    }
+
+    [Fact]
+    public void MainWindowViewModel_DiscardEdits_RestoresBaselineSnapshot()
+    {
+        var rule = new Rule
+        {
+            Name = "Original Rule Name",
+            Description = "Original Description",
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\Original" } },
+            Conditions = new ConditionGroup { Operator = LogicOperator.And }
+        };
+        _viewModel.SelectedRule = rule;
+        _viewModel.IsRuleDirty.Should().BeFalse();
+
+        // Mutate properties
+        rule.Name = "Mutated Rule Name";
+        rule.Description = "Mutated Description";
+        _viewModel.IsRuleDirty.Should().BeTrue();
+
+        // Confirm discard
+        _viewModel.ConfirmDiscardRuleCallback = (msg, title) => true;
+        var proceed = _viewModel.ConfirmDiscardRuleEdits();
+
+        // In-memory rule entity must be restored to baseline
+        proceed.Should().BeTrue();
+        rule.Name.Should().Be("Original Rule Name");
+        rule.Description.Should().Be("Original Description");
         _viewModel.IsRuleDirty.Should().BeFalse();
     }
 }

@@ -137,6 +137,11 @@ public partial class Rule : ObservableObject
     /// </summary>
     [ObservableProperty]
     private string? _errorMessage;
+
+    /// <summary>
+    /// Creates an independent deep clone of this Rule entity.
+    /// </summary>
+    public Rule DeepClone() => RuleDraft.DeepCloneRule(this);
 }
 
 /// <summary>

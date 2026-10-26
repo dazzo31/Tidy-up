@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using TidyUp.Data.Repositories;
 using TidyUp.Models.Domain;
+using TidyUp.Models.Enums;
 using TidyUp.Services.Folders;
 using TidyUp.Services.Rules;
 using TidyUp.Services.Simulation;
@@ -55,6 +56,31 @@ public partial class RuleWizardViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isRuleEnabled;
+
+    [ObservableProperty]
+    private int _executionOrder;
+
+    [ObservableProperty]
+    private bool _stopProcessingAfterMatch;
+
+    [ObservableProperty]
+    private RuleTriggerType _triggerType = RuleTriggerType.Continuous;
+
+    [ObservableProperty]
+    private TimeSpan? _scheduledTime;
+
+    [ObservableProperty]
+    private DateTime _createdDate = DateTime.UtcNow;
+
+    [ObservableProperty]
+    private DateTime? _lastRunDate;
+
+    [ObservableProperty]
+    private int _filesProcessedCount;
+
+    public Func<Task<bool>>? SaveHandler { get; set; }
+
+    public Action? CancelHandler { get; set; }
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(AddFolderCommand))]
@@ -245,6 +271,13 @@ public partial class RuleWizardViewModel : ObservableObject
         RuleName = rule.Name ?? string.Empty;
         RuleDescription = rule.Description ?? string.Empty;
         IsRuleEnabled = rule.IsEnabled;
+        ExecutionOrder = rule.ExecutionOrder;
+        StopProcessingAfterMatch = rule.StopProcessingAfterMatch;
+        TriggerType = rule.TriggerType;
+        ScheduledTime = rule.ScheduledTime;
+        CreatedDate = rule.CreatedDate;
+        LastRunDate = rule.LastRunDate;
+        FilesProcessedCount = rule.FilesProcessedCount;
 
         MonitoredFolders.Clear();
         foreach (var folder in rule.MonitoredFolders)
@@ -309,6 +342,13 @@ public partial class RuleWizardViewModel : ObservableObject
         RuleName = string.Empty;
         RuleDescription = string.Empty;
         IsRuleEnabled = false;
+        ExecutionOrder = 0;
+        StopProcessingAfterMatch = false;
+        TriggerType = RuleTriggerType.Continuous;
+        ScheduledTime = null;
+        CreatedDate = DateTime.UtcNow;
+        LastRunDate = null;
+        FilesProcessedCount = 0;
         MonitoredFolders.Clear();
         ConditionEditor.RootCondition = new ConditionGroup { Operator = Models.Enums.LogicOperator.And };
         ActionEditor.Actions.Clear();
@@ -339,6 +379,13 @@ public partial class RuleWizardViewModel : ObservableObject
             Name = RuleName.Trim(),
             Description = RuleDescription.Trim(),
             IsEnabled = IsRuleEnabled,
+            ExecutionOrder = ExecutionOrder,
+            StopProcessingAfterMatch = StopProcessingAfterMatch,
+            TriggerType = TriggerType,
+            ScheduledTime = ScheduledTime,
+            CreatedDate = CreatedDate,
+            LastRunDate = LastRunDate,
+            FilesProcessedCount = FilesProcessedCount,
             Conditions = ConditionEditor.RootCondition
         };
 
@@ -404,6 +451,25 @@ public partial class RuleWizardViewModel : ObservableObject
         ErrorMessage = null;
         IsSaving = true;
 
+        if (SaveHandler != null)
+        {
+            try
+            {
+                var success = await SaveHandler();
+                if (success)
+                {
+                    CreatedRule = BuildRule();
+                    RuleSaved?.Invoke(this, CreatedRule);
+                    RequestClose?.Invoke();
+                }
+            }
+            finally
+            {
+                IsSaving = false;
+            }
+            return;
+        }
+
         try
         {
             var rule = BuildRule();
@@ -466,6 +532,11 @@ public partial class RuleWizardViewModel : ObservableObject
     [RelayCommand]
     public void Cancel()
     {
+        if (CancelHandler != null)
+        {
+            CancelHandler.Invoke();
+            return;
+        }
         if (IsDirty && CreatedRule == null)
         {
             bool proceed = ConfirmDiscardCallback != null

@@ -160,4 +160,125 @@ public class RuleWizardModeSynchronizationTests : IDisposable
         _mainViewModel.CurrentView.Should().Be(NavigationView.RuleEditor);
         _mainViewModel.IsRuleDirty.Should().BeTrue();
     }
+
+    [Fact]
+    public void RuleWizardViewModel_SavePreservesAllRuleMetadata()
+    {
+        var existingRule = new Rule
+        {
+            Id = Guid.NewGuid(),
+            Name = "Preserved Rule",
+            Description = "Metadata Description",
+            IsEnabled = true,
+            ExecutionOrder = 14,
+            StopProcessingAfterMatch = true,
+            TriggerType = RuleTriggerType.Scheduled,
+            ScheduledTime = TimeSpan.FromHours(22),
+            CreatedDate = new DateTime(2025, 3, 15, 8, 30, 0, DateTimeKind.Utc),
+            LastRunDate = new DateTime(2025, 4, 1, 12, 0, 0, DateTimeKind.Utc),
+            FilesProcessedCount = 137,
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\Monitored" } },
+            Actions = { new MoveFileAction { DestinationPath = @"C:\Dest" } }
+        };
+
+        _wizardViewModel.LoadFromRule(existingRule);
+
+        // Verify wizard loaded metadata
+        _wizardViewModel.ExecutionOrder.Should().Be(14);
+        _wizardViewModel.StopProcessingAfterMatch.Should().BeTrue();
+        _wizardViewModel.TriggerType.Should().Be(RuleTriggerType.Scheduled);
+        _wizardViewModel.ScheduledTime.Should().Be(TimeSpan.FromHours(22));
+        _wizardViewModel.CreatedDate.Should().Be(new DateTime(2025, 3, 15, 8, 30, 0, DateTimeKind.Utc));
+        _wizardViewModel.LastRunDate.Should().Be(new DateTime(2025, 4, 1, 12, 0, 0, DateTimeKind.Utc));
+        _wizardViewModel.FilesProcessedCount.Should().Be(137);
+
+        // Mutate wizard title and folder
+        _wizardViewModel.RuleName = "Updated Name In Wizard";
+
+        // BuildRule must preserve all metadata losslessly
+        var builtRule = _wizardViewModel.BuildRule();
+        builtRule.Id.Should().Be(existingRule.Id);
+        builtRule.Name.Should().Be("Updated Name In Wizard");
+        builtRule.ExecutionOrder.Should().Be(14);
+        builtRule.StopProcessingAfterMatch.Should().BeTrue();
+        builtRule.TriggerType.Should().Be(RuleTriggerType.Scheduled);
+        builtRule.ScheduledTime.Should().Be(TimeSpan.FromHours(22));
+        builtRule.CreatedDate.Should().Be(new DateTime(2025, 3, 15, 8, 30, 0, DateTimeKind.Utc));
+        builtRule.LastRunDate.Should().Be(new DateTime(2025, 4, 1, 12, 0, 0, DateTimeKind.Utc));
+        builtRule.FilesProcessedCount.Should().Be(137);
+    }
+
+    [Fact]
+    public void RuleWizardViewModel_Cancel_DelegatesToShellHandler()
+    {
+        bool cancelInvoked = false;
+        _wizardViewModel.CancelHandler = () => cancelInvoked = true;
+
+        _wizardViewModel.Cancel();
+
+        cancelInvoked.Should().BeTrue();
+    }
+
+    [Fact]
+    public void MainWindowViewModel_CancelNewRule_ClearsOrphanedState()
+    {
+        _mainViewModel.CreateNewRuleCommand.Execute(null);
+        _mainViewModel.SelectedRule.Should().NotBeNull();
+        _mainViewModel.IsRuleDirty.Should().BeTrue();
+
+        // Mutate draft in wizard
+        _mainViewModel.WizardViewModel.RuleName = "Uncommitted New Rule";
+
+        // Confirm discard when cancelling
+        _mainViewModel.ConfirmDiscardRuleCallback = (msg, title) => true;
+        _mainViewModel.WizardViewModel.CancelCommand.Execute(null);
+
+        // State must be cleanly reset without orphan rules in list
+        _mainViewModel.IsRuleDirty.Should().BeFalse();
+        _mainViewModel.Rules.Should().NotContain(r => r.Name == "Uncommitted New Rule");
+        _mainViewModel.WizardViewModel.RuleName.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void MainWindowViewModel_DiscardEdits_RestoresNestedConditionsAndActions()
+    {
+        var rule = new Rule
+        {
+            Name = "Deep Rule",
+            Conditions = new ConditionGroup
+            {
+                Operator = LogicOperator.And,
+                Conditions =
+                {
+                    new FileNameCondition { Value = "initial.txt", Operator = StringOperator.Contains }
+                }
+            },
+            Actions =
+            {
+                new MoveFileAction { DestinationPath = @"C:\Initial", Order = 1 }
+            },
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\Monitored" } }
+        };
+
+        _mainViewModel.SelectedRule = rule;
+        _mainViewModel.IsRuleDirty.Should().BeFalse();
+
+        // Mutate nested condition and action
+        var condition = (FileNameCondition)rule.Conditions!.Conditions[0];
+        condition.Value = "mutated.pdf";
+        rule.Name = "Mutated Deep Rule";
+        _mainViewModel.IsRuleDirty.Should().BeTrue();
+
+        // Discard edits
+        _mainViewModel.ConfirmDiscardRuleCallback = (msg, title) => true;
+        var proceed = _mainViewModel.ConfirmDiscardRuleEdits();
+
+        proceed.Should().BeTrue();
+        _mainViewModel.IsRuleDirty.Should().BeFalse();
+        rule.Name.Should().Be("Deep Rule");
+
+        // Verify nested condition was restored to baseline
+        var restoredCondition = (FileNameCondition)rule.Conditions!.Conditions[0];
+        restoredCondition.Value.Should().Be("initial.txt");
+    }
 }

@@ -185,6 +185,8 @@ public partial class MainWindowViewModel : ObservableObject
     }
 
     private Rule? _selectedRule;
+    private RuleDraft? _activeRuleDraft;
+    private bool _isSynchronizing;
     
     public Rule? SelectedRule
     {
@@ -202,43 +204,58 @@ public partial class MainWindowViewModel : ObservableObject
 
             var oldRule = _selectedRule;
             
-            if (SetProperty(ref _selectedRule, value))
+            _isSynchronizing = true;
+            try
             {
-                IsRuleDirty = false;
-                // Unsubscribe from old rule
-                if (oldRule != null)
+                if (SetProperty(ref _selectedRule, value))
                 {
-                    oldRule.PropertyChanged -= SelectedRule_PropertyChanged;
-                    oldRule.MonitoredFolders.CollectionChanged -= MonitoredFolders_CollectionChanged;
-                }
-                
-                // Subscribe to new rule
-                if (value != null)
-                {
-                    value.PropertyChanged += SelectedRule_PropertyChanged;
-                    value.MonitoredFolders.CollectionChanged += MonitoredFolders_CollectionChanged;
-                    
-                    // Update condition and action editors when rule changes
-                    ConditionEditor.RootCondition = value.Conditions ?? new Models.Domain.ConditionGroup { Operator = Models.Enums.LogicOperator.And };
-                    ActionEditor.Actions.Clear();
-                    foreach (var action in value.Actions.OrderBy(a => a.Order))
+                    IsRuleDirty = false;
+                    // Unsubscribe from old rule
+                    if (oldRule != null)
                     {
-                        ActionEditor.Actions.Add(action);
+                        oldRule.PropertyChanged -= SelectedRule_PropertyChanged;
+                        oldRule.MonitoredFolders.CollectionChanged -= MonitoredFolders_CollectionChanged;
                     }
                     
-                    // Update preview with monitored folders
-                    ConditionEditor.SetMonitoredFolders(value.MonitoredFolders.ToList());
+                    // Subscribe to new rule
+                    if (value != null)
+                    {
+                        _activeRuleDraft = new RuleDraft(value);
+                        value.PropertyChanged += SelectedRule_PropertyChanged;
+                        value.MonitoredFolders.CollectionChanged += MonitoredFolders_CollectionChanged;
+                        
+                        // Update condition and action editors when rule changes
+                        ConditionEditor.RootCondition = value.Conditions ?? new Models.Domain.ConditionGroup { Operator = Models.Enums.LogicOperator.And };
+                        ActionEditor.Actions.Clear();
+                        foreach (var action in value.Actions.OrderBy(a => a.Order))
+                        {
+                            ActionEditor.Actions.Add(action);
+                        }
+                        
+                        // Update preview with monitored folders
+                        ConditionEditor.SetMonitoredFolders(value.MonitoredFolders.ToList());
 
-                    // Sync to wizard viewmodel
-                    WizardViewModel?.LoadFromRule(value);
+                        // Sync to wizard viewmodel
+                        WizardViewModel?.LoadFromRule(value);
+                    }
+                    else
+                    {
+                        _activeRuleDraft = null;
+                    }
+                    
+                    // Notify all commands that depend on SelectedRule
+                    SaveRuleCommand.NotifyCanExecuteChanged();
+                    DeleteRuleCommand.NotifyCanExecuteChanged();
+                    ToggleRuleCommand.NotifyCanExecuteChanged();
+                    TestRuleCommand.NotifyCanExecuteChanged();
+                    ExportRuleCommand.NotifyCanExecuteChanged();
                 }
-                
-                // Notify all commands that depend on SelectedRule
-                SaveRuleCommand.NotifyCanExecuteChanged();
-                DeleteRuleCommand.NotifyCanExecuteChanged();
-                ToggleRuleCommand.NotifyCanExecuteChanged();
-                TestRuleCommand.NotifyCanExecuteChanged();
-                ExportRuleCommand.NotifyCanExecuteChanged();
+            }
+            finally
+            {
+                _isSynchronizing = false;
+                IsRuleDirty = false;
+                if (value != null) value.IsDirty = false;
             }
         }
     }
@@ -284,10 +301,109 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (proceed)
         {
-            IsRuleDirty = false;
+            DiscardActiveEdits();
         }
 
         return proceed;
+    }
+
+    public void HandleWizardCancel()
+    {
+        if (!ConfirmDiscardRuleEdits())
+            return;
+
+        StatusMessage = "Ready";
+    }
+
+    private void DiscardActiveEdits()
+    {
+        if (SelectedRule == null)
+        {
+            IsRuleDirty = false;
+            return;
+        }
+
+        if (_activeRuleDraft?.IsNew == true)
+        {
+            var fallback = Rules.FirstOrDefault();
+            _selectedRule = null;
+            IsRuleDirty = false;
+            WizardViewModel?.ResetWizard();
+            SelectedRule = fallback;
+            return;
+        }
+
+        if (_activeRuleDraft != null)
+        {
+            RestoreRuleFromBaseline(_activeRuleDraft.BaselineSnapshot);
+        }
+
+        IsRuleDirty = false;
+        SelectedRule.IsDirty = false;
+    }
+
+    private void RestoreRuleFromBaseline(Rule baseline)
+    {
+        if (SelectedRule == null || baseline == null) return;
+
+        _isSynchronizing = true;
+        try
+        {
+            SelectedRule.PropertyChanged -= SelectedRule_PropertyChanged;
+            SelectedRule.MonitoredFolders.CollectionChanged -= MonitoredFolders_CollectionChanged;
+
+            SelectedRule.Name = baseline.Name;
+            SelectedRule.Description = baseline.Description;
+            SelectedRule.IsEnabled = baseline.IsEnabled;
+            SelectedRule.ExecutionOrder = baseline.ExecutionOrder;
+            SelectedRule.StopProcessingAfterMatch = baseline.StopProcessingAfterMatch;
+            SelectedRule.TriggerType = baseline.TriggerType;
+            SelectedRule.ScheduledTime = baseline.ScheduledTime;
+            SelectedRule.CreatedDate = baseline.CreatedDate;
+            SelectedRule.ModifiedDate = baseline.ModifiedDate;
+            SelectedRule.LastRunDate = baseline.LastRunDate;
+            SelectedRule.FilesProcessedCount = baseline.FilesProcessedCount;
+
+            SelectedRule.MonitoredFolders.Clear();
+            foreach (var folder in baseline.MonitoredFolders)
+            {
+                SelectedRule.MonitoredFolders.Add(new MonitoredFolder
+                {
+                    Path = folder.Path,
+                    IncludeSubfolders = folder.IncludeSubfolders,
+                    ExclusionPatterns = new System.Collections.ObjectModel.ObservableCollection<string>(folder.ExclusionPatterns)
+                });
+            }
+
+            var cloned = RuleDraft.DeepCloneRule(baseline);
+            SelectedRule.Conditions = cloned.Conditions;
+            SelectedRule.Actions.Clear();
+            foreach (var action in cloned.Actions)
+            {
+                SelectedRule.Actions.Add(action);
+            }
+
+            UpdateRuleMetadata(SelectedRule);
+
+            ConditionEditor.RootCondition = SelectedRule.Conditions ?? new Models.Domain.ConditionGroup { Operator = Models.Enums.LogicOperator.And };
+            ActionEditor.Actions.Clear();
+            foreach (var action in SelectedRule.Actions.OrderBy(a => a.Order))
+            {
+                ActionEditor.Actions.Add(action);
+            }
+            ConditionEditor.SetMonitoredFolders(SelectedRule.MonitoredFolders.ToList());
+
+            WizardViewModel?.LoadFromRule(SelectedRule);
+
+            SelectedRule.PropertyChanged += SelectedRule_PropertyChanged;
+            SelectedRule.MonitoredFolders.CollectionChanged += MonitoredFolders_CollectionChanged;
+        }
+        finally
+        {
+            _isSynchronizing = false;
+            IsRuleDirty = false;
+            SelectedRule.IsDirty = false;
+        }
     }
 
     public IApplicationStateManager StateManager { get; }
@@ -362,6 +478,9 @@ public partial class MainWindowViewModel : ObservableObject
         WizardViewModel = (RuleWizardViewModel?)serviceProvider.GetService(typeof(RuleWizardViewModel))
             ?? new RuleWizardViewModel(_ruleRepository, _ruleValidator, executionPlanGen, _ruleSummaryGenerator, _pathNormalizer);
 
+        WizardViewModel.SaveHandler = SaveDraftAsync;
+        WizardViewModel.CancelHandler = HandleWizardCancel;
+
         WizardViewModel.RuleSaved += async (s, savedRule) =>
         {
             await LoadRulesAsync();
@@ -369,6 +488,20 @@ public partial class MainWindowViewModel : ObservableObject
             IsRuleDirty = false;
             StatusMessage = $"Rule '{savedRule.Name}' saved successfully";
         };
+
+        WizardViewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName is nameof(RuleWizardViewModel.RuleName)
+                or nameof(RuleWizardViewModel.RuleDescription)
+                or nameof(RuleWizardViewModel.IsRuleEnabled))
+            {
+                MarkRuleDirty();
+            }
+        };
+
+        WizardViewModel.MonitoredFolders.CollectionChanged += (s, e) => MarkRuleDirty();
+
+        ActionEditor.Actions.CollectionChanged += (s, e) => MarkRuleDirty();
 
         FoldersViewModel = (FoldersViewModel?)serviceProvider.GetService(typeof(FoldersViewModel))
             ?? new FoldersViewModel(_ruleRepository, _healthMonitor, _folderCatalog, _pathNormalizer);
@@ -666,19 +799,30 @@ public partial class MainWindowViewModel : ObservableObject
         CurrentEditorMode = RuleEditorMode.GuidedWorkflow;
         CurrentView = NavigationView.RuleEditor;
         SelectedRule = newRule;
+        _activeRuleDraft = new RuleDraft(newRule, isNew: true);
         IsRuleDirty = true;
+        newRule.IsDirty = true;
         StatusMessage = "Creating new rule in Guided Workflow (Disabled)";
     }
 
     private bool CanCreateNewRule() => StateManager.CurrentState != ApplicationLifecycleState.ExecutingBatch;
 
     /// <summary>
-    /// Saves the selected rule to the database.
+    /// Saves the selected rule to the database, maintaining parity across Guided and Advanced editors.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanSaveRule))]
-    private async Task SaveRuleAsync()
+    public async Task<bool> SaveRuleAsync()
     {
-        if (SelectedRule == null) return;
+        return await SaveDraftAsync();
+    }
+
+    /// <summary>
+    /// Core draft persistence method shared by Shell Save and Wizard Save.
+    /// Preserves all metadata, updates baseline on success, and retains dirty state on failure.
+    /// </summary>
+    public async Task<bool> SaveDraftAsync()
+    {
+        if (SelectedRule == null) return false;
 
         IsLoading = true;
         StatusMessage = "Saving rule...";
@@ -716,25 +860,30 @@ public partial class MainWindowViewModel : ObservableObject
                 await _ruleRepository.UpdateAsync(SelectedRule);
                 StatusMessage = "Rule updated successfully";
             }
-        }
-        catch (Exception ex)
-        {
-            StatusMessage = $"Error saving rule: {ex.Message}";
-        }
-        finally
-        {
-            IsLoading = false;
+
+            // SUCCESS PATH ONLY:
+            _activeRuleDraft?.CommitBaseline(SelectedRule);
             IsRuleDirty = false;
-            if (SelectedRule != null)
-            {
-                SelectedRule.IsDirty = false;
-                UpdateRuleMetadata(SelectedRule);
-            }
+            SelectedRule.IsDirty = false;
+            UpdateRuleMetadata(SelectedRule);
             FilterRules();
             StateManager.NotifyRuleSaved();
             await DashboardViewModel.LoadDashboardDataAsync();
             await FoldersViewModel.LoadFoldersAsync();
             UpdateHealthAlerts();
+            WizardViewModel.ErrorMessage = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error saving rule: {ex.Message}";
+            WizardViewModel.ErrorMessage = $"Failed to save rule: {ex.Message}";
+            // Retain dirty state on error!
+            return false;
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
@@ -872,11 +1021,18 @@ public partial class MainWindowViewModel : ObservableObject
         if (SelectedRule == null) return;
 
         // Save current rule state to editors before preview
-        SelectedRule.Conditions = ConditionEditor.RootCondition;
-        SelectedRule.Actions.Clear();
-        foreach (var action in ActionEditor.Actions)
+        if (CurrentEditorMode == RuleEditorMode.GuidedWorkflow)
         {
-            SelectedRule.Actions.Add(action);
+            WizardViewModel.SyncToRule(SelectedRule);
+        }
+        else
+        {
+            SelectedRule.Conditions = ConditionEditor.RootCondition;
+            SelectedRule.Actions.Clear();
+            foreach (var action in ActionEditor.Actions)
+            {
+                SelectedRule.Actions.Add(action);
+            }
         }
 
         StateManager.TransitionTo(ApplicationLifecycleState.Simulating, "Testing rule preview");
@@ -1163,6 +1319,17 @@ public partial class MainWindowViewModel : ObservableObject
     public bool IsHistoryActive => CurrentView == NavigationView.History;
     public bool IsSettingsActive => CurrentView == NavigationView.Settings;
 
+    private void MarkRuleDirty()
+    {
+        if (_isSynchronizing || SelectedRule == null) return;
+        IsRuleDirty = true;
+        SelectedRule.IsDirty = true;
+        UpdateRuleMetadata(SelectedRule);
+        StateManager.NotifyRuleModified(SelectedRule?.Name);
+        SaveRuleCommand.NotifyCanExecuteChanged();
+        TestRuleCommand.NotifyCanExecuteChanged();
+    }
+
     /// <summary>
     /// Event handler for SelectedRule property changes.
     /// </summary>
@@ -1182,14 +1349,8 @@ public partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        IsRuleDirty = true;
-        if (SelectedRule != null)
-        {
-            SelectedRule.IsDirty = true;
-            UpdateRuleMetadata(SelectedRule);
-        }
+        MarkRuleDirty();
 
-        StateManager.NotifyRuleModified(SelectedRule?.Name);
         if (e.PropertyName == nameof(Rule.Name))
         {
             SaveRuleCommand.NotifyCanExecuteChanged();
@@ -1205,13 +1366,6 @@ public partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private void MonitoredFolders_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
-        IsRuleDirty = true;
-        if (SelectedRule != null)
-        {
-            SelectedRule.IsDirty = true;
-            UpdateRuleMetadata(SelectedRule);
-        }
-        StateManager.NotifyRuleModified(SelectedRule?.Name);
-        TestRuleCommand.NotifyCanExecuteChanged();
+        MarkRuleDirty();
     }
 }
