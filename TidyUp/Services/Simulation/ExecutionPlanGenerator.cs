@@ -110,8 +110,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 continue;
             }
 
-            // Evaluate rule conditions
-            bool isMatch = _ruleEngine.EvaluateRule(rule, fileInfo);
+            // Evaluate rule conditions in simulation mode (decoupled from live execution eligibility)
+            bool isMatch = _ruleEngine.MatchesConditions(rule, fileInfo);
             if (!isMatch)
                 continue;
 

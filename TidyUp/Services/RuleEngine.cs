@@ -12,7 +12,15 @@ public class RuleEngine : IRuleEngine
 {
     public bool EvaluateRule(Rule rule, FileInfo fileInfo)
     {
-        if (rule == null || !rule.IsEnabled)
+        return EvaluateRule(rule, fileInfo, RuleEvaluationPurpose.LiveExecution);
+    }
+
+    public bool EvaluateRule(Rule rule, FileInfo fileInfo, RuleEvaluationPurpose purpose)
+    {
+        if (rule == null)
+            return false;
+
+        if (purpose == RuleEvaluationPurpose.LiveExecution && !rule.IsEnabled)
             return false;
 
         // If rule has no conditions, it matches all files
@@ -21,6 +29,11 @@ public class RuleEngine : IRuleEngine
 
         // Evaluate the condition tree
         return rule.Conditions.Evaluate(fileInfo);
+    }
+
+    public bool MatchesConditions(Rule rule, FileInfo fileInfo)
+    {
+        return EvaluateRule(rule, fileInfo, RuleEvaluationPurpose.SimulationOrPreview);
     }
 
     public List<Rule> GetMatchingRules(List<Rule> rules, FileInfo fileInfo, bool stopOnFirstMatch = false)
@@ -48,7 +61,7 @@ public class RuleEngine : IRuleEngine
         return matchingRules;
     }
 
-    public FileEvaluationDiagnostics ExplainEvaluation(Rule rule, string filePath)
+    public FileEvaluationDiagnostics ExplainEvaluation(Rule rule, string filePath, RuleEvaluationPurpose purpose = RuleEvaluationPurpose.LiveExecution)
     {
         if (string.IsNullOrWhiteSpace(filePath))
         {
@@ -65,10 +78,10 @@ public class RuleEngine : IRuleEngine
         }
 
         var fileInfo = new FileInfo(filePath);
-        return ExplainEvaluation(rule, fileInfo);
+        return ExplainEvaluation(rule, fileInfo, purpose);
     }
 
-    public FileEvaluationDiagnostics ExplainEvaluation(Rule rule, FileInfo fileInfo)
+    public FileEvaluationDiagnostics ExplainEvaluation(Rule rule, FileInfo fileInfo, RuleEvaluationPurpose purpose = RuleEvaluationPurpose.LiveExecution)
     {
         if (rule == null)
         {
@@ -87,7 +100,7 @@ public class RuleEngine : IRuleEngine
         var filePath = fileInfo?.FullName ?? string.Empty;
         var fileName = fileInfo?.Name ?? string.Empty;
 
-        if (!rule.IsEnabled)
+        if (purpose == RuleEvaluationPurpose.LiveExecution && !rule.IsEnabled)
         {
             return new FileEvaluationDiagnostics
             {
@@ -109,7 +122,7 @@ public class RuleEngine : IRuleEngine
                 RuleName = rule.Name,
                 FilePath = filePath,
                 FileName = fileName,
-                IsRuleEnabled = true,
+                IsRuleEnabled = rule.IsEnabled,
                 IsOverallMatch = true,
                 Summary = $"Rule '{rule.Name}' has no conditions configured and matches all files by default.",
                 RootOperator = rule.Conditions?.Operator
@@ -129,7 +142,7 @@ public class RuleEngine : IRuleEngine
             RuleName = rule.Name,
             FilePath = filePath,
             FileName = fileName,
-            IsRuleEnabled = true,
+            IsRuleEnabled = rule.IsEnabled,
             IsOverallMatch = groupResult.IsMatch,
             Summary = summary,
             RootOperator = rootGroup.Operator,

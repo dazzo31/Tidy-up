@@ -315,5 +315,53 @@ public class ExecutionPlanGeneratorTests : IDisposable
         plan.TotalMatched.Should().Be(0);
         plan.PlannedActions.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task GeneratePlanForFolderAsync_WhenRuleIsDisabled_SimulatesMatchingFilesCorrectly()
+    {
+        // Arrange
+        var sourceDir = Path.Combine(_testRoot, "DisabledRuleSource");
+        var targetDir = Path.Combine(_testRoot, "DisabledRuleTarget");
+        Directory.CreateDirectory(sourceDir);
+
+        var doc1 = Path.Combine(sourceDir, "archive.zip");
+        var doc2 = Path.Combine(sourceDir, "notes.txt");
+        await File.WriteAllTextAsync(doc1, "Fake ZIP");
+        await File.WriteAllTextAsync(doc2, "Fake TXT");
+
+        var disabledRule = new Rule
+        {
+            Name = "Disabled Move Rule",
+            IsEnabled = false, // DISABLED RULE!
+            Conditions = new ConditionGroup
+            {
+                Operator = LogicOperator.And,
+                Conditions =
+                {
+                    new FileExtensionCondition { Operator = StringOperator.Is, Value = "zip" }
+                }
+            },
+            Actions = new ObservableCollection<FileAction>
+            {
+                new MoveFileAction { DestinationPath = targetDir, Order = 0 }
+            }
+        };
+
+        // Act
+        var plan = await _generator.GeneratePlanForFolderAsync(
+            disabledRule,
+            sourceDir,
+            includeSubfolders: false);
+
+        // Assert: Disabled rule must successfully simulate matching files in preview
+        plan.TotalScanned.Should().Be(2);
+        plan.TotalMatched.Should().Be(1);
+        plan.PlannedActions.Should().ContainSingle();
+        plan.PlannedActions[0].SourcePath.Should().Be(doc1);
+        plan.PlannedActions[0].TargetPath.Should().Be(Path.Combine(targetDir, "archive.zip"));
+
+        // Invariant: Rule must still remain disabled
+        disabledRule.IsEnabled.Should().BeFalse();
+    }
 }
 

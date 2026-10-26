@@ -387,6 +387,69 @@ public class RuleEngineTests : IDisposable
         result.Should().BeEmpty();
     }
 
+    [Fact]
+    public void MatchesConditions_DisabledRuleWithMatchingConditions_ReturnsTrue()
+    {
+        var rule = new Rule
+        {
+            Name = "Disabled Draft",
+            IsEnabled = false,
+            Conditions = new ConditionGroup
+            {
+                Conditions = { new FileExtensionCondition { Operator = StringOperator.Is, Value = "txt" } }
+            }
+        };
+        var file = _fileHelper.CreateTestFile("document.txt");
+
+        var liveResult = _engine.EvaluateRule(rule, file, RuleEvaluationPurpose.LiveExecution);
+        var previewResult = _engine.MatchesConditions(rule, file);
+
+        liveResult.Should().BeFalse("disabled rules must never be eligible for live execution");
+        previewResult.Should().BeTrue("simulation/preview must evaluate conditions regardless of IsEnabled");
+    }
+
+    [Fact]
+    public void MatchesConditions_DisabledRuleWithMismatchedConditions_ReturnsFalse()
+    {
+        var rule = new Rule
+        {
+            Name = "Disabled Draft",
+            IsEnabled = false,
+            Conditions = new ConditionGroup
+            {
+                Conditions = { new FileExtensionCondition { Operator = StringOperator.Is, Value = "pdf" } }
+            }
+        };
+        var file = _fileHelper.CreateTestFile("document.txt");
+
+        var previewResult = _engine.MatchesConditions(rule, file);
+        previewResult.Should().BeFalse("mismatched conditions must return false even in simulation");
+    }
+
+    [Fact]
+    public void ExplainEvaluation_SimulationOrPreview_EvaluatesConditionsAndPreservesDisabledState()
+    {
+        var rule = new Rule
+        {
+            Name = "Disabled Draft",
+            IsEnabled = false,
+            Conditions = new ConditionGroup
+            {
+                Conditions = { new FileExtensionCondition { Operator = StringOperator.Is, Value = "txt" } }
+            }
+        };
+        var file = _fileHelper.CreateTestFile("document.txt");
+
+        var liveDiag = _engine.ExplainEvaluation(rule, file, RuleEvaluationPurpose.LiveExecution);
+        var previewDiag = _engine.ExplainEvaluation(rule, file, RuleEvaluationPurpose.SimulationOrPreview);
+
+        liveDiag.IsRuleEnabled.Should().BeFalse();
+        liveDiag.IsOverallMatch.Should().BeFalse();
+
+        previewDiag.IsRuleEnabled.Should().BeFalse("diagnostic must truthfully reflect that rule is disabled");
+        previewDiag.IsOverallMatch.Should().BeTrue("condition was met in preview evaluation");
+    }
+
     public void Dispose()
     {
         _fileHelper.Dispose();
