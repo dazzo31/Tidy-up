@@ -44,32 +44,40 @@ public class ToastNotificationService : IToastNotificationService
 
     public void ShowNotification(string title, string message, ToastNotificationType type = ToastNotificationType.Information)
     {
-        if (IsQuietMode || !AreNotificationsEnabled)
-            return;
-
-        if (type == ToastNotificationType.Error && _settings?.ShowErrorNotifications == false)
-            return;
-
-        if (type == ToastNotificationType.Success && _settings?.ShowSuccessNotifications == false)
-            return;
-
-        var args = new ToastNotificationEventArgs
+        try
         {
-            Title = title,
-            Message = message,
-            Type = type
-        };
+            if (IsQuietMode || !AreNotificationsEnabled)
+                return;
 
-        NotificationTriggered?.Invoke(this, args);
+            if (type == ToastNotificationType.Error && _settings?.ShowErrorNotifications == false)
+                return;
 
-        var balloonIcon = type switch
+            if (type == ToastNotificationType.Success && _settings?.ShowSuccessNotifications == false)
+                return;
+
+            var args = new ToastNotificationEventArgs
+            {
+                Title = title,
+                Message = message,
+                Type = type
+            };
+
+            NotificationTriggered?.Invoke(this, args);
+
+            var balloonIcon = type switch
+            {
+                ToastNotificationType.Warning => BalloonIcon.Warning,
+                ToastNotificationType.Error => BalloonIcon.Error,
+                _ => BalloonIcon.Info
+            };
+
+            _trayIconService?.ShowBalloonTip(title, message, balloonIcon);
+        }
+        catch (Exception ex)
         {
-            ToastNotificationType.Warning => BalloonIcon.Warning,
-            ToastNotificationType.Error => BalloonIcon.Error,
-            _ => BalloonIcon.Info
-        };
-
-        _trayIconService?.ShowBalloonTip(title, message, balloonIcon);
+            // Notification failures must never change operation outcome or crash calling business logic
+            System.Diagnostics.Debug.WriteLine($"Failed to display toast notification: {ex.Message}");
+        }
     }
 
     public void NotifyBatchCompletedWithErrors(string batchName, int errorCount, int totalCount)
@@ -88,4 +96,3 @@ public class ToastNotificationService : IToastNotificationService
             ToastNotificationType.Error);
     }
 }
-

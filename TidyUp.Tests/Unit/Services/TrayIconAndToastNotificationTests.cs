@@ -1,7 +1,15 @@
+using System;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
+using TidyUp.Configuration;
+using TidyUp.Data;
 using TidyUp.Models;
 using TidyUp.Services;
 using TidyUp.Services.Monitoring;
+using TidyUp.Services.State;
+using TidyUp.Tests.TestInfrastructure;
 using Xunit;
 
 namespace TidyUp.Tests.Unit.Services;
@@ -81,6 +89,83 @@ public class TrayIconAndToastNotificationTests
     }
 
     [Fact]
+    public void ToastNotificationService_SuppressesSuccess_WhenShowSuccessNotificationsFalse()
+    {
+        var mockTray = new Mock<ITrayIconService>();
+        var settings = new AppSettings
+        {
+            ToastNotificationsEnabled = true,
+            QuietMode = false,
+            ShowSuccessNotifications = false
+        };
+
+        var service = new ToastNotificationService(settings, mockTray.Object);
+        bool triggered = false;
+        service.NotificationTriggered += (s, e) => triggered = true;
+
+        service.ShowNotification("Success Title", "Success Message", ToastNotificationType.Success);
+
+        Assert.False(triggered);
+        mockTray.Verify(t => t.ShowBalloonTip(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Hardcodet.Wpf.TaskbarNotification.BalloonIcon>()), Times.Never);
+
+        // Act & Assert when enabled
+        settings.ShowSuccessNotifications = true;
+        service.ShowNotification("Success Title", "Success Message", ToastNotificationType.Success);
+
+        Assert.True(triggered);
+        mockTray.Verify(t => t.ShowBalloonTip("Success Title", "Success Message", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info), Times.Once);
+    }
+
+    [Fact]
+    public void ToastNotificationService_SuppressesError_WhenShowErrorNotificationsFalse()
+    {
+        var mockTray = new Mock<ITrayIconService>();
+        var settings = new AppSettings
+        {
+            ToastNotificationsEnabled = true,
+            QuietMode = false,
+            ShowErrorNotifications = false
+        };
+
+        var service = new ToastNotificationService(settings, mockTray.Object);
+        bool triggered = false;
+        service.NotificationTriggered += (s, e) => triggered = true;
+
+        service.ShowNotification("Error Title", "Error Message", ToastNotificationType.Error);
+
+        Assert.False(triggered);
+        mockTray.Verify(t => t.ShowBalloonTip(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Hardcodet.Wpf.TaskbarNotification.BalloonIcon>()), Times.Never);
+
+        // Act & Assert when enabled
+        settings.ShowErrorNotifications = true;
+        service.ShowNotification("Error Title", "Error Message", ToastNotificationType.Error);
+
+        Assert.True(triggered);
+        mockTray.Verify(t => t.ShowBalloonTip("Error Title", "Error Message", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Error), Times.Once);
+    }
+
+    [Fact]
+    public void ToastNotificationService_NeverThrows_WhenNotificationHandlerOrTrayFails()
+    {
+        var mockTray = new Mock<ITrayIconService>();
+        mockTray.Setup(t => t.ShowBalloonTip(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<Hardcodet.Wpf.TaskbarNotification.BalloonIcon>()))
+            .Throws(new InvalidOperationException("Simulated Win32 shell failure"));
+
+        var settings = new AppSettings
+        {
+            ToastNotificationsEnabled = true,
+            QuietMode = false
+        };
+
+        var service = new ToastNotificationService(settings, mockTray.Object);
+        service.NotificationTriggered += (s, e) => throw new ApplicationException("Simulated subscriber failure");
+
+        // Action must not throw to caller
+        var act = () => service.ShowNotification("Test", "Message", ToastNotificationType.Information);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
     public void ToastNotificationService_NotifyBatchCompletedWithErrors_FormatsProperly()
     {
         // Arrange
@@ -139,13 +224,17 @@ public class TrayIconAndToastNotificationTests
     {
         // Arrange
         var mockMonitor = new Mock<IFileMonitorService>();
-        var service = new TrayIconService(fileMonitorService: mockMonitor.Object);
+        var stateManager = new ApplicationStateManager();
+        stateManager.TryTransitionTo(ApplicationLifecycleState.MonitoringRunning);
+
+        var service = new TrayIconService(fileMonitorService: mockMonitor.Object, stateManager: stateManager);
 
         // Act: Pause
         await service.PauseMonitoringAsync();
 
         // Assert
         Assert.Equal(TrayIconStatus.Paused, service.CurrentStatus);
+        Assert.Equal(ApplicationLifecycleState.MonitoringPaused, stateManager.CurrentState);
         mockMonitor.Verify(m => m.Pause(), Times.Once);
 
         // Act: Resume
@@ -153,6 +242,7 @@ public class TrayIconAndToastNotificationTests
 
         // Assert
         Assert.Equal(TrayIconStatus.Normal, service.CurrentStatus);
+        Assert.Equal(ApplicationLifecycleState.MonitoringRunning, stateManager.CurrentState);
         mockMonitor.Verify(m => m.ResumeAsync(), Times.Once);
     }
 
@@ -187,5 +277,63 @@ public class TrayIconAndToastNotificationTests
 
         // Assert
         Assert.Equal(TrayIconStatus.Normal, service.CurrentStatus);
+    }
+
+    [Fact]
+    public void TrayIconService_WhenSystemTrayDisabled_SuppressesBalloonTips()
+    {
+        var settings = new AppSettings { SystemTrayEnabled = false };
+        var service = new TrayIconService(settings: settings);
+
+        // Balloon tip must not throw and must be suppressed
+        var act = () => service.ShowBalloonTip("Title", "Message", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+        act.Should().NotThrow();
+    }
+
+    [Fact]
+    public void DI_CompositionRoot_RegistersAppSettingsSingleton()
+    {
+        using var appData = new IsolatedAppData();
+        var provider = ServiceConfiguration.ConfigureServices(appData.Paths);
+
+        var s1 = provider.GetRequiredService<AppSettings>();
+        var s2 = provider.GetRequiredService<AppSettings>();
+        var repo = provider.GetRequiredService<SettingsRepository>();
+
+        s1.Should().NotBeNull();
+        s1.Should().BeSameAs(s2, "AppSettings must be registered as a typed singleton");
+        s1.Should().BeSameAs(repo.CurrentSettings, "SettingsRepository and DI must share the exact same instance");
+
+        var tray = provider.GetRequiredService<ITrayIconService>();
+        var toast = provider.GetRequiredService<IToastNotificationService>();
+        tray.Should().NotBeNull();
+        toast.Should().NotBeNull();
+
+        (provider as IDisposable)?.Dispose();
+    }
+
+    [Fact]
+    public void DI_CompositionRoot_WithPreconfiguredSettings_SuppliesSameInstanceToServices()
+    {
+        using var appData = new IsolatedAppData();
+        var customSettings = new AppSettings
+        {
+            ToastNotificationsEnabled = false,
+            QuietMode = true,
+            SystemTrayEnabled = false,
+            ScanBatchSize = 42
+        };
+
+        var provider = ServiceConfiguration.ConfigureServices(appData.Paths, customSettings);
+
+        var resolved = provider.GetRequiredService<AppSettings>();
+        resolved.Should().BeSameAs(customSettings);
+        resolved.ScanBatchSize.Should().Be(42);
+
+        var toast = provider.GetRequiredService<IToastNotificationService>();
+        toast.AreNotificationsEnabled.Should().BeFalse();
+        toast.IsQuietMode.Should().BeTrue();
+
+        (provider as IDisposable)?.Dispose();
     }
 }

@@ -90,6 +90,38 @@ public class SettingsRepository
     }
 
     /// <summary>
+    /// Synchronously retrieves the shared settings singleton, loading from disk on first access if needed.
+    /// </summary>
+    public AppSettings CurrentSettings
+    {
+        get
+        {
+            if (_shared == null)
+            {
+                var result = LoadWithResultAsync().GetAwaiter().GetResult();
+                _shared = result.Settings;
+            }
+            return _shared;
+        }
+    }
+
+    /// <summary>
+    /// Explicitly sets or updates the shared singleton settings instance.
+    /// </summary>
+    public void SetShared(AppSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        if (_shared == null)
+        {
+            _shared = settings;
+        }
+        else if (!ReferenceEquals(_shared, settings))
+        {
+            _shared.CopyFrom(settings);
+        }
+    }
+
+    /// <summary>
     /// Loads settings from disk with structured corruption detection and backup recovery.
     /// </summary>
     public async Task<SettingsLoadResult> LoadWithResultAsync()

@@ -90,6 +90,7 @@ public partial class App : Application
                 MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
                     "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
                 AppSettings = AppSettings.CreateDefault();
+                _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>().SetShared(AppSettings);
             }
 
             // Apply the saved theme (and follow later changes) before any window is created
@@ -120,21 +121,24 @@ public partial class App : Application
             _trayIconService = _serviceProvider.GetRequiredService<ITrayIconService>();
             _toastService = _serviceProvider.GetRequiredService<IToastNotificationService>();
 
-            try
+            if (AppSettings?.SystemTrayEnabled == true)
             {
-                _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
-                if (_trayIcon != null)
+                try
                 {
-                    _trayIconService.Initialize(_trayIcon);
-                    if (_toastService is ToastNotificationService concreteToast)
+                    _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
+                    if (_trayIcon != null)
                     {
-                        concreteToast.SetTrayIconService(_trayIconService);
+                        _trayIconService.Initialize(_trayIcon);
+                        if (_toastService is ToastNotificationService concreteToast)
+                        {
+                            concreteToast.SetTrayIconService(_trayIconService);
+                        }
                     }
                 }
-            }
-            catch
-            {
-                // Tray icon initialization fallback
+                catch
+                {
+                    // Tray icon initialization fallback
+                }
             }
 
             // Show main window
@@ -199,7 +203,7 @@ public partial class App : Application
     private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
         // Check if we should minimize to tray instead of closing
-        if (AppSettings?.MinimizeToTray == true && !_isExiting)
+        if (AppSettings?.SystemTrayEnabled == true && AppSettings?.MinimizeToTray == true && !_isExiting)
         {
             e.Cancel = true;
             _mainWindow?.Hide();

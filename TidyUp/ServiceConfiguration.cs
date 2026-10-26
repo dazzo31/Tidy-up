@@ -31,7 +31,7 @@ namespace TidyUp;
 /// </summary>
 public static class ServiceConfiguration
 {
-    public static IServiceProvider ConfigureServices(TidyUpPaths? paths = null)
+    public static IServiceProvider ConfigureServices(TidyUpPaths? paths = null, AppSettings? initialSettings = null)
     {
         paths ??= TidyUpPaths.FromEnvironmentOrDefault();
         Directory.CreateDirectory(paths.AppDataRoot);
@@ -57,7 +57,16 @@ public static class ServiceConfiguration
         // Repositories � scoped so they share a DbContext within a logical operation
         services.AddTransient<IRuleRepository, RuleRepository>();
         services.AddTransient<IActionLogRepository, ActionLogRepository>();
-        services.AddSingleton<SettingsRepository>();
+        services.AddSingleton<SettingsRepository>(sp =>
+        {
+            var repo = new SettingsRepository(sp.GetRequiredService<TidyUpPaths>());
+            if (initialSettings != null)
+            {
+                repo.SetShared(initialSettings);
+            }
+            return repo;
+        });
+        services.AddSingleton<AppSettings>(sp => sp.GetRequiredService<SettingsRepository>().CurrentSettings);
 
         // Services � stateless services can be singletons
         services.AddSingleton<ISafeFileSystem, WindowsShellFileOperations>();
@@ -77,8 +86,14 @@ public static class ServiceConfiguration
         services.AddSingleton<IApplicationStateManager, ApplicationStateManager>();
         services.AddSingleton<IExecutionDiscrepancyAnalyzer, ExecutionDiscrepancyAnalyzer>();
         services.AddSingleton<IBatchProcessingCoordinator, BatchProcessingCoordinator>();
-        services.AddSingleton<ITrayIconService, TrayIconService>();
-        services.AddSingleton<IToastNotificationService, ToastNotificationService>();
+        services.AddSingleton<ITrayIconService>(sp => new TrayIconService(
+            sp.GetRequiredService<IFileMonitorService>(),
+            sp.GetRequiredService<IWatcherHealthMonitor>(),
+            sp.GetRequiredService<AppSettings>(),
+            sp.GetRequiredService<IApplicationStateManager>()));
+        services.AddSingleton<IToastNotificationService>(sp => new ToastNotificationService(
+            sp.GetRequiredService<AppSettings>(),
+            sp.GetRequiredService<ITrayIconService>()));
         services.AddSingleton<IMultiRuleConflictAnalyzer, MultiRuleConflictAnalyzer>();
         services.AddTransient<IRuleRevisionManager, RuleRevisionManager>();
         services.AddSingleton<IRuleSerializationService, RuleSerializationService>();
