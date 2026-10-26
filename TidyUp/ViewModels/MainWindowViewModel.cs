@@ -64,6 +64,7 @@ public partial class MainWindowViewModel : ObservableObject
             if (SetProperty(ref _searchText, value))
             {
                 FilterRules();
+                OnPropertyChanged(nameof(CanReorderRules));
             }
         }
     }
@@ -125,11 +126,81 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(FilterDisabledFontWeight));
         OnPropertyChanged(nameof(FilterErrorsFontWeight));
         FilterRules();
+        OnPropertyChanged(nameof(CanReorderRules));
     }
 
     partial void OnSelectedSortOptionChanged(RuleSortOption value)
     {
         FilterRules();
+        OnPropertyChanged(nameof(CanReorderRules));
+    }
+
+    /// <summary>
+    /// Gets whether drag-and-drop reordering is permitted.
+    /// Reordering is disabled when search filtering, non-All status filter, or non-priority sorting is active.
+    /// </summary>
+    public bool CanReorderRules =>
+        string.IsNullOrWhiteSpace(SearchText) &&
+        SelectedFilter == RuleFilterType.All &&
+        (SelectedSortOption == null || SelectedSortOption.Type == RuleSortType.ExecutionPriority);
+
+    /// <summary>
+    /// Reorders rules in memory and commits updated execution orders atomically to SQLite.
+    /// If persistence fails, restores previous in-memory order and surfaces the error.
+    /// </summary>
+    public async Task<bool> ReorderRulesAsync(Rule sourceRule, Rule targetRule)
+    {
+        ArgumentNullException.ThrowIfNull(sourceRule);
+        ArgumentNullException.ThrowIfNull(targetRule);
+
+        if (!CanReorderRules)
+        {
+            StatusMessage = "Reordering is disabled while searching, filtering, or sorting by non-priority criteria.";
+            return false;
+        }
+
+        if (sourceRule == targetRule)
+            return false;
+
+        int oldIndex = Rules.IndexOf(sourceRule);
+        int newIndex = Rules.IndexOf(targetRule);
+
+        if (oldIndex == -1 || newIndex == -1 || oldIndex == newIndex)
+            return false;
+
+        // Snapshot previous orderings for rollback on transaction failure
+        var previousOrderings = Rules.Select(r => (Rule: r, Order: r.ExecutionOrder)).ToList();
+
+        // Apply in-memory reordering
+        Rules.Move(oldIndex, newIndex);
+        for (int i = 0; i < Rules.Count; i++)
+        {
+            Rules[i].ExecutionOrder = i;
+        }
+
+        FilterRules();
+
+        var payload = Rules.Select(r => (r.Id, r.ExecutionOrder)).ToList();
+
+        try
+        {
+            await _ruleRepository.UpdateExecutionOrdersAsync(payload);
+            StatusMessage = "Rule execution order updated successfully";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            // Restore previous in-memory state on persistence failure
+            Rules.Move(newIndex, oldIndex);
+            foreach (var item in previousOrderings)
+            {
+                item.Rule.ExecutionOrder = item.Order;
+            }
+            FilterRules();
+
+            StatusMessage = $"Failed to save rule reordering: {ex.Message}";
+            return false;
+        }
     }
 
     [ObservableProperty]

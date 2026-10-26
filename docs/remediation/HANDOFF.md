@@ -1,21 +1,26 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `ac747af`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `0c4cd62` (pending TASK-REM-09 commit)  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-08` completed)  
-**Active Task & Current State:** `TASK-REM-08` (`DONE`) -> Next: `TASK-REM-09` (Rule list drag-and-drop order persistence)  
+**Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-09` completed)  
+**Active Task & Current State:** `TASK-REM-09` (`DONE`) -> Next: `TASK-REM-10` (Unified schema-aware rule serialization & import gate)  
 **Completed Changes & Files:**
-- `RuleDraft.cs`: Extended with `IsNew` tracking, deep-cloned JSON equality comparison excluding runtime execution statistics (`FilesProcessedCount`, `LastRunDate`).
-- `Rule.cs`: Added `DeepClone()` convenience helper.
-- `RuleWizardViewModel.cs`: Preserved all metadata (`ExecutionOrder`, `StopProcessingAfterMatch`, `TriggerType`, `ScheduledTime`, `CreatedDate`, `LastRunDate`, `FilesProcessedCount`) across `LoadFromRule` and `BuildRule`; added `SaveHandler` and `CancelHandler` integration delegates.
-- `RuleWizardView.xaml.cs`: Subscribed `RequestClose` to close parent dialog windows cleanly.
-- `MainWindowViewModel.cs`: Implemented unified `SaveDraftAsync()` shared by Guided and Shell Save; ensured dirty flags are cleared ONLY upon successful database persistence; retained dirty state on failed save; implemented `RestoreRuleFromBaseline()` to roll back in-memory edits to database snapshot on Discard; implemented `HandleWizardCancel()` to cleanly reset new rule drafts without orphaned state; eliminated false dirty triggers via `_isSynchronizing`.
-- `MainWindowDirtyStateTests.cs`: Added regression tests for saving rule, retaining dirty state on failed save, and snapshot restoration on discard.
-- `RuleWizardModeSynchronizationTests.cs`: Added regression tests proving wizard metadata preservation, wizard cancellation delegation, new-rule cancel cleanup, and nested condition/action discard restoration.
-- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-08` as `DONE` and `TU-08`, `TU-09`, `TU-10`, `TU-11` as `FIXED_VERIFIED`.
+- `IRuleRepository.cs` & `RuleRepository.cs`: Added `UpdateExecutionOrdersAsync(IEnumerable<(Guid RuleId, int Order)> orderings)` executing within an atomic SQLite/EF Core database transaction.
+- `MainWindowViewModel.cs`:
+  - Added `CanReorderRules` property disabling drag-and-drop reordering when text searching (`SearchText`), status filtering (`SelectedFilter != RuleFilterType.All`), or non-priority sorting (`SelectedSortOption.Type != RuleSortType.ExecutionPriority`) is active.
+  - Added `ReorderRulesAsync(Rule sourceRule, Rule targetRule)` updating in-memory orders, committing atomic batch reordering to SQLite via `IRuleRepository`, restoring previous order on transaction failure, and surfacing user-facing status messages.
+- `MainWindow.xaml.cs`:
+  - Wired `RuleListBox_PreviewMouseMove`, `RuleListBox_Drop`, and `RuleListBox_DragOver` to respect `ViewModel.CanReorderRules`.
+  - Replaced unpersisted in-memory index shifting in `RuleListBox_Drop` with `await ViewModel.ReorderRulesAsync(sourceRule, targetRule)`.
+- `MainWindowRulesListTests.cs`:
+  - Added unit test `CanReorderRules_Gating_ReflectsFilterSearchAndSortingState` testing filter, search, and sort gating.
+  - Added unit test `ReorderRulesAsync_WhenCanReorderRulesIsFalse_AbortsAndSurfacesMessage`.
+  - Added integration test `ReorderRulesAsync_WhenValid_PersistsOrdersAtomicallyToRepository` verifying atomic database persistence against real SQLite.
+  - Added unit test `ReorderRulesAsync_WhenTransactionFails_RestoresPreviousOrderAndSurfacesError` verifying in-memory rollback and error surfacing on transaction exception.
+- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-09` as `DONE` and `TU-30` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 633 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 637 passed, 0 failed, 0 skipped (3.0s).
 - Zero warnings, zero regressions across entire suite.
 
 **Evidence Paths & Tested SHA:**
@@ -32,5 +37,5 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Stage and commit `TASK-REM-08`.
-- Lock `TASK-REM-09` in Phase 1 (Rule list drag-and-drop order persistence).
+- Stage and commit `TASK-REM-09`.
+- Lock `TASK-REM-10` in Phase 1 (Unified schema-aware rule serialization & import gate).

@@ -132,6 +132,36 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         return entities.Select(EntityToModel).ToList();
     }
 
+    public async Task UpdateExecutionOrdersAsync(IEnumerable<(Guid RuleId, int Order)> orderings)
+    {
+        ArgumentNullException.ThrowIfNull(orderings);
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var now = DateTime.UtcNow;
+            foreach (var (ruleId, order) in orderings)
+            {
+                var entity = await context.Rules.FindAsync(ruleId);
+                if (entity != null)
+                {
+                    entity.ExecutionOrder = order;
+                    entity.ModifiedDate = now;
+                }
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            NotifyRulesChanged(null, "Reordered");
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     private void CanonicalizeFolders(Rule rule)
     {
         if (rule.MonitoredFolders == null) return;

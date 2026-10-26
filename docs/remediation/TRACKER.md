@@ -31,7 +31,7 @@
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-08` | Deep-cloned rule draft engine & shared save/discard | **DONE** | Phase 0 Gate | `ac747af` | RuleDraft unified save/discard/cancel, metadata lossless, 633 tests pass | Proceed to `TASK-REM-09` |
-| `TASK-REM-09` | Rule list drag-and-drop order persistence | NOT_STARTED | `TASK-REM-08` | — | Target: TU-30 | Atomic priority reorder |
+| `TASK-REM-09` | Rule list drag-and-drop order persistence | **DONE** | `TASK-REM-08` | — | Atomic priority reorder in SQLite, UI drag gating, rollback on failure, 637 tests pass | Proceed to `TASK-REM-10` |
 | `TASK-REM-10` | Unified schema-aware rule serialization & import gate | NOT_STARTED | `TASK-REM-09` | — | Target: TU-29 | Schema validation & disabled import |
 | `TASK-REM-11` | Variable engine normalization & filename sanitization | NOT_STARTED | `TASK-REM-10` | — | Targets: TU-39, TU-40 | Sanitize time colons & check tokens |
 | `TASK-REM-34` | Atomic settings persistence & corrupt profile recovery | NOT_STARTED | `TASK-REM-11` | — | Target: TU-42 | Atomic replace & corrupt backup |

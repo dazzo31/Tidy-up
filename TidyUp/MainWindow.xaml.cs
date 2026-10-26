@@ -172,6 +172,12 @@ public partial class MainWindow : Window
 
     private void RuleListBox_PreviewMouseMove(object sender, MouseEventArgs e)
     {
+        if (!ViewModel.CanReorderRules)
+        {
+            _draggedRule = null;
+            return;
+        }
+
         if (e.LeftButton == MouseButtonState.Pressed && _draggedRule != null)
         {
             Point mousePos = e.GetPosition(null);
@@ -190,8 +196,15 @@ public partial class MainWindow : Window
         }
     }
 
-    private void RuleListBox_Drop(object sender, DragEventArgs e)
+    private async void RuleListBox_Drop(object sender, DragEventArgs e)
     {
+        if (!ViewModel.CanReorderRules)
+        {
+            _draggedRule = null;
+            e.Effects = DragDropEffects.None;
+            return;
+        }
+
         if (e.Data.GetDataPresent("Rule"))
         {
             var sourceRule = e.Data.GetData("Rule") as Rule;
@@ -204,20 +217,7 @@ public partial class MainWindow : Window
             {
                 if (sourceRule != targetRule)
                 {
-                    int oldIndex = ViewModel.Rules.IndexOf(sourceRule);
-                    int newIndex = ViewModel.Rules.IndexOf(targetRule);
-
-                    if (oldIndex != -1 && newIndex != -1)
-                    {
-                        ViewModel.Rules.Move(oldIndex, newIndex);
-                        
-                        for (int i = 0; i < ViewModel.Rules.Count; i++)
-                        {
-                            ViewModel.Rules[i].ExecutionOrder = i;
-                        }
-
-                        ViewModel.SearchText = ViewModel.SearchText;
-                    }
+                    await ViewModel.ReorderRulesAsync(sourceRule, targetRule);
                 }
             }
         }
@@ -226,7 +226,7 @@ public partial class MainWindow : Window
 
     private void RuleListBox_DragOver(object sender, DragEventArgs e)
     {
-        if (e.Data.GetDataPresent("Rule"))
+        if (ViewModel.CanReorderRules && e.Data.GetDataPresent("Rule"))
         {
             e.Effects = DragDropEffects.Move;
         }

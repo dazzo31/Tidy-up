@@ -1,4 +1,5 @@
 using FluentAssertions;
+using TidyUp.Data.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
@@ -210,5 +211,139 @@ public class MainWindowRulesListTests : IDisposable
 
         _viewModel.IsRuleDirty.Should().BeTrue();
         rule.IsDirty.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanReorderRules_Gating_ReflectsFilterSearchAndSortingState()
+    {
+        _viewModel.SearchText = string.Empty;
+        _viewModel.SetFilter(RuleFilterType.All);
+        _viewModel.SelectedSortOption = MainWindowViewModel.AvailableSortOptions.First(s => s.Type == RuleSortType.ExecutionPriority);
+        _viewModel.CanReorderRules.Should().BeTrue();
+
+        // Search text active
+        _viewModel.SearchText = "query";
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SearchText = string.Empty;
+        _viewModel.CanReorderRules.Should().BeTrue();
+
+        // Non-All filter active
+        _viewModel.SetFilter(RuleFilterType.EnabledOnly);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SetFilter(RuleFilterType.DisabledOnly);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SetFilter(RuleFilterType.HasErrors);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SetFilter(RuleFilterType.All);
+        _viewModel.CanReorderRules.Should().BeTrue();
+
+        // Non-priority sort active
+        _viewModel.SelectedSortOption = MainWindowViewModel.AvailableSortOptions.First(s => s.Type == RuleSortType.Name);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SelectedSortOption = MainWindowViewModel.AvailableSortOptions.First(s => s.Type == RuleSortType.LastRun);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SelectedSortOption = MainWindowViewModel.AvailableSortOptions.First(s => s.Type == RuleSortType.ModificationDate);
+        _viewModel.CanReorderRules.Should().BeFalse();
+        _viewModel.SelectedSortOption = MainWindowViewModel.AvailableSortOptions.First(s => s.Type == RuleSortType.ExecutionPriority);
+        _viewModel.CanReorderRules.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task ReorderRulesAsync_WhenCanReorderRulesIsFalse_AbortsAndSurfacesMessage()
+    {
+        var r1 = new Rule { Name = "R1", ExecutionOrder = 0 };
+        var r2 = new Rule { Name = "R2", ExecutionOrder = 1 };
+        _viewModel.Rules.Clear();
+        _viewModel.Rules.Add(r1);
+        _viewModel.Rules.Add(r2);
+
+        _viewModel.SearchText = "R1"; // disables reordering
+
+        var result = await _viewModel.ReorderRulesAsync(r1, r2);
+
+        result.Should().BeFalse();
+        _viewModel.StatusMessage.Should().Contain("Reordering is disabled");
+        _viewModel.Rules[0].Should().Be(r1);
+        _viewModel.Rules[1].Should().Be(r2);
+    }
+
+    [Fact]
+    public async Task ReorderRulesAsync_WhenValid_PersistsOrdersAtomicallyToRepository()
+    {
+        var repo = _serviceProvider.GetRequiredService<IRuleRepository>();
+
+        var r1 = new Rule
+        {
+            Name = "Rule A",
+            ExecutionOrder = 0,
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\MonitoredA" } },
+            Actions = { new MoveFileAction { DestinationPath = @"C:\DestA" } }
+        };
+        var r2 = new Rule
+        {
+            Name = "Rule B",
+            ExecutionOrder = 1,
+            MonitoredFolders = { new MonitoredFolder { Path = @"C:\MonitoredB" } },
+            Actions = { new MoveFileAction { DestinationPath = @"C:\DestB" } }
+        };
+
+        await repo.AddAsync(r1);
+        await repo.AddAsync(r2);
+
+        _viewModel.Rules.Clear();
+        _viewModel.Rules.Add(r1);
+        _viewModel.Rules.Add(r2);
+
+        // Move Rule A down to position of Rule B
+        var result = await _viewModel.ReorderRulesAsync(r1, r2);
+
+        result.Should().BeTrue();
+        _viewModel.StatusMessage.Should().Be("Rule execution order updated successfully");
+
+        // In-memory collection should reflect new order and execution priorities
+        _viewModel.Rules[0].Id.Should().Be(r2.Id);
+        _viewModel.Rules[0].ExecutionOrder.Should().Be(0);
+        _viewModel.Rules[1].Id.Should().Be(r1.Id);
+        _viewModel.Rules[1].ExecutionOrder.Should().Be(1);
+
+        // Database should be updated atomically
+        var persistedRules = await repo.GetAllAsync();
+        var persistedR2 = persistedRules.First(r => r.Id == r2.Id);
+        var persistedR1 = persistedRules.First(r => r.Id == r1.Id);
+
+        persistedR2.ExecutionOrder.Should().Be(0);
+        persistedR1.ExecutionOrder.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task ReorderRulesAsync_WhenTransactionFails_RestoresPreviousOrderAndSurfacesError()
+    {
+        var mockRepo = new Moq.Mock<IRuleRepository>();
+        mockRepo.Setup(r => r.UpdateExecutionOrdersAsync(Moq.It.IsAny<IEnumerable<(Guid RuleId, int Order)>>()))
+            .Throws(new InvalidOperationException("Simulated SQLite write error"));
+
+        var mockImportExport = new Moq.Mock<TidyUp.Services.IImportExportService>();
+
+        var vm = new MainWindowViewModel(
+            mockRepo.Object,
+            mockImportExport.Object,
+            _serviceProvider);
+
+        var r1 = new Rule { Name = "First Rule", ExecutionOrder = 0 };
+        var r2 = new Rule { Name = "Second Rule", ExecutionOrder = 1 };
+        vm.Rules.Add(r1);
+        vm.Rules.Add(r2);
+
+        var result = await vm.ReorderRulesAsync(r1, r2);
+
+        result.Should().BeFalse();
+        vm.StatusMessage.Should().Be("Failed to save rule reordering: Simulated SQLite write error");
+
+        // Verification of rollback to original positions and orders
+        vm.Rules.Should().HaveCount(2);
+        vm.Rules[0].Should().Be(r1);
+        vm.Rules[0].ExecutionOrder.Should().Be(0);
+        vm.Rules[1].Should().Be(r2);
+        vm.Rules[1].ExecutionOrder.Should().Be(1);
     }
 }
