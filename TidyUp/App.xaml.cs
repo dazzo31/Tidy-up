@@ -39,6 +39,35 @@ public partial class App : Application
             _serviceProvider = ServiceConfiguration.ConfigureServices();
             ServiceProvider = _serviceProvider;
 
+            // Load settings first so AppSettings singleton is initialized before any service consumes it
+            try
+            {
+                AppSettings = await ServiceConfiguration.LoadSettingsAsync(_serviceProvider);
+                var settingsRepo = _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>();
+                if (settingsRepo.LastLoadResult?.IsCorrupt == true)
+                {
+                    if (settingsRepo.LastLoadResult.RecoveredFromBackup)
+                    {
+                        MessageBox.Show(
+                            $"TidyUp's settings file was corrupted and has been restored from backup:\n{settingsRepo.LastLoadResult.BackupPathUsed}\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
+                            "Settings Restored From Backup", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            $"TidyUp's settings file was corrupted and could not be restored from backup. Default settings have been loaded.\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
+                            "Settings Corrupted", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
+                    "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+                AppSettings = AppSettings.CreateDefault();
+                _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>().SetShared(AppSettings);
+            }
+
             // Ensure database is created and up to date
             try
             {
@@ -68,35 +97,6 @@ public partial class App : Application
                     "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
-            }
-
-            // Load settings
-            try
-            {
-                AppSettings = await ServiceConfiguration.LoadSettingsAsync(_serviceProvider);
-                var settingsRepo = _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>();
-                if (settingsRepo.LastLoadResult?.IsCorrupt == true)
-                {
-                    if (settingsRepo.LastLoadResult.RecoveredFromBackup)
-                    {
-                        MessageBox.Show(
-                            $"TidyUp's settings file was corrupted and has been restored from backup:\n{settingsRepo.LastLoadResult.BackupPathUsed}\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
-                            "Settings Restored From Backup", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                    else
-                    {
-                        MessageBox.Show(
-                            $"TidyUp's settings file was corrupted and could not be restored from backup. Default settings have been loaded.\n\nA copy of the corrupted file was preserved at:\n{settingsRepo.LastLoadResult.CorruptBackupPath}",
-                            "Settings Corrupted", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Failed to load settings: {ex.Message}\nUsing defaults.",
-                    "Settings Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-                AppSettings = AppSettings.CreateDefault();
-                _serviceProvider.GetRequiredService<TidyUp.Data.SettingsRepository>().SetShared(AppSettings);
             }
 
             // Auto cleanup logs on startup if enabled (TASK-REM-35)

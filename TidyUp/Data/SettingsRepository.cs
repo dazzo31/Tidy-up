@@ -98,7 +98,7 @@ public class SettingsRepository
         {
             if (_shared == null)
             {
-                var result = LoadWithResultAsync().GetAwaiter().GetResult();
+                var result = LoadWithResult();
                 _shared = result.Settings;
             }
             return _shared;
@@ -124,7 +124,7 @@ public class SettingsRepository
     /// <summary>
     /// Loads settings from disk with structured corruption detection and backup recovery.
     /// </summary>
-    public async Task<SettingsLoadResult> LoadWithResultAsync()
+    public SettingsLoadResult LoadWithResult()
     {
         if (!File.Exists(SettingsFilePath))
         {
@@ -141,7 +141,7 @@ public class SettingsRepository
         string json;
         try
         {
-            json = await File.ReadAllTextAsync(SettingsFilePath);
+            json = File.ReadAllText(SettingsFilePath);
             if (string.IsNullOrWhiteSpace(json))
             {
                 throw new JsonException("Settings file is empty or whitespace.");
@@ -187,7 +187,112 @@ public class SettingsRepository
             {
                 try
                 {
-                    var backupJson = await File.ReadAllTextAsync(SettingsBackupPath);
+                    var backupJson = File.ReadAllText(SettingsBackupPath);
+                    var backupSettings = JsonSerializer.Deserialize<AppSettings>(backupJson, JsonOptions);
+                    if (backupSettings != null)
+                    {
+                        var resolvedBackup = WithResolvedDefaults(backupSettings);
+
+                        // Restore backup to main settings file
+                        File.Copy(SettingsBackupPath, SettingsFilePath, overwrite: true);
+
+                        var recoveryResult = new SettingsLoadResult
+                        {
+                            Settings = resolvedBackup,
+                            IsCorrupt = true,
+                            RecoveredFromBackup = true,
+                            CorruptBackupPath = corruptBackupPath,
+                            BackupPathUsed = SettingsBackupPath,
+                            ErrorMessage = ex.Message
+                        };
+                        LastLoadResult = recoveryResult;
+                        return recoveryResult;
+                    }
+                }
+                catch (Exception backupEx)
+                {
+                    Console.WriteLine($"Backup settings file was also invalid: {backupEx.Message}");
+                }
+            }
+
+            // Could not recover from backup: return defaults with corruption flag
+            var fallbackResult = new SettingsLoadResult
+            {
+                Settings = WithResolvedDefaults(AppSettings.CreateDefault()),
+                IsCorrupt = true,
+                RecoveredFromBackup = false,
+                CorruptBackupPath = corruptBackupPath,
+                ErrorMessage = ex.Message
+            };
+            LastLoadResult = fallbackResult;
+            return fallbackResult;
+        }
+    }
+
+    public async Task<SettingsLoadResult> LoadWithResultAsync()
+    {
+        if (!File.Exists(SettingsFilePath))
+        {
+            var cleanResult = new SettingsLoadResult
+            {
+                Settings = WithResolvedDefaults(AppSettings.CreateDefault()),
+                IsCorrupt = false,
+                RecoveredFromBackup = false
+            };
+            LastLoadResult = cleanResult;
+            return cleanResult;
+        }
+
+        string json;
+        try
+        {
+            json = await File.ReadAllTextAsync(SettingsFilePath).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                throw new JsonException("Settings file is empty or whitespace.");
+            }
+
+            var settings = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
+            if (settings == null)
+            {
+                throw new JsonException("Deserialized settings object is null.");
+            }
+
+            var resolved = WithResolvedDefaults(settings);
+
+            // Ensure known-good backup exists
+            EnsureKnownGoodBackup();
+
+            var successResult = new SettingsLoadResult
+            {
+                Settings = resolved,
+                IsCorrupt = false,
+                RecoveredFromBackup = false
+            };
+            LastLoadResult = successResult;
+            return successResult;
+        }
+        catch (Exception ex)
+        {
+            // Profile is corrupt or invalid JSON! Preserve corrupt bytes with timestamped backup
+            var corruptTimestamp = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss");
+            var corruptBackupPath = $"{SettingsFilePath}.corrupt.{corruptTimestamp}";
+
+            try
+            {
+                File.Copy(SettingsFilePath, corruptBackupPath, overwrite: true);
+            }
+            catch (Exception copyEx)
+            {
+                Console.WriteLine($"Failed to preserve corrupt settings file: {copyEx.Message}");
+            }
+
+            // Attempt recovery from known-good backup
+            if (File.Exists(SettingsBackupPath))
+            {
+                try
+                {
+                    var backupJson = await File.ReadAllTextAsync(SettingsBackupPath).ConfigureAwait(false);
                     var backupSettings = JsonSerializer.Deserialize<AppSettings>(backupJson, JsonOptions);
                     if (backupSettings != null)
                     {
