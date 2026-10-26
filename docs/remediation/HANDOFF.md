@@ -5,6 +5,10 @@
 **Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-03` Complete)  
 **Active Task & Current State:** `TASK-REM-03` (`DONE`) -> Next: `TASK-REM-04` (Overwrite & Prompt Safe Staging & Displaced Backup)  
 **Completed Changes & Files:**
+- TASK-REM-04 (SHA: 10f995e):
+  - ActionExecutor.cs: Overwrite conflict strategy stages displaced backups of existing destination files before mutation across ExecuteMoveAsync, ExecuteCopyAsync, ExecuteRenameAsync, and ExecuteChangeExtensionAsync. If mutation throws, displaced backup is restored automatically to prevent data loss. ConflictResolution.Prompt returns ActionResultType.Warning with fail-closed message in automated batch runs instead of silently overwriting.
+  - ActionExecutorTests.cs: Unit tests verify safe displaced backup creation and restore on mutation failure, as well as Prompt conflict strategy fail-closed behavior. 717 tests passing.
+
 - `TASK-REM-03` (SHA: `9abbccd`):
   - `ExecutionAuthorizationContext.cs`: Added execution authorization context validating plan, action ID, permanent delete paths, and overwrite paths.
   - `PlannedFileAction.cs`: Added `IsAuthorizedForPermanentDeletion` and `AuthorizationContext`.
