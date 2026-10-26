@@ -32,7 +32,7 @@
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-08` | Deep-cloned rule draft engine & shared save/discard | **DONE** | Phase 0 Gate | `ac747af` | RuleDraft unified save/discard/cancel, metadata lossless, 633 tests pass | Proceed to `TASK-REM-09` |
 | `TASK-REM-09` | Rule list drag-and-drop order persistence | **DONE** | `TASK-REM-08` | `ae9ffd4` | Atomic priority reorder in SQLite, UI drag gating, rollback on failure, 637 tests pass | Proceed to `TASK-REM-10` |
-| `TASK-REM-10` | Unified schema-aware rule serialization & import gate | **DONE** | `TASK-REM-09` | — | Consolidated on RuleSerializationService, disabled-on-import invariant, atomic batch commit, 647 tests pass | Proceed to `TASK-REM-11` |
+| `TASK-REM-10` | Unified schema-aware rule serialization & import gate | **DONE** | `TASK-REM-09` | `55d01b2` | Consolidated on RuleSerializationService, disabled-on-import invariant, atomic batch commit, 647 tests pass | Proceed to `TASK-REM-11` |
 | `TASK-REM-11` | Variable engine normalization & filename sanitization | NOT_STARTED | `TASK-REM-10` | — | Targets: TU-39, TU-40 | Sanitize time colons & check tokens |
 | `TASK-REM-34` | Atomic settings persistence & corrupt profile recovery | NOT_STARTED | `TASK-REM-11` | — | Target: TU-42 | Atomic replace & corrupt backup |
 | `TASK-REM-28` | Typed AppSettings DI registration & service config | NOT_STARTED | `TASK-REM-34` | — | Target: TU-28 | DI singleton & quiet hours |
