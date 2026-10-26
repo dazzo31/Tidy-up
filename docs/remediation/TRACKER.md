@@ -83,7 +83,7 @@
 | `TASK-REM-32` | History pagination command notification & eligibility | DONE | `TASK-REM-31` | `bad0f7b` | TU-36: NotifyCanExecuteChanged called on NextPageCommand and PreviousPageCommand across CurrentPage, PageSize, TotalRecords and LoadPageAsync; 762 tests pass | Proceed to `TASK-REM-33` |
 | `TASK-REM-33` | Context-sensitive filtered history export | DONE | `TASK-REM-32` | `74bd9b9` | TU-37: ExportToCsvAsync and ExportToJsonAsync support filteredOnly: true/false using BuildFilteredQuery across all pages; formula injection mitigation in EscapeCsv; 765 tests pass | Proceed to `TASK-REM-06` |
 | `TASK-REM-06` | Genuine database maintenance & vacuum | DONE | `TASK-REM-33` | `0608e7b` | TU-27: IDbIntegrityChecker.VacuumDatabaseAsync executes PRAGMA wal_checkpoint(TRUNCATE) and VACUUM, reports exact bytes reclaimed and duration, 767 tests pass | Proceed to `TASK-REM-35` |
-| `TASK-REM-35` | Settings surface audit & inert control containment | NOT_STARTED | `TASK-REM-06` | — | Target: TU-26 | Wire settings or mark unavailable |
+| `TASK-REM-35` | Settings surface audit & inert control containment | DONE | `TASK-REM-06` | `dbc0650` | TU-26: MaxConcurrentOperations locked to 1 (serial ADR-01); NetworkFolderPollingIntervalSeconds contained with [Integration Pending]; DatabaseBackupPath made editable with Browse; FileLock/Debounce/ScanBatchSize/RecycleBin/DestructiveConfirmations wired to runtime; 770 tests pass | Proceed to `TASK-REM-36` |
 | `TASK-REM-36` | Component vs feature honest matrix & unwired stubs | NOT_STARTED | `TASK-REM-35` | — | Target: TU-33 | Disclose network & scheduling bounds |
 
 ### Phase 7: Visual & Integrated Acceptance

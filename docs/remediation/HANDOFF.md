@@ -1,10 +1,21 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 0608e7b  
+**Repository / Branch / Current SHA:** TidyUp on main @ dbc0650  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-06 Complete)  
-**Active Task & Current State:** TASK-REM-06 (DONE) -> Next: TASK-REM-35 (Settings surface audit & inert control containment)  
+**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-35 Complete)  
+**Active Task & Current State:** TASK-REM-35 (DONE) -> Next: TASK-REM-36 (Component vs feature honest matrix & unwired stubs)  
 **Completed Changes & Files:**
+- TASK-REM-35 (SHA: dbc0650):
+  - AppSettings.cs & SettingsView.xaml: Locked `MaxConcurrentOperations` to 1 (enforced serial per ADR-01) with disabled controls and honest explanatory text. Contained `NetworkFolderPollingIntervalSeconds` with `[Integration Pending]` badge and disabled state. Made `DatabaseBackupPath` editable with directory path hint and "Browse..." button.
+  - FileMonitorService.cs: Injected `AppSettings` and wired `DebounceDelayMs` into watcher debounce timer.
+  - ActionExecutor.cs: Injected `AppSettings` and wired `FileLockRetryCount` and `FileLockRetryDelayMs` into `WaitForFileReadyAsync`.
+  - ExecutionPlanGenerator.cs: Injected `AppSettings` and wired `ScanBatchSize`.
+  - ActionEditorViewModel.cs: Injected `AppSettings` and wired `DefaultConflictResolution` and `UseRecycleBinByDefault` into action creation (`AddMoveAction`, `AddCopyAction`, `AddDeleteAction`).
+  - RuleWizardViewModel.cs & PreviewViewModel.cs: Injected `AppSettings` into Rule Wizard and wired `RequireDestructiveConfirmations` into `PreviewViewModel.ApplyChangesAsync` to gate Safeguard modal evaluation.
+  - DatabaseBackupManager.cs: Injected `AppSettings` and honors custom `DatabaseBackupPath` for database snapshots.
+  - SettingsViewModel.cs: Added `DefaultBackupsDirectory` and `BrowseBackupDirectoryCommand` with `OpenFolderDialog`.
+  - App.xaml.cs: Wires background log cleanup on startup when `AutoCleanupLogs` is true using `LogRetentionDays`.
+  - SettingsCategorizedExperienceTests.cs: Unit tests verify `BrowseBackupDirectoryCommand`, `ActionEditorViewModel` defaults from `AppSettings`, and `DatabaseBackupManager` custom backup path. 770 tests passing.
 - TASK-REM-06 (SHA: 0608e7b):
   - IDbIntegrityChecker.cs & DbIntegrityChecker.cs: Implemented `VacuumDatabaseAsync(string dbPath)` returning `DatabaseMaintenanceResult`. Executes `PRAGMA wal_checkpoint(TRUNCATE);` followed by `VACUUM;` to checkpoint all dirty pages into the main database and truncate the WAL file before vacuuming. Measures pre/post file and WAL/SHM sizes and execution duration.
   - SettingsViewModel.cs: Injected `IDbIntegrityChecker` and `TidyUpPaths`. Replaced dummy `Task.Delay(300)` simulation in `VacuumDatabaseAsync` with real SQLite vacuum call. Reports exact reclaimed bytes/KB and elapsed duration, or honestly displays "Database already compact (0 bytes reclaimed)".
