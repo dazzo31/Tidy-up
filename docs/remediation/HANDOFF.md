@@ -1,37 +1,33 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ 5ae68ac  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `10c3e56`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 1 Gate Passed; Phase 2 in progress (`TASK-REM-14` completed)  
-**Active Task & Current State:** `TASK-REM-14` (`DONE`) -> Next: `TASK-REM-15` (In-memory target reservation & conflict resolution simulation)  
+**Last Verified Phase Gate:** Phase 1 Gate Passed; Phase 2 in progress (`TASK-REM-15` completed)  
+**Active Task & Current State:** `TASK-REM-15` (`DONE`) -> Next: `TASK-REM-16` (Preservation of Subfolder Directory Hierarchy)  
 **Completed Changes & Files:**
 - `PlannedFileAction.cs`:
-  - Added `InitialSourcePath` capturing the original physical file on disk before any preceding chained mutations.
-  - Added `DependsOnActionId` explicitly recording predecessor action dependencies in a multi-action chain.
-- `ExecutionPlanGenerator.cs`:
-  - Implemented type-aware virtual path continuation semantics across chained actions:
-    - `Move`: Next virtual path advances to destination target.
-    - `Copy`: Respects `ApplyToSourceFile` — if false, subsequent actions target the destination copy; if true, retains the original source path.
-    - `Rename` & `ChangeExtension`: Next virtual path advances to directory + renamed filename.
-    - `Delete`: Terminates file continuation (subsequent actions have no virtual file to act on).
-    - `ExtractArchive`: Retains archive source path instead of treating the extraction directory as a file path.
-    - `RunCommand`: Retains source file path instead of treating command string as a file path.
+  - Added `IsSkipped` indicating that an action is intentionally bypassed by policy rather than failing with an unresolved conflict.
+  - Added `ResolutionNote` capturing policy-driven resolutions (e.g. auto-renamed target path, policy-skipped, authorized overwrite).
 - `PreviewViewModel.cs`:
-  - Enhanced `PerformPreFlightCheck` to validate `InitialSourcePath` on disk for dependent actions (`DependsOnActionId != null`) instead of demanding intermediate virtual paths to exist on disk.
-  - Enforced dependency closure: validates that all predecessor actions in a dependency chain are included in the approved batch before allowing execution.
+  - Added `IsSkipped` and `ResolutionNote` properties to `PlannedActionItemViewModel`.
+  - Defaulted `IsApproved = false` for skipped actions so they are not scheduled for disk mutation by default.
+- `ExecutionPlanGenerator.cs`:
+  - Added `targetReservations` dictionary (`Dictionary<string, Guid>`) tracking reserved target destinations across actions within a plan and folder scan.
+  - Implemented `CheckAndResolveConflict`:
+    - `ConflictResolution.RenameNew`: Generates unique projected target paths (`file (1).ext`), reserves them in the ledger, clears `HasConflict = false`, and records `ResolutionNote`.
+    - `ConflictResolution.Skip`: Marks `IsSkipped = true`, clears `HasConflict = false`, and notes policy skip.
+    - `ConflictResolution.Overwrite`: For existing disk files, clears `HasConflict = false` with authorization note. For independent batch collisions targeting the same file, flags `HasConflict = true` ("Batch conflict: multiple actions in batch target identical destination").
+    - `ConflictResolution.Prompt` / unresolvable: Sets `HasConflict = true`.
 - `ExecutionPlanGeneratorTests.cs`:
-  - Added unit tests for:
-    - `Rename -> Move` multi-action chain dependency tracking and pre-flight check success.
-    - `Copy` with `ApplyToSourceFile == true` vs `false` source path continuation.
-    - Dependency closure failure when predecessor action is unapproved/deselected.
-- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-14` as `DONE` and `TU-13`, `TU-14` as `FIXED_VERIFIED`.
+  - Added tests for `RenameNew` counter target projection, `Skip` policy resolution without conflict, and `Overwrite` batch collision detection.
+- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-15` as `DONE` and `TU-16` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 683 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 686 passed, 0 failed, 0 skipped (3.0s).
 - Zero compilation errors across solution.
 
 **Evidence Paths & Tested SHA:**
-- SHA: working tree
+- SHA: `10c3e56`
 - Tracking: `docs/remediation/TRACKER.md`
 - Finding Matrix: `docs/remediation/FINDING_MATRIX.md`
 
@@ -44,5 +40,5 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Stage and commit `TASK-REM-14`.
-- Lock `TASK-REM-15` in Phase 2 (In-memory target reservation & conflict resolution simulation).
+- Commit doc updates.
+- Lock `TASK-REM-16` in Phase 2 (Preservation of Subfolder Directory Hierarchy — `TU-31`).
