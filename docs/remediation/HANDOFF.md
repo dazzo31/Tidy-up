@@ -1,10 +1,17 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `a38ec5b`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `2ec3b27`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 2 Gate Passed; Phase 3 In Progress (`TASK-REM-22` Complete)  
-**Active Task & Current State:** `TASK-REM-22` (`DONE`) -> Next: `TASK-REM-19` (Immutable Planned Parameter Execution & {counter} Fix)  
+**Last Verified Phase Gate:** Phase 2 Gate Passed; Phase 3 In Progress (`TASK-REM-22`, `TASK-REM-19` Complete)  
+**Active Task & Current State:** `TASK-REM-19` (`DONE`) -> Next: `TASK-REM-20` (Atomic Batch Lifetime Lease & State Machine Guarding)  
 **Completed Changes & Files:**
+- `TASK-REM-19` (SHA: `2ec3b27`):
+  - `PlannedFileAction.cs`: Added `TargetFileName` and `PlannedCounter` properties to store pre-resolved immutable parameters.
+  - `ExecutionPlanGenerator.cs`: Populated `PlannedCounter` and `TargetFileName` during simulation.
+  - `ActionExecutor.cs`: Updated `ExecutePlannedActionAsync` to execute immutable pre-resolved target paths and frozen counters across Move, Copy, Rename, and ChangeExtension actions.
+  - `BatchProcessingCoordinator.cs`: Delegated batch item execution directly to `_actionExecutor.ExecutePlannedActionAsync(currentAction, batchId)` with fallback.
+  - `BatchProcessingCoordinatorTests.cs`: Unit tests prove that partial batch selection (e.g. executing file #5 out of 5) preserves the exact frozen sequence number and target path approved in preview without counter drift. 709 tests passing.
+
 - `TASK-REM-22` (SHA: `a38ec5b`):
   - `OperationJournalEntry.cs` & `PlannedFileAction.cs` & `FileAction.cs`: Rule metadata properties (`RuleId`, `RuleName`, `RuleRevisionId`) propagated from plan generator through file actions to durable journal entries.
   - `ActionExecutor.cs`: Journal entries recorded on both success (`Completed`) and failure (`Failed`) with pre-action and post-action checksums and error messages.

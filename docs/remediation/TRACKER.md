@@ -52,7 +52,7 @@
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-22` | Two-phase durable journaling & rule metadata tracking | DONE | Phase 2 Gate | `a38ec5b` | TU-21: durable journal success/failure, RuleId/RuleName/RuleRevisionId, displaced backup path in details, 706 tests passing | Proceed to `TASK-REM-19` |
-| `TASK-REM-19` | Immutable planned parameter execution & {counter} fix | NOT_STARTED | `TASK-REM-22` | — | Target: TU-15 | Execute frozen plan paths, no drift |
+| `TASK-REM-19` | Immutable planned parameter execution & {counter} fix | DONE | `TASK-REM-22` | `2ec3b27` | TU-15: immutable planned parameters, frozen counter & target path preservation on partial selection, 709 tests passing | Proceed to `TASK-REM-20` |
 | `TASK-REM-20` | Atomic batch lifetime lease & state machine guarding | NOT_STARTED | `TASK-REM-19` | — | Target: TU-44 | ExecutingBatch lease held across batch |
 
 ### Phase 4: Safety, Recovery & Outcomes
