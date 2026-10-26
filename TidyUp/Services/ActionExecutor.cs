@@ -90,7 +90,7 @@ public class ActionExecutor(
             RenameFileAction rename => await ExecuteRenameAsync(rename, fileInfo, counter),
             ChangeExtensionAction changeExt => await ExecuteChangeExtensionAsync(changeExt, fileInfo),
             DeleteFileAction delete => await ExecuteDeleteAsync(delete, fileInfo, isAuthorizedForPermanentDeletion: !delete.ConfirmBeforeDelete),
-            ExtractArchiveAction extract => await ExecuteExtractArchiveAsync(extract, fileInfo, counter),
+            ExtractArchiveAction extract => await ExecuteExtractArchiveAsync(extract, fileInfo, counter, isAuthorizedForPermanentDeletion: !extract.ConfirmBeforeDelete),
             RunCommandAction runCmd => await ExecuteRunCommandAsync(runCmd, fileInfo, counter),
             _ => new ActionResult { Success = false, ErrorMessage = "Unknown action type", Type = ActionResultType.Error }
         };
@@ -222,6 +222,13 @@ public class ActionExecutor(
             DeleteFileAction delete => await ExecuteDeleteAsync(
                 delete,
                 fileInfo,
+                isAuthorizedForPermanentDeletion: plannedAction.AuthorizationContext != null
+                    ? plannedAction.AuthorizationContext.IsPermanentDeleteAuthorized(plannedAction.SourcePath)
+                    : plannedAction.IsAuthorizedForPermanentDeletion),
+            ExtractArchiveAction extract => await ExecuteExtractArchiveAsync(
+                extract,
+                fileInfo,
+                plannedAction.PlannedCounter,
                 isAuthorizedForPermanentDeletion: plannedAction.AuthorizationContext != null
                     ? plannedAction.AuthorizationContext.IsPermanentDeleteAuthorized(plannedAction.SourcePath)
                     : plannedAction.IsAuthorizedForPermanentDeletion),
@@ -771,7 +778,11 @@ public class ActionExecutor(
         }
     }
 
-    private async Task<ActionResult> ExecuteExtractArchiveAsync(ExtractArchiveAction action, FileInfo fileInfo, int? counter)
+    private async Task<ActionResult> ExecuteExtractArchiveAsync(
+        ExtractArchiveAction action,
+        FileInfo fileInfo,
+        int? counter,
+        bool isAuthorizedForPermanentDeletion = false)
     {
         try
         {
@@ -799,11 +810,17 @@ public class ActionExecutor(
                 }
             });
 
-            // Delete archive if requested
+            // Delete archive if requested safely via SafeFileSystem
             if (action.DeleteAfterExtraction)
-                await Task.Run(() => File.Delete(fileInfo.FullName));
+            {
+                bool allowPermanentFallback = !action.UseRecycleBinForArchiveDeletion && isAuthorizedForPermanentDeletion;
+                await _safeFileSystem.DeleteFileSafelyAsync(
+                    fileInfo.FullName,
+                    useRecycleBin: action.UseRecycleBinForArchiveDeletion,
+                    allowPermanentFallback: allowPermanentFallback);
+            }
 
-            return new ActionResult { Success = true, ResultPath = destPath, Type = ActionResultType.Success };
+            return new ActionResult { Success = true, ResultPath = destPath, TargetPath = destPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {

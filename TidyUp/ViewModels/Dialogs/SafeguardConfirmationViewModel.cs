@@ -133,7 +133,7 @@ public partial class SafeguardConfirmationViewModel : ObservableObject
 
         foreach (var action in actionList)
         {
-            // 1. Permanent deletion check (Delete without Recycle Bin)
+            // 1. Permanent deletion or destructive archive deletion check
             if (action.ActionType == ActionType.Delete &&
                 action.FileAction is DeleteFileAction del &&
                 !del.UseRecycleBin)
@@ -149,8 +149,25 @@ public partial class SafeguardConfirmationViewModel : ObservableObject
                     Description = "File will be permanently deleted without being placed in the Recycle Bin."
                 });
             }
+            else if (action.ActionType == ActionType.ExtractArchive &&
+                     action.FileAction is ExtractArchiveAction extractDel &&
+                     extractDel.DeleteAfterExtraction)
+            {
+                PermanentDeletionCount++;
+                HasPermanentDeletionRisk = true;
+                FilesAtRisk.Add(new FileRiskItemViewModel
+                {
+                    FilePath = action.SourcePath,
+                    TargetPath = action.TargetPath,
+                    RuleName = action.RuleName,
+                    RiskType = FileRiskType.PermanentDeletion,
+                    Description = extractDel.UseRecycleBinForArchiveDeletion
+                        ? "Source archive will be deleted (sent to Recycle Bin) after extraction."
+                        : "Source archive will be permanently deleted after extraction."
+                });
+            }
 
-            // 2. Overwrite check (Move/Copy/Rename with Overwrite conflict resolution or collision)
+            // 2. Overwrite check (Move/Copy/Rename with Overwrite conflict resolution or collision, OR Extract with OverwriteExisting)
             bool isOverwrite = false;
             if (action.ConflictResolution == ConflictResolution.Overwrite)
             {
@@ -158,6 +175,12 @@ public partial class SafeguardConfirmationViewModel : ObservableObject
             }
             else if (action.HasConflict && action.ConflictDescription != null &&
                      action.ConflictDescription.Contains("already exists", StringComparison.OrdinalIgnoreCase))
+            {
+                isOverwrite = true;
+            }
+            else if (action.ActionType == ActionType.ExtractArchive &&
+                     action.FileAction is ExtractArchiveAction extractAction &&
+                     extractAction.OverwriteExisting)
             {
                 isOverwrite = true;
             }

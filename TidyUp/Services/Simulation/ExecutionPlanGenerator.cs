@@ -375,7 +375,24 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
                 plannedAction.TargetPath = string.IsNullOrWhiteSpace(extractDest)
                     ? Path.GetDirectoryName(currentVirtualPath)
                     : extractDest;
-                plannedAction.HasConflict = false;
+                if (!string.IsNullOrEmpty(plannedAction.TargetPath) && Directory.Exists(plannedAction.TargetPath))
+                {
+                    if (extractAction.OverwriteExisting && Directory.EnumerateFileSystemEntries(plannedAction.TargetPath).Any())
+                    {
+                        plannedAction.HasConflict = true;
+                        plannedAction.ConflictDescription = "Target directory already exists and contains files.";
+                        plannedAction.ConflictResolution = ConflictResolution.Overwrite;
+                        plannedAction.ResolutionNote = "Extraction destination directory contains existing files that may be overwritten.";
+                    }
+                    else
+                    {
+                        plannedAction.HasConflict = false;
+                    }
+                }
+                else
+                {
+                    plannedAction.HasConflict = false;
+                }
                 break;
 
             case RunCommandAction runCmdAction:

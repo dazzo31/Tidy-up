@@ -203,6 +203,18 @@ public partial class ExtractArchiveAction : FileAction
     private bool _deleteAfterExtraction;
 
     /// <summary>
+    /// Whether to send deleted archive to Recycle Bin (defaults to true).
+    /// </summary>
+    [ObservableProperty]
+    private bool _useRecycleBinForArchiveDeletion = true;
+
+    /// <summary>
+    /// Whether to prompt before deleting the archive.
+    /// </summary>
+    [ObservableProperty]
+    private bool _confirmBeforeDelete = true;
+
+    /// <summary>
     /// Whether to overwrite existing files in the destination.
     /// </summary>
     [ObservableProperty]

@@ -1,3 +1,5 @@
+using Moq;
+using TidyUp.Services.FileSystem;
 using FluentAssertions;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
@@ -671,4 +673,72 @@ public class ActionExecutorTests : IDisposable
     }
 
     #endregion
+    #region Extract Archive Tests
+
+    [Fact]
+    public async Task ExecuteExtractArchiveAsync_WithDeleteAfterExtraction_CallsSafeFileSystemWithRecycleBin()
+    {
+        // Arrange
+        var mockSafeFs = new Mock<ISafeFileSystem>();
+        var executor = new ActionExecutor(_variableEngine, safeFileSystem: mockSafeFs.Object);
+
+        var tempDir = _fileHelper.CreateTestDirectory("extract_mock");
+        var zipPath = Path.Combine(tempDir.FullName, "mock.zip");
+        var contentDir = _fileHelper.CreateTestDirectory("mock_content");
+        _fileHelper.CreateTestFile(Path.Combine("mock_content", "sample.txt"), "data");
+        System.IO.Compression.ZipFile.CreateFromDirectory(contentDir.FullName, zipPath);
+
+        var targetDest = Path.Combine(tempDir.FullName, "mock_output");
+        var action = new ExtractArchiveAction
+        {
+            DestinationPath = targetDest,
+            DeleteAfterExtraction = true,
+            UseRecycleBinForArchiveDeletion = true
+        };
+
+        // Act
+        var result = await executor.ExecuteActionAsync(action, new FileInfo(zipPath));
+
+        // Assert
+        result.Success.Should().BeTrue();
+        mockSafeFs.Verify(fs => fs.DeleteFileSafelyAsync(
+            zipPath,
+            true,
+            It.IsAny<bool>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ExecuteExtractArchiveAsync_WithPermanentDelete_WithoutAuthorization_FailsClosed()
+    {
+        // Arrange
+        var mockSafeFs = new Mock<ISafeFileSystem>();
+        mockSafeFs.Setup(fs => fs.DeleteFileSafelyAsync(It.IsAny<string>(), false, false))
+            .ThrowsAsync(new InvalidOperationException("Permanent deletion not authorized."));
+        var executor = new ActionExecutor(_variableEngine, safeFileSystem: mockSafeFs.Object);
+
+        var tempDir = _fileHelper.CreateTestDirectory("extract_fail");
+        var zipPath = Path.Combine(tempDir.FullName, "fail.zip");
+        var contentDir = _fileHelper.CreateTestDirectory("fail_content");
+        _fileHelper.CreateTestFile(Path.Combine("fail_content", "sample.txt"), "data");
+        System.IO.Compression.ZipFile.CreateFromDirectory(contentDir.FullName, zipPath);
+
+        var targetDest = Path.Combine(tempDir.FullName, "fail_output");
+        var action = new ExtractArchiveAction
+        {
+            DestinationPath = targetDest,
+            DeleteAfterExtraction = true,
+            UseRecycleBinForArchiveDeletion = false,
+            ConfirmBeforeDelete = true
+        };
+
+        // Act
+        var result = await executor.ExecuteActionAsync(action, new FileInfo(zipPath));
+
+        // Assert
+        result.Success.Should().BeFalse();
+        result.ErrorMessage.Should().Contain("Permanent deletion not authorized.");
+    }
+
+    #endregion
+
 }

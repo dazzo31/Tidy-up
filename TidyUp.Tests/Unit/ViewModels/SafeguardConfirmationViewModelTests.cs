@@ -202,5 +202,60 @@ public class SafeguardConfirmationViewModelTests
     }
 
     #endregion
-}
+    [Fact]
+    public void EvaluateRisks_ExtractArchiveWithDeleteAfterExtraction_DetectsPermanentDeletionRisk()
+    {
+        var extractAction = new PlannedFileAction
+        {
+            SourcePath = @"C:\Test\bundle.zip",
+            ActionType = ActionType.ExtractArchive,
+            FileAction = new ExtractArchiveAction
+            {
+                DeleteAfterExtraction = true,
+                UseRecycleBinForArchiveDeletion = true
+            },
+            RuleName = "Extract & Clean"
+        };
 
+        var items = new List<PlannedActionItemViewModel>
+        {
+            new PlannedActionItemViewModel(extractAction) { IsApproved = true }
+        };
+
+        var result = _viewModel.EvaluateRisks(items);
+
+        result.Should().BeTrue();
+        _viewModel.HasPermanentDeletionRisk.Should().BeTrue();
+        _viewModel.PermanentDeletionCount.Should().Be(1);
+        _viewModel.FilesAtRisk.Should().ContainSingle(r => r.RiskType == FileRiskType.PermanentDeletion);
+    }
+
+    [Fact]
+    public void EvaluateRisks_ExtractArchiveWithOverwriteExisting_DetectsOverwriteRisk()
+    {
+        var extractAction = new PlannedFileAction
+        {
+            SourcePath = @"C:\Test\bundle.zip",
+            ActionType = ActionType.ExtractArchive,
+            TargetPath = @"C:\Test\Extracted",
+            FileAction = new ExtractArchiveAction
+            {
+                OverwriteExisting = true
+            },
+            RuleName = "Extract & Overwrite"
+        };
+
+        var items = new List<PlannedActionItemViewModel>
+        {
+            new PlannedActionItemViewModel(extractAction) { IsApproved = true }
+        };
+
+        var result = _viewModel.EvaluateRisks(items);
+
+        result.Should().BeTrue();
+        _viewModel.HasOverwriteRisk.Should().BeTrue();
+        _viewModel.OverwriteCount.Should().Be(1);
+        _viewModel.FilesAtRisk.Should().ContainSingle(r => r.RiskType == FileRiskType.FileOverwrite);
+    }
+
+}
