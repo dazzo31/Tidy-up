@@ -134,6 +134,40 @@ public class HistoryViewModelTests : IDisposable
         _viewModel.CurrentPage.Should().Be(1);
     }
 
+    [Fact]
+    public async Task PaginationCommands_UpdateCanExecuteEligibilityOnDataLoadAndTraversal()
+    {
+        // Zero records initially
+        _viewModel.NextPageCommand.CanExecute(null).Should().BeFalse();
+        _viewModel.PreviousPageCommand.CanExecute(null).Should().BeFalse();
+
+        // Seed 30 entries (2 pages with PageSize 25)
+        await SeedJournalEntriesAsync(30);
+        _viewModel.PageSize = 25;
+        await _viewModel.LoadPageAsync();
+
+        // On Page 1 of 2: Next is enabled, Previous is disabled
+        _viewModel.NextPageCommand.CanExecute(null).Should().BeTrue();
+        _viewModel.PreviousPageCommand.CanExecute(null).Should().BeFalse();
+
+        // Move to Page 2 of 2: Next is disabled, Previous is enabled
+        await _viewModel.NextPageCommand.ExecuteAsync(null);
+        _viewModel.CurrentPage.Should().Be(2);
+        _viewModel.NextPageCommand.CanExecute(null).Should().BeFalse();
+        _viewModel.PreviousPageCommand.CanExecute(null).Should().BeTrue();
+
+        // Move back to Page 1
+        await _viewModel.PreviousPageCommand.ExecuteAsync(null);
+        _viewModel.CurrentPage.Should().Be(1);
+        _viewModel.NextPageCommand.CanExecute(null).Should().BeTrue();
+        _viewModel.PreviousPageCommand.CanExecute(null).Should().BeFalse();
+
+        // Change PageSize to 50: All 30 items fit on single page -> both disabled
+        _viewModel.PageSize = 50;
+        _viewModel.NextPageCommand.CanExecute(null).Should().BeFalse();
+        _viewModel.PreviousPageCommand.CanExecute(null).Should().BeFalse();
+    }
+
     #endregion
 
     #region Filtering Tests

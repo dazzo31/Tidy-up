@@ -191,6 +191,8 @@ public partial class HistoryViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPreviousPage))]
     [NotifyPropertyChangedFor(nameof(HasNextPage))]
     [NotifyPropertyChangedFor(nameof(PageSummary))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
     private int _currentPage = 1;
 
     [ObservableProperty]
@@ -198,6 +200,8 @@ public partial class HistoryViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPreviousPage))]
     [NotifyPropertyChangedFor(nameof(HasNextPage))]
     [NotifyPropertyChangedFor(nameof(PageSummary))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
     private int _pageSize = 25;
 
     [ObservableProperty]
@@ -205,7 +209,11 @@ public partial class HistoryViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(HasPreviousPage))]
     [NotifyPropertyChangedFor(nameof(HasNextPage))]
     [NotifyPropertyChangedFor(nameof(PageSummary))]
+    [NotifyCanExecuteChangedFor(nameof(NextPageCommand))]
+    [NotifyCanExecuteChangedFor(nameof(PreviousPageCommand))]
     private int _totalRecords;
+
+
 
     public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalRecords / PageSize) : 0;
     public bool HasPreviousPage => CurrentPage > 1;
@@ -439,6 +447,8 @@ public partial class HistoryViewModel : ObservableObject
             OnPropertyChanged(nameof(HasPreviousPage));
             OnPropertyChanged(nameof(HasNextPage));
             OnPropertyChanged(nameof(PageSummary));
+            NextPageCommand.NotifyCanExecuteChanged();
+            PreviousPageCommand.NotifyCanExecuteChanged();
         }
         catch (Exception ex)
         {
@@ -760,9 +770,23 @@ public partial class HistoryViewModel : ObservableObject
         return value;
     }
 
+    partial void OnCurrentPageChanged(int value)
+    {
+        NextPageCommand.NotifyCanExecuteChanged();
+        PreviousPageCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnTotalRecordsChanged(int value)
+    {
+        NextPageCommand.NotifyCanExecuteChanged();
+        PreviousPageCommand.NotifyCanExecuteChanged();
+    }
+
     partial void OnPageSizeChanged(int value)
     {
         CurrentPage = 1;
+        NextPageCommand.NotifyCanExecuteChanged();
+        PreviousPageCommand.NotifyCanExecuteChanged();
         _ = LoadPageAsync();
     }
 }
