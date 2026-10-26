@@ -310,7 +310,7 @@ public class ImportExportServiceTests : IDisposable
         // Assert
         importedRule.Name.Should().Be(originalRule.Name);
         importedRule.Description.Should().Be(originalRule.Description);
-        importedRule.IsEnabled.Should().Be(originalRule.IsEnabled);
+        importedRule.IsEnabled.Should().BeFalse("imported rules must always import as disabled per safety invariant");
         importedRule.ExecutionOrder.Should().Be(originalRule.ExecutionOrder);
         importedRule.MonitoredFolders.Should().HaveCount(originalRule.MonitoredFolders.Count);
         importedRule.Actions.Should().HaveCount(originalRule.Actions.Count);

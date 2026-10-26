@@ -81,6 +81,82 @@ public class RuleSerializationService : IRuleSerializationService
                 return (false, "'rules' array must contain at least one rule definition.");
             }
 
+            // Inspect rule definitions in array
+            int index = 0;
+            foreach (var ruleElem in rulesProp.EnumerateArray())
+            {
+                index++;
+                if (!ruleElem.TryGetProperty("name", out var nameProp) &&
+                    !ruleElem.TryGetProperty("Name", out nameProp))
+                {
+                    return (false, "One or more rules are missing a name.");
+                }
+
+                var ruleName = nameProp.GetString();
+                if (string.IsNullOrWhiteSpace(ruleName))
+                {
+                    return (false, "One or more rules are missing a name.");
+                }
+
+                // Check monitored folders
+                bool hasFolders = false;
+                if ((ruleElem.TryGetProperty("monitoredFolders", out var foldersProp) ||
+                     ruleElem.TryGetProperty("MonitoredFolders", out foldersProp)) &&
+                    foldersProp.ValueKind == JsonValueKind.Array && foldersProp.GetArrayLength() > 0)
+                {
+                    hasFolders = true;
+                    foreach (var folderElem in foldersProp.EnumerateArray())
+                    {
+                        if ((!folderElem.TryGetProperty("path", out var pathProp) &&
+                             !folderElem.TryGetProperty("Path", out pathProp)) ||
+                            string.IsNullOrWhiteSpace(pathProp.GetString()))
+                        {
+                            return (false, $"Rule '{ruleName}' has a monitored folder with missing or empty path.");
+                        }
+                    }
+                }
+
+                if (!hasFolders)
+                {
+                    return (false, $"Rule '{ruleName}' has no monitored folders.");
+                }
+
+                // Check actions
+                bool hasActions = false;
+                if ((ruleElem.TryGetProperty("actions", out var actionsProp) ||
+                     ruleElem.TryGetProperty("Actions", out actionsProp)) &&
+                    actionsProp.ValueKind == JsonValueKind.Array && actionsProp.GetArrayLength() > 0)
+                {
+                    hasActions = true;
+                    foreach (var actionElem in actionsProp.EnumerateArray())
+                    {
+                        string? actionType = null;
+                        if (actionElem.TryGetProperty("$type", out var typeProp) ||
+                            actionElem.TryGetProperty("type", out typeProp) ||
+                            actionElem.TryGetProperty("Type", out typeProp))
+                        {
+                            actionType = typeProp.GetString();
+                        }
+
+                        if (string.Equals(actionType, "move", StringComparison.OrdinalIgnoreCase) ||
+                            string.Equals(actionType, "copy", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if ((!actionElem.TryGetProperty("destinationPath", out var destProp) &&
+                                 !actionElem.TryGetProperty("DestinationPath", out destProp)) ||
+                                string.IsNullOrWhiteSpace(destProp.GetString()))
+                            {
+                                return (false, $"Rule '{ruleName}' has an action with missing or empty destination path.");
+                            }
+                        }
+                    }
+                }
+
+                if (!hasActions)
+                {
+                    return (false, $"Rule '{ruleName}' has no actions.");
+                }
+            }
+
             return (true, null);
         }
         catch (JsonException ex)
@@ -118,6 +194,8 @@ public class RuleSerializationService : IRuleSerializationService
                 Success = true
             };
 
+            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
             foreach (var rule in package.Rules)
             {
                 // Safety Requirement: Imported rules ALWAYS start in Disabled state
@@ -129,6 +207,25 @@ public class RuleSerializationService : IRuleSerializationService
                 rule.ModifiedDate = DateTime.UtcNow;
                 rule.LastRunDate = null;
                 rule.FilesProcessedCount = 0;
+
+                // Disambiguate duplicate rule names within the package
+                if (string.IsNullOrWhiteSpace(rule.Name))
+                {
+                    rule.Name = "Imported Rule";
+                }
+
+                if (seenNames.Contains(rule.Name))
+                {
+                    int copyNum = 1;
+                    string candidateName;
+                    do
+                    {
+                        candidateName = $"{rule.Name} ({copyNum++})";
+                    } while (seenNames.Contains(candidateName));
+
+                    rule.Name = candidateName;
+                }
+                seenNames.Add(rule.Name);
 
                 // Sanitize monitored folders
                 foreach (var folder in rule.MonitoredFolders)
@@ -195,4 +292,3 @@ public class RuleSerializationService : IRuleSerializationService
         return false;
     }
 }
-

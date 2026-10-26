@@ -2,6 +2,7 @@ using TidyUp.Models.Domain;
 
 namespace TidyUp.Services;
 
+[Obsolete("Use IRuleSerializationService instead.")]
 public interface IImportExportService
 {
     /// <summary>

@@ -150,5 +150,211 @@ public class SerializationTests
         Assert.NotEmpty(result.Warnings);
         Assert.Contains(result.Warnings, w => w.Contains("reserved Windows device name"));
     }
-}
 
+    [Fact]
+    public void ValidatePackageSchema_SupportsLegacyPackageWithoutSchemaUri()
+    {
+        // Arrange: Legacy 1.0 JSON export format without $schema or application headers
+        string legacyJson = """
+        {
+          "version": "1.0",
+          "exportedAt": "2025-01-01T00:00:00Z",
+          "rules": [
+            {
+              "name": "Legacy Document Organizer",
+              "monitoredFolders": [
+                { "path": "C:\\LegacyDocs" }
+              ],
+              "actions": [
+                {
+                  "$type": "move",
+                  "destinationPath": "C:\\ArchivedDocs"
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+        // Act
+        var result = _serializationService.ValidatePackageSchema(legacyJson);
+        var importResult = _serializationService.ImportRules(legacyJson);
+
+        // Assert
+        Assert.True(result.IsValid);
+        Assert.Null(result.ErrorMessage);
+        Assert.True(importResult.Success);
+        Assert.Single(importResult.ImportedRules);
+        var imported = importResult.ImportedRules[0];
+        Assert.Equal("Legacy Document Organizer", imported.Name);
+        Assert.False(imported.IsEnabled, "Legacy rules must import as disabled.");
+    }
+
+    [Fact]
+    public void ValidatePackageSchema_RejectsFutureVersionsWithDescriptiveMessage()
+    {
+        string futureJson = """
+        {
+          "version": "9.9",
+          "rules": [
+            {
+              "name": "Future Rule",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+
+        var result = _serializationService.ValidatePackageSchema(futureJson);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("Unsupported schema version '9.9'", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void ValidatePackageSchema_RejectsMissingVersionProperty()
+    {
+        string missingVersionJson = """
+        {
+          "rules": [
+            {
+              "name": "Rule",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+
+        var result = _serializationService.ValidatePackageSchema(missingVersionJson);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("missing mandatory 'version' property", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void ValidatePackageSchema_RejectsMissingNameOrEmptyFoldersOrActions()
+    {
+        string missingNameJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+        var r1 = _serializationService.ValidatePackageSchema(missingNameJson);
+        Assert.False(r1.IsValid);
+        Assert.Contains("missing a name", r1.ErrorMessage);
+
+        string emptyFoldersJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "No Folders",
+              "monitoredFolders": [],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+        var r2 = _serializationService.ValidatePackageSchema(emptyFoldersJson);
+        Assert.False(r2.IsValid);
+        Assert.Contains("has no monitored folders", r2.ErrorMessage);
+
+        string emptyActionsJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "No Actions",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": []
+            }
+          ]
+        }
+        """;
+        var r3 = _serializationService.ValidatePackageSchema(emptyActionsJson);
+        Assert.False(r3.IsValid);
+        Assert.Contains("has no actions", r3.ErrorMessage);
+    }
+
+    [Fact]
+    public void ValidatePackageSchema_RejectsMalformedActionParameters()
+    {
+        string emptyDestJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "Bad Move Action",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [
+                {
+                  "$type": "move",
+                  "destinationPath": ""
+                }
+              ]
+            }
+          ]
+        }
+        """;
+
+        var result = _serializationService.ValidatePackageSchema(emptyDestJson);
+
+        Assert.False(result.IsValid);
+        Assert.Contains("missing or empty destination path", result.ErrorMessage);
+    }
+
+    [Fact]
+    public void ImportRules_DisambiguatesDuplicateNamesAndReassignsUniqueGuids()
+    {
+        var fixedId = Guid.NewGuid();
+        string duplicateBatchJson = $$"""
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "id": "{{fixedId}}",
+              "name": "Duplicate Name",
+              "monitoredFolders": [{ "path": "C:\\Test1" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest1" }]
+            },
+            {
+              "id": "{{fixedId}}",
+              "name": "Duplicate Name",
+              "monitoredFolders": [{ "path": "C:\\Test2" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest2" }]
+            }
+          ]
+        }
+        """;
+
+        var result = _serializationService.ImportRules(duplicateBatchJson);
+
+        Assert.True(result.Success);
+        Assert.Equal(2, result.ImportedRules.Count);
+
+        var rule1 = result.ImportedRules[0];
+        var rule2 = result.ImportedRules[1];
+
+        // IDs must be unique and different from source
+        Assert.NotEqual(fixedId, rule1.Id);
+        Assert.NotEqual(fixedId, rule2.Id);
+        Assert.NotEqual(rule1.Id, rule2.Id);
+
+        // Names must be disambiguated
+        Assert.Equal("Duplicate Name", rule1.Name);
+        Assert.Equal("Duplicate Name (1)", rule2.Name);
+
+        // Both disabled
+        Assert.False(rule1.IsEnabled);
+        Assert.False(rule2.IsEnabled);
+    }
+}

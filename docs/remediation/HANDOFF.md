@@ -1,27 +1,30 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `ae9ffd4`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `3cfcf77` (pending TASK-REM-10 commit)  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-09` completed)  
-**Active Task & Current State:** `TASK-REM-09` (`DONE`) -> Next: `TASK-REM-10` (Unified schema-aware rule serialization & import gate)  
+**Last Verified Phase Gate:** Phase 0 Gate Passed; Phase 1 in progress (`TASK-REM-10` completed)  
+**Active Task & Current State:** `TASK-REM-10` (`DONE`) -> Next: `TASK-REM-11` (Variable engine normalization & filename sanitization)  
 **Completed Changes & Files:**
-- `IRuleRepository.cs` & `RuleRepository.cs`: Added `UpdateExecutionOrdersAsync(IEnumerable<(Guid RuleId, int Order)> orderings)` executing within an atomic SQLite/EF Core database transaction.
+- `IRuleRepository.cs` & `RuleRepository.cs`: Added `AddRangeAsync(IEnumerable<Rule> rules)` performing atomic batch persistence within an EF Core SQLite database transaction, rolling back on failure.
+- `RuleSerializationService.cs`:
+  - Extended schema validation to verify package root object, version property presence, supported version 1.0 check (rejecting future versions with clear error message), non-empty rules array, rule name presence, monitored folder path presence, and valid action parameters (e.g. non-empty destination paths on move/copy).
+  - Enforced strict invariant: `rule.IsEnabled = false` on every imported rule.
+  - Assigned fresh unique `Guid.NewGuid()` to each imported rule to eliminate collisions.
+  - Disambiguated duplicate rule names within an imported package.
+  - Reset runtime stats and timestamps (`CreatedDate`, `ModifiedDate`, `LastRunDate = null`, `FilesProcessedCount = 0`).
+- `IImportExportService.cs` & `ImportExportService.cs`: Marked `[Obsolete("Use IRuleSerializationService instead.")]` and transitioned `ImportExportService` to an adapter delegating to `RuleSerializationService`.
 - `MainWindowViewModel.cs`:
-  - Added `CanReorderRules` property disabling drag-and-drop reordering when text searching (`SearchText`), status filtering (`SelectedFilter != RuleFilterType.All`), or non-priority sorting (`SelectedSortOption.Type != RuleSortType.ExecutionPriority`) is active.
-  - Added `ReorderRulesAsync(Rule sourceRule, Rule targetRule)` updating in-memory orders, committing atomic batch reordering to SQLite via `IRuleRepository`, restoring previous order on transaction failure, and surfacing user-facing status messages.
-- `MainWindow.xaml.cs`:
-  - Wired `RuleListBox_PreviewMouseMove`, `RuleListBox_Drop`, and `RuleListBox_DragOver` to respect `ViewModel.CanReorderRules`.
-  - Replaced unpersisted in-memory index shifting in `RuleListBox_Drop` with `await ViewModel.ReorderRulesAsync(sourceRule, targetRule)`.
-- `MainWindowRulesListTests.cs`:
-  - Added unit test `CanReorderRules_Gating_ReflectsFilterSearchAndSortingState` testing filter, search, and sort gating.
-  - Added unit test `ReorderRulesAsync_WhenCanReorderRulesIsFalse_AbortsAndSurfacesMessage`.
-  - Added integration test `ReorderRulesAsync_WhenValid_PersistsOrdersAtomicallyToRepository` verifying atomic database persistence against real SQLite.
-  - Added unit test `ReorderRulesAsync_WhenTransactionFails_RestoresPreviousOrderAndSurfacesError` verifying in-memory rollback and error surfacing on transaction exception.
-- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-09` as `DONE` and `TU-30` as `FIXED_VERIFIED`.
+  - Injected `IRuleSerializationService` (with backward-compatible fallback).
+  - Consolidated `ExportRuleAsync` and `ExportAllRulesAsync` on `RuleSerializationService.ExportRules`.
+  - Added `ImportRulesFromJsonAsync` validating schema first, enforcing disabled state, prompting for user confirmation via `ConfirmImportCallback` / `MessageBox`, assigning sequential execution priorities, and committing the batch atomically via `_ruleRepository.AddRangeAsync`.
+- `SerializationTests.cs`: Added tests for legacy package migration, future version rejection (2.0 and 9.9), missing version rejection, malformed action parameter rejection, duplicate ID re-assignment, duplicate name disambiguation, and round-trip field fidelity.
+- `ImportExportServiceTests.cs`: Updated round-trip test to assert `importedRule.IsEnabled.Should().BeFalse()`.
+- `MainWindowRulesListTests.cs`: Added integration and unit tests for `ImportRulesFromJsonAsync` covering atomic persistence against real SQLite, cancellation gating, validation failure abort, and persistence exception rollback.
+- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-10` as `DONE` and `TU-29` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 637 passed, 0 failed, 0 skipped (3.0s).
-- Zero warnings, zero regressions across entire suite.
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 647 passed, 0 failed, 0 skipped (3.0s).
+- Zero errors across entire solution.
 
 **Evidence Paths & Tested SHA:**
 - SHA: working tree
@@ -37,5 +40,5 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Stage and commit `TASK-REM-09`.
-- Lock `TASK-REM-10` in Phase 1 (Unified schema-aware rule serialization & import gate).
+- Stage and commit `TASK-REM-10`.
+- Lock `TASK-REM-11` in Phase 1 (Variable engine normalization & filename sanitization).

@@ -1,47 +1,33 @@
 using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using TidyUp.Models.Domain;
+using TidyUp.Services.Rules;
 
 namespace TidyUp.Services;
 
+/// <summary>
+/// Legacy compatibility adapter delegating to the canonical RuleSerializationService.
+/// </summary>
+[Obsolete("Use IRuleSerializationService instead.")]
 public class ImportExportService : IImportExportService
 {
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly IRuleSerializationService _serializationService;
 
-    public ImportExportService()
+    public ImportExportService(IRuleSerializationService? serializationService = null)
     {
-        _jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-        };
+        _serializationService = serializationService ?? new RuleSerializationService();
     }
 
     public Task<string> ExportRuleAsync(Rule rule)
     {
-        var exportData = new RuleExport
-        {
-            Version = "1.0",
-            ExportedAt = DateTime.UtcNow,
-            Rules = new List<Rule> { rule }
-        };
-
-        var json = JsonSerializer.Serialize(exportData, _jsonOptions);
+        ArgumentNullException.ThrowIfNull(rule);
+        var json = _serializationService.ExportRules(new[] { rule });
         return Task.FromResult(json);
     }
 
     public Task<string> ExportRulesAsync(IEnumerable<Rule> rules)
     {
-        var exportData = new RuleExport
-        {
-            Version = "1.0",
-            ExportedAt = DateTime.UtcNow,
-            Rules = rules.ToList()
-        };
-
-        var json = JsonSerializer.Serialize(exportData, _jsonOptions);
+        ArgumentNullException.ThrowIfNull(rules);
+        var json = _serializationService.ExportRules(rules);
         return Task.FromResult(json);
     }
 
@@ -53,88 +39,35 @@ public class ImportExportService : IImportExportService
 
     public Task<IEnumerable<Rule>> ImportRulesAsync(string json)
     {
-        try
+        if (string.IsNullOrWhiteSpace(json))
         {
-            var exportData = JsonSerializer.Deserialize<RuleExport>(json, _jsonOptions);
-            
-            if (exportData == null || exportData.Rules == null || !exportData.Rules.Any())
-            {
-                throw new InvalidOperationException("JSON does not contain any rules");
-            }
-
-            // Reset IDs and timestamps so they get new values when saved to database
-            foreach (var rule in exportData.Rules)
-            {
-                rule.Id = Guid.NewGuid();
-                rule.CreatedDate = DateTime.UtcNow;
-                rule.ModifiedDate = DateTime.UtcNow;
-                rule.LastRunDate = null;
-                rule.FilesProcessedCount = 0;
-            }
-
-            return Task.FromResult<IEnumerable<Rule>>(exportData.Rules);
+            throw new InvalidOperationException("JSON is empty");
         }
-        catch (JsonException ex)
+
+        var validation = _serializationService.ValidatePackageSchema(json);
+        if (!validation.IsValid)
         {
-            throw new InvalidOperationException($"Invalid JSON format: {ex.Message}", ex);
+            throw new InvalidOperationException($"Invalid JSON format: {validation.ErrorMessage}");
         }
+
+        var result = _serializationService.ImportRules(json);
+        if (!result.Success || result.ImportedRules.Count == 0)
+        {
+            throw new InvalidOperationException(result.ErrorMessage ?? "JSON does not contain any rules");
+        }
+
+        return Task.FromResult<IEnumerable<Rule>>(result.ImportedRules);
     }
 
     public Task<(bool IsValid, string ErrorMessage)> ValidateRuleJsonAsync(string json)
     {
-        try
-        {
-            if (string.IsNullOrWhiteSpace(json))
-            {
-                return Task.FromResult((false, "JSON is empty"));
-            }
-
-            var exportData = JsonSerializer.Deserialize<RuleExport>(json, _jsonOptions);
-            
-            if (exportData == null)
-            {
-                return Task.FromResult((false, "JSON could not be parsed"));
-            }
-
-            if (exportData.Rules == null || !exportData.Rules.Any())
-            {
-                return Task.FromResult((false, "No rules found in JSON"));
-            }
-
-            // Validate each rule has required fields
-            foreach (var rule in exportData.Rules)
-            {
-                if (string.IsNullOrWhiteSpace(rule.Name))
-                {
-                    return Task.FromResult((false, "One or more rules are missing a name"));
-                }
-
-                if (rule.MonitoredFolders == null || !rule.MonitoredFolders.Any())
-                {
-                    return Task.FromResult((false, $"Rule '{rule.Name}' has no monitored folders"));
-                }
-
-                if (rule.Actions == null || !rule.Actions.Any())
-                {
-                    return Task.FromResult((false, $"Rule '{rule.Name}' has no actions"));
-                }
-            }
-
-            return Task.FromResult((true, string.Empty));
-        }
-        catch (JsonException ex)
-        {
-            return Task.FromResult((false, $"Invalid JSON: {ex.Message}"));
-        }
-        catch (Exception ex)
-        {
-            return Task.FromResult((false, $"Validation error: {ex.Message}"));
-        }
+        var validation = _serializationService.ValidatePackageSchema(json);
+        return Task.FromResult((validation.IsValid, validation.ErrorMessage ?? string.Empty));
     }
 
     public async Task ExportToFileAsync(IEnumerable<Rule> rules, string filePath)
     {
-        var json = await ExportRulesAsync(rules);
+        var json = _serializationService.ExportRules(rules);
         await File.WriteAllTextAsync(filePath, json);
     }
 
@@ -147,12 +80,5 @@ public class ImportExportService : IImportExportService
 
         var json = await File.ReadAllTextAsync(filePath);
         return await ImportRulesAsync(json);
-    }
-
-    private class RuleExport
-    {
-        public string Version { get; set; } = "1.0";
-        public DateTime ExportedAt { get; set; }
-        public List<Rule> Rules { get; set; } = new();
     }
 }

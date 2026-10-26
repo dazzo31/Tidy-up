@@ -35,6 +35,7 @@ public partial class MainWindowViewModel : ObservableObject
 {
     private readonly IRuleRepository _ruleRepository;
     private readonly IImportExportService _importExportService;
+    private readonly IRuleSerializationService _ruleSerializationService;
     private readonly IServiceProvider _serviceProvider;
     private readonly IRuleSummaryGenerator _ruleSummaryGenerator;
     private readonly IRuleValidator _ruleValidator;
@@ -490,11 +491,15 @@ public partial class MainWindowViewModel : ObservableObject
         IRuleSummaryGenerator? ruleSummaryGenerator = null,
         IRuleValidator? ruleValidator = null,
         IFolderPathNormalizer? pathNormalizer = null,
-        IMonitoredFolderCatalog? folderCatalog = null)
+        IMonitoredFolderCatalog? folderCatalog = null,
+        IRuleSerializationService? ruleSerializationService = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
         _serviceProvider = serviceProvider;
+        _ruleSerializationService = ruleSerializationService
+            ?? (IRuleSerializationService?)serviceProvider.GetService(typeof(IRuleSerializationService))
+            ?? new RuleSerializationService();
 
         _ruleSummaryGenerator = ruleSummaryGenerator
             ?? (IRuleSummaryGenerator?)serviceProvider.GetService(typeof(IRuleSummaryGenerator))
@@ -1131,6 +1136,12 @@ public partial class MainWindowViewModel : ObservableObject
     /// <summary>
     /// Exports the selected rule to a JSON file.
     /// </summary>
+    /// <summary>
+    /// Gets or sets a callback for confirming rule imports.
+    /// When null, defaults to showing a standard MessageBox.
+    /// </summary>
+    public Func<string, string, bool>? ConfirmImportCallback { get; set; }
+
     [RelayCommand(CanExecute = nameof(CanExportRule))]
     private async Task ExportRuleAsync()
     {
@@ -1150,7 +1161,8 @@ public partial class MainWindowViewModel : ObservableObject
 
             try
             {
-                await _importExportService.ExportToFileAsync(new[] { SelectedRule }, dialog.FileName);
+                var json = _ruleSerializationService.ExportRules(new[] { SelectedRule });
+                await File.WriteAllTextAsync(dialog.FileName, json);
                 StatusMessage = $"Rule exported to {Path.GetFileName(dialog.FileName)}";
             }
             catch (Exception ex)
@@ -1186,7 +1198,8 @@ public partial class MainWindowViewModel : ObservableObject
 
             try
             {
-                await _importExportService.ExportToFileAsync(Rules, dialog.FileName);
+                var json = _ruleSerializationService.ExportRules(Rules);
+                await File.WriteAllTextAsync(dialog.FileName, json);
                 StatusMessage = $"Exported {Rules.Count} rule(s) to {Path.GetFileName(dialog.FileName)}";
             }
             catch (Exception ex)
@@ -1203,6 +1216,93 @@ public partial class MainWindowViewModel : ObservableObject
     private bool CanExportAllRules() => Rules.Any();
 
     /// <summary>
+    /// Imports rules from raw JSON string, validating schema, enforcing disabled state, and atomically saving to repository.
+    /// </summary>
+    public async Task<bool> ImportRulesFromJsonAsync(string jsonContent, string? sourceFileName = null)
+    {
+        if (string.IsNullOrWhiteSpace(jsonContent))
+        {
+            StatusMessage = "Import failed: Package JSON is empty or whitespace.";
+            return false;
+        }
+
+        IsLoading = true;
+        StatusMessage = "Validating rules package...";
+
+        try
+        {
+            var validation = _ruleSerializationService.ValidatePackageSchema(jsonContent);
+            if (!validation.IsValid)
+            {
+                StatusMessage = $"Import failed: {validation.ErrorMessage}";
+                return false;
+            }
+
+            var importResult = _ruleSerializationService.ImportRules(jsonContent);
+            if (!importResult.Success || importResult.ImportedRules.Count == 0)
+            {
+                StatusMessage = $"Import failed: {importResult.ErrorMessage ?? "No rules found in package."}";
+                return false;
+            }
+
+            var ruleList = importResult.ImportedRules;
+
+            // Invariant: All imported rules MUST be disabled
+            foreach (var r in ruleList)
+            {
+                r.IsEnabled = false;
+            }
+
+            var displayName = !string.IsNullOrWhiteSpace(sourceFileName) ? Path.GetFileName(sourceFileName) : "file";
+            var confirmMsg =
+                $"Import {ruleList.Count} rule(s) from {displayName}?\n\n" +
+                $"Rules to import (will be imported as Disabled):\n" +
+                string.Join("\n", ruleList.Take(5).Select(r => $"  • {r.Name}")) +
+                (ruleList.Count > 5 ? $"\n  ... and {ruleList.Count - 5} more" : "");
+
+            bool proceed = ConfirmImportCallback != null
+                ? ConfirmImportCallback(confirmMsg, "Confirm Import")
+                : MessageBox.Show(confirmMsg, "Confirm Import", MessageBoxButton.YesNo, MessageBoxImage.Question) == MessageBoxResult.Yes;
+
+            if (!proceed)
+            {
+                StatusMessage = "Import cancelled";
+                return false;
+            }
+
+            // Assign execution orders sequentially after current highest priority
+            int currentMaxOrder = Rules.Any() ? Rules.Max(r => r.ExecutionOrder) : -1;
+            for (int i = 0; i < ruleList.Count; i++)
+            {
+                ruleList[i].ExecutionOrder = currentMaxOrder + 1 + i;
+            }
+
+            // Atomic batch commit: all or nothing
+            var persistedRules = await _ruleRepository.AddRangeAsync(ruleList);
+
+            foreach (var rule in persistedRules)
+            {
+                UpdateRuleMetadata(rule);
+                Rules.Add(rule);
+            }
+
+            FilterRules();
+
+            StatusMessage = $"Imported {persistedRules.Count} rule(s) from {displayName}";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Error importing rules: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    /// <summary>
     /// Imports rules from a JSON file.
     /// </summary>
     [RelayCommand]
@@ -1216,63 +1316,14 @@ public partial class MainWindowViewModel : ObservableObject
 
         if (dialog.ShowDialog() == true)
         {
-            IsLoading = true;
-            StatusMessage = "Importing rules...";
-
             try
             {
-                // Validate first
                 var fileContent = await File.ReadAllTextAsync(dialog.FileName);
-                var validation = await _importExportService.ValidateRuleJsonAsync(fileContent);
-                
-                if (!validation.IsValid)
-                {
-                    StatusMessage = $"Import failed: {validation.ErrorMessage}";
-                    return;
-                }
-
-                // Import and get rules
-                var importedRules = await _importExportService.ImportFromFileAsync(dialog.FileName);
-                var ruleList = importedRules.ToList();
-
-                // Show confirmation with summary
-                var confirmResult = MessageBox.Show(
-                    $"Import {ruleList.Count} rule(s) from {Path.GetFileName(dialog.FileName)}?\n\n" +
-                    $"Rules to import:\n" +
-                    string.Join("\n", ruleList.Take(5).Select(r => $"  • {r.Name}")) +
-                    (ruleList.Count > 5 ? $"\n  ... and {ruleList.Count - 5} more" : ""),
-                    "Confirm Import",
-                    MessageBoxButton.YesNo,
-                    MessageBoxImage.Question);
-
-                if (confirmResult != MessageBoxResult.Yes)
-                {
-                    StatusMessage = "Import cancelled";
-                    return;
-                }
-
-                // Import and save
-                int count = 0;
-                
-                foreach (var rule in ruleList)
-                {
-                    // Assign next execution order
-                    rule.ExecutionOrder = Rules.Any() ? Rules.Max(r => r.ExecutionOrder) + 1 : 0;
-                    
-                    await _ruleRepository.AddAsync(rule);
-                    Rules.Add(rule);
-                    count++;
-                }
-
-                StatusMessage = $"Imported {count} rule(s) from {Path.GetFileName(dialog.FileName)}";
+                await ImportRulesFromJsonAsync(fileContent, dialog.FileName);
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error importing rules: {ex.Message}";
-            }
-            finally
-            {
-                IsLoading = false;
+                StatusMessage = $"Error reading import file: {ex.Message}";
             }
         }
     }

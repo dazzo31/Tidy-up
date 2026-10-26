@@ -346,4 +346,139 @@ public class MainWindowRulesListTests : IDisposable
         vm.Rules[1].Should().Be(r2);
         vm.Rules[1].ExecutionOrder.Should().Be(1);
     }
+
+    [Fact]
+    public async Task ImportRulesFromJsonAsync_WhenValid_PersistsAtomicallyAndEnforcesDisabled()
+    {
+        string packageJson = """
+        {
+          "$schema": "https://tidyup.app/schemas/rules-v1.json",
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "Imported Alpha",
+              "isEnabled": true,
+              "monitoredFolders": [{ "path": "C:\\MonitoredAlpha" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\DestAlpha" }]
+            },
+            {
+              "name": "Imported Beta",
+              "isEnabled": true,
+              "monitoredFolders": [{ "path": "C:\\MonitoredBeta" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\DestBeta" }]
+            }
+          ]
+        }
+        """;
+
+        _viewModel.Rules.Clear();
+        _viewModel.ConfirmImportCallback = (msg, title) => true;
+
+        var result = await _viewModel.ImportRulesFromJsonAsync(packageJson, "rules.json");
+
+        result.Should().BeTrue();
+        _viewModel.StatusMessage.Should().Be("Imported 2 rule(s) from rules.json");
+        _viewModel.Rules.Should().HaveCount(2);
+
+        // Invariant: all imported rules MUST be disabled
+        _viewModel.Rules[0].Name.Should().Be("Imported Alpha");
+        _viewModel.Rules[0].IsEnabled.Should().BeFalse();
+        _viewModel.Rules[1].Name.Should().Be("Imported Beta");
+        _viewModel.Rules[1].IsEnabled.Should().BeFalse();
+
+        // Database verification
+        var repo = _serviceProvider.GetRequiredService<IRuleRepository>();
+        var dbRules = await repo.GetAllAsync();
+        dbRules.Should().Contain(r => r.Name == "Imported Alpha" && !r.IsEnabled);
+        dbRules.Should().Contain(r => r.Name == "Imported Beta" && !r.IsEnabled);
+    }
+
+    [Fact]
+    public async Task ImportRulesFromJsonAsync_WhenCancelled_ImportsZeroRules()
+    {
+        string packageJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "Cancelled Rule",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+
+        _viewModel.Rules.Clear();
+        _viewModel.ConfirmImportCallback = (msg, title) => false; // User cancels dialog
+
+        var result = await _viewModel.ImportRulesFromJsonAsync(packageJson, "rules.json");
+
+        result.Should().BeFalse();
+        _viewModel.StatusMessage.Should().Be("Import cancelled");
+        _viewModel.Rules.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ImportRulesFromJsonAsync_WhenValidationFails_AbortsAndSurfacesError()
+    {
+        string invalidVersionJson = """
+        {
+          "version": "3.0",
+          "rules": [
+            {
+              "name": "Future Rule",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+
+        _viewModel.Rules.Clear();
+        _viewModel.ConfirmImportCallback = (msg, title) => true;
+
+        var result = await _viewModel.ImportRulesFromJsonAsync(invalidVersionJson);
+
+        result.Should().BeFalse();
+        _viewModel.StatusMessage.Should().Contain("Unsupported schema version '3.0'");
+        _viewModel.Rules.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task ImportRulesFromJsonAsync_WhenPersistenceFails_RollsBackZeroRulesAdded()
+    {
+        var mockRepo = new Moq.Mock<IRuleRepository>();
+        mockRepo.Setup(r => r.AddRangeAsync(Moq.It.IsAny<IEnumerable<Rule>>()))
+            .Throws(new InvalidOperationException("Simulated SQLite constraint violation"));
+
+        var mockImportExport = new Moq.Mock<TidyUp.Services.IImportExportService>();
+
+        var vm = new MainWindowViewModel(
+            mockRepo.Object,
+            mockImportExport.Object,
+            _serviceProvider)
+        {
+            ConfirmImportCallback = (msg, title) => true
+        };
+
+        string packageJson = """
+        {
+          "version": "1.0",
+          "rules": [
+            {
+              "name": "Doomed Rule",
+              "monitoredFolders": [{ "path": "C:\\Test" }],
+              "actions": [{ "$type": "move", "destinationPath": "C:\\Dest" }]
+            }
+          ]
+        }
+        """;
+
+        var result = await vm.ImportRulesFromJsonAsync(packageJson);
+
+        result.Should().BeFalse();
+        vm.StatusMessage.Should().Contain("Simulated SQLite constraint violation");
+        vm.Rules.Should().BeEmpty();
+    }
 }

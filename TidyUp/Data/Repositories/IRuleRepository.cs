@@ -21,6 +21,7 @@ public interface IRuleRepository
     Task<List<Rule>> GetAllAsync();
     Task<Rule?> GetByIdAsync(Guid id);
     Task<Rule> AddAsync(Rule rule);
+    Task<List<Rule>> AddRangeAsync(IEnumerable<Rule> rules);
     Task UpdateAsync(Rule rule);
     Task DeleteAsync(Guid id);
     Task<List<Rule>> GetEnabledRulesOrderedAsync();

@@ -77,6 +77,57 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         return added;
     }
 
+    public async Task<List<Rule>> AddRangeAsync(IEnumerable<Rule> rules)
+    {
+        ArgumentNullException.ThrowIfNull(rules);
+        var ruleList = rules.ToList();
+        if (ruleList.Count == 0) return new List<Rule>();
+
+        foreach (var rule in ruleList)
+        {
+            CanonicalizeFolders(rule);
+
+            if (ruleValidator is not null)
+            {
+                var validation = ruleValidator.ValidateRule(rule);
+                if (!validation.IsValid)
+                    throw new RuleValidationException(validation.Errors);
+
+                if (rule.IsEnabled)
+                {
+                    var allRules = await GetAllAsync();
+                    allRules.AddRange(ruleList);
+                    var cycleValidation = ruleValidator.ValidateRules(allRules);
+                    if (!cycleValidation.IsValid)
+                        throw new RuleValidationException(cycleValidation.Errors);
+                }
+            }
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        try
+        {
+            var entities = new List<RuleEntity>();
+            foreach (var rule in ruleList)
+            {
+                var entity = ModelToEntity(rule);
+                context.Rules.Add(entity);
+                entities.Add(entity);
+            }
+
+            await context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            NotifyRulesChanged(null, "AddedRange");
+            return entities.Select(EntityToModel).ToList();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
     public async Task UpdateAsync(Rule rule)
     {
         CanonicalizeFolders(rule);
