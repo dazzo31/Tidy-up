@@ -80,9 +80,10 @@
                                     Command="{Binding DataContext.RemoveConditionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
                                     AutomationProperties.Name="Remove condition group"
+                                    Foreground="{DynamicResource Win11ErrorBrush}"
                                     ToolTip="Remove this group"
                                     Width="28" Height="28">
-                                <materialDesign:PackIcon Kind="DeleteOutline" Width="18" Height="18" Foreground="{DynamicResource MaterialDesignValidationErrorBrush}"/>
+                                <materialDesign:PackIcon Kind="TrashCanOutline" Width="18" Height="18"/>
                             </Button>
                         </StackPanel>
                     </Grid>
@@ -374,22 +375,30 @@
         <!-- Toolbar -->
         <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="8">
             <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="Add Condition"
                     Command="{Binding AddConditionCommand}"
                     automation:AutomationProperties.Name="Add condition"
+                    ToolTip="Add condition to root group"
                     Margin="0,0,8,0">
                 <Button.CommandParameter>
                     <Binding Path="RootCondition"/>
                 </Button.CommandParameter>
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBlock Text="Add Condition" VerticalAlignment="Center"/>
+                </StackPanel>
             </Button>
-            <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                    Content="Add Group"
+            <Button Style="{StaticResource MaterialDesignOutlinedButton}"
                     Command="{Binding AddGroupCommand}"
                     automation:AutomationProperties.Name="Add condition group"
+                    ToolTip="Add condition group"
                     Margin="0,0,8,0">
                 <Button.CommandParameter>
                     <Binding Path="RootCondition"/>
                 </Button.CommandParameter>
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="FolderPlus" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBlock Text="Add Group" VerticalAlignment="Center"/>
+                </StackPanel>
             </Button>
         </StackPanel>
 

@@ -117,8 +117,9 @@
                                                Command="{Binding DataContext.RemoveActionCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                CommandParameter="{Binding}"
                                                AutomationProperties.Name="Remove action"
-                                               ToolTip="Remove">
-                                            <materialDesign:PackIcon Kind="Delete"/>
+                                               Foreground="{DynamicResource Win11ErrorBrush}"
+                                               ToolTip="Remove Action">
+                                            <materialDesign:PackIcon Kind="TrashCanOutline"/>
                                         </Button>
                                     </StackPanel>
                                 </Grid>
@@ -140,23 +141,29 @@
                                                             Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Destination Path (can use variables like {filename})"
                                                             AutomationProperties.Name="Move destination path"
-                                                            Margin="0,0,4,0"/>
+                                                            Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Insert Variable"
-                                                           Click="InsertVariable_Click"
-                                                           Tag="MoveDestinationTextBox"
-                                                           AutomationProperties.Name="Insert variable"
-                                                           Margin="0,0,4,0">
-                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Browse for destination folder"
+                                                            Click="BrowseDestinationFolder_Click"
+                                                            Tag="{Binding}"
+                                                            AutomationProperties.Name="Browse destination folder"
+                                                            Margin="0,0,8,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="FolderOpen" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Browse..." VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                     <Button Grid.Column="2"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Browse for folder"
-                                                           Click="BrowseDestinationFolder_Click"
-                                                           Tag="{Binding}"
-                                                           AutomationProperties.Name="Browse destination folder">
-                                                        <materialDesign:PackIcon Kind="FolderOpen" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Insert Variable"
+                                                            Click="InsertVariable_Click"
+                                                            Tag="MoveDestinationTextBox"
+                                                            AutomationProperties.Name="Insert variable">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="Variable" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Variable" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                 </Grid>
                                                 <CheckBox Content="Preserve subfolder structure"
@@ -186,23 +193,29 @@
                                                             Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Destination Path (can use variables like {filename})"
                                                             AutomationProperties.Name="Copy destination path"
-                                                            Margin="0,0,4,0"/>
+                                                            Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Insert Variable"
-                                                           Click="InsertVariable_Click"
-                                                           Tag="CopyDestinationTextBox"
-                                                           AutomationProperties.Name="Insert variable"
-                                                           Margin="0,0,4,0">
-                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Browse for destination folder"
+                                                            Click="BrowseDestinationFolder_Click"
+                                                            Tag="{Binding}"
+                                                            AutomationProperties.Name="Browse destination folder"
+                                                            Margin="0,0,8,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="FolderOpen" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Browse..." VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                     <Button Grid.Column="2"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Browse for folder"
-                                                           Click="BrowseDestinationFolder_Click"
-                                                           Tag="{Binding}"
-                                                           AutomationProperties.Name="Browse destination folder">
-                                                        <materialDesign:PackIcon Kind="FolderOpen" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Insert Variable"
+                                                            Click="InsertVariable_Click"
+                                                            Tag="CopyDestinationTextBox"
+                                                            AutomationProperties.Name="Insert variable">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="Variable" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Variable" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                 </Grid>
                                                 <CheckBox Content="Preserve subfolder structure"
@@ -231,14 +244,17 @@
                                                             Text="{Binding NamePattern, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Name Pattern (e.g., {filename}_{date})"
                                                             AutomationProperties.Name="Rename pattern"
-                                                            Margin="0,0,4,0"/>
+                                                            Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Insert Variable"
-                                                           Click="InsertVariable_Click"
-                                                           Tag="RenamePatternTextBox"
-                                                           AutomationProperties.Name="Insert variable">
-                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Insert Variable"
+                                                            Click="InsertVariable_Click"
+                                                            Tag="RenamePatternTextBox"
+                                                            AutomationProperties.Name="Insert variable">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="Variable" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Variable" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                 </Grid>
                                                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
@@ -286,23 +302,29 @@
                                                             Text="{Binding DestinationPath, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Destination Path (empty = same folder)"
                                                             AutomationProperties.Name="Extract destination path"
-                                                            Margin="0,0,4,0"/>
+                                                            Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Insert Variable"
-                                                           Click="InsertVariable_Click"
-                                                           Tag="ExtractDestinationTextBox"
-                                                           AutomationProperties.Name="Insert variable"
-                                                           Margin="0,0,4,0">
-                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Browse for destination folder"
+                                                            Click="BrowseDestinationFolder_Click"
+                                                            Tag="{Binding}"
+                                                            AutomationProperties.Name="Browse destination folder"
+                                                            Margin="0,0,8,0">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="FolderOpen" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Browse..." VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                     <Button Grid.Column="2"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Browse for folder"
-                                                           Click="BrowseDestinationFolder_Click"
-                                                           Tag="{Binding}"
-                                                           AutomationProperties.Name="Browse destination folder">
-                                                        <materialDesign:PackIcon Kind="FolderOpen" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Insert Variable"
+                                                            Click="InsertVariable_Click"
+                                                            Tag="ExtractDestinationTextBox"
+                                                            AutomationProperties.Name="Insert variable">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="Variable" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Variable" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                 </Grid>
                                                 <CheckBox Content="Overwrite existing files"
@@ -326,14 +348,17 @@
                                                             Text="{Binding Command, UpdateSourceTrigger=PropertyChanged}"
                                                             materialDesign:HintAssist.Hint="Command (can use variables like {fullpath})"
                                                             AutomationProperties.Name="Command to run"
-                                                            Margin="0,0,4,0"/>
+                                                            Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                           Style="{StaticResource MaterialDesignIconButton}"
-                                                           ToolTip="Insert Variable"
-                                                           Click="InsertVariable_Click"
-                                                           Tag="RunCommandTextBox"
-                                                           AutomationProperties.Name="Insert variable">
-                                                        <materialDesign:PackIcon Kind="Variable" Width="20" Height="20"/>
+                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            ToolTip="Insert Variable"
+                                                            Click="InsertVariable_Click"
+                                                            Tag="RunCommandTextBox"
+                                                            AutomationProperties.Name="Insert variable">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <materialDesign:PackIcon Kind="Variable" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                                                            <TextBlock Text="Variable" VerticalAlignment="Center"/>
+                                                        </StackPanel>
                                                     </Button>
                                                 </Grid>
                                                 <TextBox Text="{Binding WorkingDirectory, UpdateSourceTrigger=PropertyChanged}"

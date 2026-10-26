@@ -65,9 +65,9 @@
 
                 <Button Grid.Column="1"
                          Command="{Binding BrowseAndAddFolderCommand}"
-                         Style="{StaticResource MaterialDesignOutlinedButton}"
+                         Style="{StaticResource MaterialDesignRaisedButton}"
                          Margin="0,0,8,0"
-                         ToolTip="Browse for directory">
+                         ToolTip="Browse for directory to monitor">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="FolderOpen" VerticalAlignment="Center" Margin="0,0,4,0"/>
                         <TextBlock Text="Browse..." VerticalAlignment="Center"/>
@@ -76,11 +76,11 @@
 
                 <Button Grid.Column="2"
                          Command="{Binding AddFolderCommand}"
-                         Style="{StaticResource MaterialDesignRaisedButton}"
-                         ToolTip="Add folder to monitored list">
+                         Style="{StaticResource MaterialDesignOutlinedButton}"
+                         ToolTip="Add manually entered folder path to monitored list">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                        <TextBlock Text="Add Folder" VerticalAlignment="Center"/>
+                        <TextBlock Text="Add Path" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -103,6 +103,9 @@
                     IconKind="FolderPlus"
                     Title="No Folders Selected"
                     Description="Add at least one directory to monitor for this rule using the Browse button or path input above."
+                    ActionText="Browse for Folder"
+                    ActionCommand="{Binding BrowseAndAddFolderCommand}"
+                    ActionVisibility="Visible"
                     Visibility="{Binding MonitoredFolders.Count, Converter={StaticResource CountToVisibilityConverter}, ConverterParameter=Zero}"
                     Margin="0,16"/>
 
