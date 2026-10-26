@@ -1,8 +1,8 @@
-# Release Verification — v1.2.1-rc.1 (Remediation Release Candidate)
+# Release Verification — v1.2.1 (Remediation & Stability Release)
 
 Verification of the complete TidyUp remediation program (Phases 0 through 8, `TASK-BASE-01` through `TASK-REM-39`), resolving all 44 cataloged architectural, data safety, lifecycle, UI/UX, and visual contrast findings.
 
-- **Candidate Version:** `v1.2.1-rc.1`
+- **Release Version:** `v1.2.1`
 - **Candidate Code SHA:** `565e1d9`
 - **Historical Tag Provenance:** Tag `v1.2.0` is preserved intact at `43811ca904954c4adb6537eb888dade5f025f3a0` and not overwritten.
 - **Verification Environment:** Windows 11 Build 10.0.26300, .NET SDK 9.0.319 Windows x64, Visual Studio / MSBuild Release configuration.

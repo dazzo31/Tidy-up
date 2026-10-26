@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.2.1-rc.1] - 2026-10-26
+## [1.2.1] - 2026-10-26
 
 ### Summary
 Comprehensive remediation and stability release resolving all 44 cataloged architectural, data safety, lifecycle, UI/UX, and visual contrast findings across Phases 0–8. Features durable execution journaling, truthful simulation and rollback, safe overwrite staging, background monitoring lifecycle coordination, atomic settings persistence, WCAG AA dark theme contrast, composition root validation, and automated win-x64 release packaging. **777 automated tests passing with 0 failures.**
