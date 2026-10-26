@@ -280,6 +280,64 @@ public class TrayIconAndToastNotificationTests
     }
 
     [Fact]
+    public void TrayIconService_AggregatesHealthAcrossMultipleFolders_WarningNotClearedByHealthySibling()
+    {
+        var mockHealthMonitor = new Mock<IWatcherHealthMonitor>();
+        var service = new TrayIconService(healthMonitor: mockHealthMonitor.Object);
+
+        // Folder A disconnects -> Warning
+        mockHealthMonitor.Raise(m => m.FolderHealthChanged += null,
+            mockHealthMonitor.Object,
+            new FolderHealthReport
+            {
+                Path = @"C:\FolderA",
+                Status = WatcherHealthStatus.Disconnected,
+                StatusDetail = "Drive unplugged"
+            });
+
+        service.CurrentStatus.Should().Be(TrayIconStatus.Warning);
+
+        // Folder B reports healthy -> Must REMAIN Warning because Folder A is still disconnected
+        mockHealthMonitor.Raise(m => m.FolderHealthChanged += null,
+            mockHealthMonitor.Object,
+            new FolderHealthReport
+            {
+                Path = @"C:\FolderB",
+                Status = WatcherHealthStatus.Healthy
+            });
+
+        service.CurrentStatus.Should().Be(TrayIconStatus.Warning);
+
+        // Folder A recovers to healthy -> Returns to Normal
+        mockHealthMonitor.Raise(m => m.FolderHealthChanged += null,
+            mockHealthMonitor.Object,
+            new FolderHealthReport
+            {
+                Path = @"C:\FolderA",
+                Status = WatcherHealthStatus.Healthy
+            });
+
+        service.CurrentStatus.Should().Be(TrayIconStatus.Normal);
+    }
+
+    [Fact]
+    public void TrayIconService_CreateStatusIconWithNativeHandle_GeneratesValidHandles()
+    {
+        var (icon, hIcon) = TrayIconService.CreateStatusIconWithNativeHandle(TrayIconStatus.Warning);
+        try
+        {
+            icon.Should().NotBeNull();
+            icon.Width.Should().Be(16);
+            icon.Height.Should().Be(16);
+            hIcon.Should().NotBe(IntPtr.Zero);
+        }
+        finally
+        {
+            icon.Dispose();
+        }
+    }
+
+    [Fact]
     public void TrayIconService_WhenSystemTrayDisabled_SuppressesBalloonTips()
     {
         var settings = new AppSettings { SystemTrayEnabled = false };

@@ -44,6 +44,11 @@ public interface ITrayIconService : IDisposable
     void UpdateStatus(TrayIconStatus status, string? tooltipText = null);
 
     /// <summary>
+    /// Recomputes aggregate folder health across all monitored folders and updates the tray icon.
+    /// </summary>
+    void RecomputeAggregateStatus();
+
+    /// <summary>
     /// Displays a standard balloon tip / system notification.
     /// </summary>
     void ShowBalloonTip(string title, string message, BalloonIcon icon);
@@ -58,4 +63,3 @@ public interface ITrayIconService : IDisposable
     /// </summary>
     Task ResumeMonitoringAsync();
 }
-
