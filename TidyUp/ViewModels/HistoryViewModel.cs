@@ -117,7 +117,10 @@ public partial class HistoryRowItemViewModel : ObservableObject
     public string? PostActionHash => Entry.PostActionHash;
     public string? Details => Entry.Details;
 
-    public bool CanRollback => string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase) && RolledBackAt == null;
+    public bool CanRollback => string.Equals(Status, "Completed", StringComparison.OrdinalIgnoreCase) 
+        && RolledBackAt == null 
+        && !string.Equals(ActionType, "ExtractArchive", StringComparison.OrdinalIgnoreCase) 
+        && !string.Equals(ActionType, "RunCommand", StringComparison.OrdinalIgnoreCase);
 
     public string ActionBadgeBackground => ActionType switch
     {
@@ -531,7 +534,12 @@ public partial class HistoryViewModel : ObservableObject
         try
         {
             var result = await _rollbackEngine.RollbackOperationAsync(item.OperationId);
-            if (result.Success)
+            if (result.ConflictReason == RollbackConflictReason.RecycleBinRestorationGuidance)
+            {
+                item.RollbackMessage = result.RestorationInstructions ?? result.Message;
+                StatusMessage = "Manual action required: restore file from Windows Recycle Bin.";
+            }
+            else if (result.Success)
             {
                 item.Status = "RolledBack";
                 item.RolledBackAt = DateTime.UtcNow;

@@ -596,7 +596,7 @@ public class ActionExecutor(
             ConflictResolution.Overwrite => destinationPath,
             ConflictResolution.RenameNew => GenerateUniquePath(destinationPath),
             ConflictResolution.RenameOld => await RenameExistingFileAsync(destinationPath),
-            ConflictResolution.Prompt => destinationPath, // TODO: Implement user prompt
+            ConflictResolution.Prompt => null, // Fail closed: prompt is not supported in batch execution; skip safely
             _ => null
         };
     }
@@ -711,7 +711,8 @@ public class ActionExecutor(
                 var parentNorm = directory.Parent.FullName.TrimEnd('\\', '/');
                 if (!ProtectedFolders.Contains(parentNorm))
                 {
-                    if (string.IsNullOrEmpty(stopBoundaryPath) ||
+                    if (!string.IsNullOrEmpty(stopBoundaryPath) &&
+                        parentNorm.StartsWith(Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase) &&
                         !string.Equals(parentNorm, Path.GetFullPath(stopBoundaryPath).TrimEnd('\\', '/'), StringComparison.OrdinalIgnoreCase))
                     {
                         await RemoveEmptyFoldersAsync(directory.Parent, stopBoundaryPath);
