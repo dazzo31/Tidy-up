@@ -143,7 +143,7 @@
                                                             AutomationProperties.Name="Move destination path"
                                                             Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            Style="{StaticResource MaterialDesignRaisedButton}"
                                                             ToolTip="Browse for destination folder"
                                                             Click="BrowseDestinationFolder_Click"
                                                             Tag="{Binding}"
@@ -195,7 +195,7 @@
                                                             AutomationProperties.Name="Copy destination path"
                                                             Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            Style="{StaticResource MaterialDesignRaisedButton}"
                                                             ToolTip="Browse for destination folder"
                                                             Click="BrowseDestinationFolder_Click"
                                                             Tag="{Binding}"
@@ -304,7 +304,7 @@
                                                             AutomationProperties.Name="Extract destination path"
                                                             Margin="0,0,8,0"/>
                                                     <Button Grid.Column="1"
-                                                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                            Style="{StaticResource MaterialDesignRaisedButton}"
                                                             ToolTip="Browse for destination folder"
                                                             Click="BrowseDestinationFolder_Click"
                                                             Tag="{Binding}"
