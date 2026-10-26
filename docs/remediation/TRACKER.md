@@ -41,7 +41,7 @@
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-12` | XAML converter & visibility binding repairs | **DONE** | Phase 1 Gate | 0d97a5d | InverseBooleanToVisibilityConverter & NullToVisibilityConverter implemented and wired across Stage4, Wizard, and Preview, 676 tests pass | Proceed to `TASK-REM-13` |
 | `TASK-REM-13` | Disabled rule dry-run simulation decoupling | **DONE** | `TASK-REM-12` | f491006 | RuleEvaluationPurpose enum and MatchesConditions decoupling simulation from live execution, 680 tests pass | Proceed to `TASK-REM-14` |
-| `TASK-REM-14` | Multi-action virtual path continuation & dependency model | **DONE** | `TASK-REM-13` | pending | InitialSourcePath and DependsOnActionId modeled, type-aware continuation, preflight dependency closure, 683 tests pass | Proceed to `TASK-REM-15` |
+| `TASK-REM-14` | Multi-action virtual path continuation & dependency model | **DONE** | `TASK-REM-13` | 5ae68ac | InitialSourcePath and DependsOnActionId modeled, type-aware continuation, preflight dependency closure, 683 tests pass | Proceed to `TASK-REM-15` |
 | `TASK-REM-15` | Target reservation & conflict resolution simulation | NOT_STARTED | `TASK-REM-14` | — | Target: TU-16 | Batch target ledger & RenameNew sim |
 | `TASK-REM-16` | Preservation of subfolder directory hierarchy | NOT_STARTED | `TASK-REM-15` | — | Target: TU-31 | Relative root path calculation |
 | `TASK-REM-17` | Responsive background enumeration & partial scan disclosure | NOT_STARTED | `TASK-REM-16` | — | Target: TU-25 | Async enumeration & permission handling |
