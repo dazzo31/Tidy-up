@@ -45,7 +45,7 @@
 | `TASK-REM-15` | Target reservation & conflict resolution simulation | **DONE** | `TASK-REM-14` | `10c3e56` | In-memory target reservation ledger, RenameNew projected counter simulation, Skip simulation without false conflicts, batch-internal collision detection, 686 tests pass | Proceed to `TASK-REM-16` |
 | `TASK-REM-16` | Preservation of subfolder directory hierarchy | **DONE** | `TASK-REM-15` | `9cd74c5` | Relative root calculation with confinement, CopyAction UI binding, MonitoredSourceRoot on domain model & planned action, 692 tests pass | Proceed to `TASK-REM-17` |
 | `TASK-REM-17` | Responsive background enumeration & partial scan disclosure | **DONE** | `TASK-REM-16` | `bcd694c` | Resilient background folder enumeration, per-folder exception containment, IsIncomplete disclosure banner, generation IDs & cancellation, 696 tests pass | Proceed to `TASK-REM-18` |
-| `TASK-REM-18` | Preview cache invalidation & explicit refresh triggers | NOT_STARTED | `TASK-REM-17` | — | Target: TU-12 | Stale plan invalidation & refresh button |
+| `TASK-REM-18` | Preview cache invalidation & explicit refresh triggers | **DONE** | `TASK-REM-17` | `c8165c1` | Stale plan invalidation on rule switch/save/discard, RefreshPreviewCommand, PlanHeaderInfo, Refresh button in header, 700 tests pass | Proceed to `TASK-REM-27` |
 | `TASK-REM-27` | Scan command semantic harmonization | NOT_STARTED | `TASK-REM-18` | — | Target: TU-04 | Harmonize Folders/Dashboard scan |
 
 ### Phase 3: Durable Execution Foundation
