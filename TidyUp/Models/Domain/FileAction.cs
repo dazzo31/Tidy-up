@@ -33,6 +33,12 @@ public abstract partial class FileAction : ObservableObject
     /// </summary>
     [ObservableProperty]
     private int _order;
+
+    [ObservableProperty]
+    private Guid? _ruleId;
+
+    [ObservableProperty]
+    private string? _ruleName;
 }
 
 /// <summary>

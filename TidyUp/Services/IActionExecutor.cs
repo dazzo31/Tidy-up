@@ -17,11 +17,13 @@ public interface IActionExecutor
     /// <param name="batchId">Optional batch identifier for durable journal grouping.</param>
     /// <returns>List of action results.</returns>
     Task<List<ActionResult>> ExecuteActionsAsync(List<FileAction> actions, FileInfo fileInfo, int? counter = null, Guid? batchId = null);
+    Task<List<ActionResult>> ExecuteActionsAsync(List<FileAction> actions, FileInfo fileInfo, int? counter, Guid? batchId, Guid? ruleId, string? ruleName, Guid? ruleRevisionId);
 
     /// <summary>
     /// Executes a single action on a file.
     /// </summary>
     Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter = null, Guid? batchId = null);
+    Task<ActionResult> ExecuteActionAsync(FileAction action, FileInfo fileInfo, int? counter, Guid? batchId, Guid? ruleId, string? ruleName, Guid? ruleRevisionId);
 
     /// <summary>
     /// Executes a planned file action using its pre-computed immutable parameters and verifying destination confinement.

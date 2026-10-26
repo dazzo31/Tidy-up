@@ -186,6 +186,8 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
 
                     foreach (var action in rule.Actions.OrderBy(a => a.Order))
                     {
+                        action.RuleId ??= rule.Id;
+                        action.RuleName ??= rule.Name;
                         var plannedAction = SimulateAction(
                             action,
                             rule.Name,
@@ -198,6 +200,7 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
 
                         plannedAction.InitialSourcePath = fileInfo.FullName;
                         plannedAction.DependsOnActionId = previousActionId;
+                        plannedAction.RuleId = rule.Id;
 
                         plan.PlannedActions.Add(plannedAction);
                         previousActionId = plannedAction.Id;

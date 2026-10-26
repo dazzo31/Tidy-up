@@ -113,6 +113,7 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
                     _stateManager?.NotifyOperationCompleted();
                 }
 
+                actionResult ??= new ActionResult { Success = false, ErrorMessage = "No result returned", Type = ActionResultType.Error };
                 if (actionResult.Success)
                 {
                     result.SucceededCount++;

@@ -50,6 +50,16 @@ public class PlannedFileAction
     public string RuleName { get; set; } = string.Empty;
 
     /// <summary>
+    /// ID of the rule generating this action.
+    /// </summary>
+    public Guid? RuleId { get; set; }
+
+    /// <summary>
+    /// Revision ID of the rule generating this action.
+    /// </summary>
+    public Guid? RuleRevisionId { get; set; }
+
+    /// <summary>
     /// Size of the source file in bytes.
     /// </summary>
     public long FileSizeBytes { get; set; }

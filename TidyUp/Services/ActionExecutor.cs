@@ -27,11 +27,21 @@ public class ActionExecutor(
     private const int MaxRetries = 3;
     private static readonly int[] RetryDelays = [100, 500, 2000];
 
-    public async Task<List<ActionResult>> ExecuteActionsAsync(
+    public Task<List<ActionResult>> ExecuteActionsAsync(
         List<FileAction> actions,
         FileInfo fileInfo,
         int? counter = null,
         Guid? batchId = null)
+        => ExecuteActionsAsync(actions, fileInfo, counter, batchId, null, null, null);
+
+    public async Task<List<ActionResult>> ExecuteActionsAsync(
+        List<FileAction> actions,
+        FileInfo fileInfo,
+        int? counter,
+        Guid? batchId,
+        Guid? ruleId,
+        string? ruleName,
+        Guid? ruleRevisionId)
     {
         var effectiveBatchId = batchId ?? Guid.NewGuid();
         var results = new List<ActionResult>();
@@ -39,7 +49,7 @@ public class ActionExecutor(
 
         foreach (var action in actions.OrderBy(a => a.Order))
         {                       
-            var result = await ExecuteActionAsync(action, currentFile, counter, effectiveBatchId);
+            var result = await ExecuteActionAsync(action, currentFile, counter, effectiveBatchId, ruleId, ruleName, ruleRevisionId);
             results.Add(result);
 
             if (!result.Success)
@@ -52,14 +62,26 @@ public class ActionExecutor(
         return results;
     }
 
-    public async Task<ActionResult> ExecuteActionAsync(
+    public Task<ActionResult> ExecuteActionAsync(
         FileAction action,
         FileInfo fileInfo,
         int? counter = null,
         Guid? batchId = null)
+        => ExecuteActionAsync(action, fileInfo, counter, batchId, null, null, null);
+
+    public async Task<ActionResult> ExecuteActionAsync(
+        FileAction action,
+        FileInfo fileInfo,
+        int? counter,
+        Guid? batchId,
+        Guid? ruleId,
+        string? ruleName,
+        Guid? ruleRevisionId)
     {
         var originalPath = fileInfo.FullName;
         var preActionHash = FileChecksumHelper.ComputeSha256(originalPath);
+        ruleId ??= action.RuleId;
+        ruleName ??= action.RuleName;
 
         var result = action switch
         {
@@ -73,34 +95,63 @@ public class ActionExecutor(
             _ => new ActionResult { Success = false, ErrorMessage = "Unknown action type", Type = ActionResultType.Error }
         };
 
-        if (result.Success && _rollbackEngine is not null)
+        if (_rollbackEngine is not null)
         {
-            var postPath = result.TargetPath ?? (action is DeleteFileAction ? null : result.ResultPath ?? originalPath);
-            var postActionHash = !string.IsNullOrEmpty(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
-
-            await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+            var effectiveBatchId = batchId ?? Guid.NewGuid();
+            var actionTypeName = action switch
             {
-                BatchId = batchId ?? Guid.NewGuid(),
-                ActionType = action switch
+                MoveFileAction => "Move",
+                CopyFileAction => "Copy",
+                RenameFileAction => "Rename",
+                ChangeExtensionAction => "ChangeExtension",
+                DeleteFileAction => "Delete",
+                ExtractArchiveAction => "ExtractArchive",
+                RunCommandAction => "RunCommand",
+                _ => action.GetType().Name
+            };
+
+            if (result.Success)
+            {
+                var postPath = result.TargetPath ?? (action is DeleteFileAction ? null : result.ResultPath ?? originalPath);
+                var postActionHash = !string.IsNullOrEmpty(postPath) && File.Exists(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
+                var details = result.DisplacedBackupPath is not null
+                    ? $"Displaced file backed up to: {result.DisplacedBackupPath}"
+                    : action is DeleteFileAction del
+                        ? (del.UseRecycleBin ? "Sent to Recycle Bin" : "Permanently Deleted")
+                        : null;
+
+                await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
                 {
-                    MoveFileAction => "Move",
-                    CopyFileAction => "Copy",
-                    RenameFileAction => "Rename",
-                    ChangeExtensionAction => "ChangeExtension",
-                    DeleteFileAction => "Delete",
-                    ExtractArchiveAction => "ExtractArchive",
-                    RunCommandAction => "RunCommand",
-                    _ => action.GetType().Name
-                },
-                OriginalPath = originalPath,
-                TargetPath = postPath,
-                PreActionHash = preActionHash,
-                PostActionHash = postActionHash,
-                Status = "Completed",
-                Details = action is DeleteFileAction del
-                    ? (del.UseRecycleBin ? "Sent to Recycle Bin" : "Permanently Deleted")
-                    : null
-            });
+                    BatchId = effectiveBatchId,
+                    RuleId = ruleId,
+                    RuleName = ruleName,
+                    RuleRevisionId = ruleRevisionId,
+                    ActionType = actionTypeName,
+                    OriginalPath = originalPath,
+                    TargetPath = postPath,
+                    PreActionHash = preActionHash,
+                    PostActionHash = postActionHash,
+                    Status = "Completed",
+                    Details = details
+                });
+            }
+            else
+            {
+                await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+                {
+                    BatchId = effectiveBatchId,
+                    RuleId = ruleId,
+                    RuleName = ruleName,
+                    RuleRevisionId = ruleRevisionId,
+                    ActionType = actionTypeName,
+                    OriginalPath = originalPath,
+                    TargetPath = result.TargetPath ?? result.ResultPath,
+                    PreActionHash = preActionHash,
+                    PostActionHash = null,
+                    Status = "Failed",
+                    Details = result.ErrorMessage
+                });
+            }
         }
 
         return result;
@@ -166,29 +217,53 @@ public class ActionExecutor(
         {
             MoveFileAction move => await ExecuteMoveAsync(move, fileInfo, plannedAction.Order, plannedAction.TargetPath),
             CopyFileAction copy => await ExecuteCopyAsync(copy, fileInfo, plannedAction.Order, plannedAction.TargetPath),
-            _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.Order, batchId)
+            _ => await ExecuteActionAsync(plannedAction.FileAction, fileInfo, plannedAction.Order, batchId, plannedAction.RuleId, plannedAction.RuleName, plannedAction.RuleRevisionId)
         };
 
-        if (result.Success && _rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction))
+        if (_rollbackEngine is not null && (plannedAction.FileAction is MoveFileAction || plannedAction.FileAction is CopyFileAction))
         {
-            var postPath = result.TargetPath ?? result.ResultPath ?? originalPath;
-            var postActionHash = !string.IsNullOrEmpty(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
-
-            await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+            var effectiveBatchId = batchId ?? Guid.NewGuid();
+            var actionTypeName = plannedAction.FileAction is MoveFileAction ? "Move" : "Copy";
+            if (result.Success)
             {
-                BatchId = batchId ?? Guid.NewGuid(),
-                ActionType = plannedAction.FileAction switch
+                var postPath = result.TargetPath ?? result.ResultPath ?? originalPath;
+                var postActionHash = !string.IsNullOrEmpty(postPath) && File.Exists(postPath) ? FileChecksumHelper.ComputeSha256(postPath) : null;
+                var details = result.DisplacedBackupPath is not null
+                    ? $"Displaced file backed up to: {result.DisplacedBackupPath}"
+                    : null;
+
+                await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
                 {
-                    MoveFileAction => "Move",
-                    CopyFileAction => "Copy",
-                    _ => plannedAction.FileAction.GetType().Name
-                },
-                OriginalPath = originalPath,
-                TargetPath = postPath,
-                PreActionHash = preActionHash,
-                PostActionHash = postActionHash,
-                Status = "Completed"
-            });
+                    BatchId = effectiveBatchId,
+                    RuleId = plannedAction.RuleId,
+                    RuleName = plannedAction.RuleName,
+                    RuleRevisionId = plannedAction.RuleRevisionId,
+                    ActionType = actionTypeName,
+                    OriginalPath = originalPath,
+                    TargetPath = postPath,
+                    PreActionHash = preActionHash,
+                    PostActionHash = postActionHash,
+                    Status = "Completed",
+                    Details = details
+                });
+            }
+            else
+            {
+                await _rollbackEngine.RecordOperationAsync(new OperationJournalEntry
+                {
+                    BatchId = effectiveBatchId,
+                    RuleId = plannedAction.RuleId,
+                    RuleName = plannedAction.RuleName,
+                    RuleRevisionId = plannedAction.RuleRevisionId,
+                    ActionType = actionTypeName,
+                    OriginalPath = originalPath,
+                    TargetPath = result.TargetPath ?? result.ResultPath,
+                    PreActionHash = preActionHash,
+                    PostActionHash = null,
+                    Status = "Failed",
+                    Details = result.ErrorMessage
+                });
+            }
         }
 
         return result;
@@ -231,6 +306,7 @@ public class ActionExecutor(
             }
 
             string fullDestPath;
+            string? displacedBackupPath = null;
             if (!string.IsNullOrEmpty(destinationOverride))
             {
                 fullDestPath = destinationOverride;
@@ -238,6 +314,22 @@ public class ActionExecutor(
                 if (!string.IsNullOrEmpty(parentDir))
                 {
                     Directory.CreateDirectory(parentDir);
+                }
+
+                if (File.Exists(fullDestPath))
+                {
+                    var (resolvedDest, displacedPath) = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                    if (resolvedDest is null)
+                    {
+                        return new ActionResult
+                        {
+                            Success = false,
+                            Type = ActionResultType.Skipped,
+                            ErrorMessage = "Operation skipped due to conflict"
+                        };
+                    }
+                    fullDestPath = resolvedDest;
+                    displacedBackupPath = displacedPath;
                 }
             }
             else
@@ -259,7 +351,7 @@ public class ActionExecutor(
                 Directory.CreateDirectory(destPath);
 
                 // Handle conflicts
-                var resolvedDest = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                var (resolvedDest, displacedPath) = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
                 if (resolvedDest is null)
                 {
                     return new ActionResult
@@ -270,11 +362,8 @@ public class ActionExecutor(
                     };
                 }
                 fullDestPath = resolvedDest;
+                displacedBackupPath = displacedPath;
             }
-
-            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
-            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(fullDestPath))
-                await Task.Run(() => File.Delete(fullDestPath));
 
             // Retry logic for locked files
             await RetryAsync(async () =>
@@ -286,7 +375,7 @@ public class ActionExecutor(
             if (action.RemoveEmptyFolders)
                 await RemoveEmptyFoldersAsync(fileInfo.Directory);
 
-            return new ActionResult { Success = true, ResultPath = fullDestPath, TargetPath = fullDestPath, Type = ActionResultType.Success };
+            return new ActionResult { Success = true, ResultPath = fullDestPath, TargetPath = fullDestPath, DisplacedBackupPath = displacedBackupPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -331,6 +420,7 @@ public class ActionExecutor(
             }
 
             string fullDestPath;
+            string? displacedBackupPath = null;
             if (!string.IsNullOrEmpty(destinationOverride))
             {
                 fullDestPath = destinationOverride;
@@ -338,6 +428,22 @@ public class ActionExecutor(
                 if (!string.IsNullOrEmpty(parentDir))
                 {
                     Directory.CreateDirectory(parentDir);
+                }
+
+                if (File.Exists(fullDestPath))
+                {
+                    var (resolvedDest, displacedPath) = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                    if (resolvedDest is null)
+                    {
+                        return new ActionResult
+                        {
+                            Success = false,
+                            Type = ActionResultType.Skipped,
+                            ErrorMessage = "Operation skipped due to conflict"
+                        };
+                    }
+                    fullDestPath = resolvedDest;
+                    displacedBackupPath = displacedPath;
                 }
             }
             else
@@ -359,7 +465,7 @@ public class ActionExecutor(
                 Directory.CreateDirectory(destPath);
 
                 // Handle conflicts
-                var resolvedDest = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
+                var (resolvedDest, displacedPath) = await ResolveConflictAsync(fullDestPath, action.ConflictResolution);
                 if (resolvedDest is null)
                 {
                     return new ActionResult
@@ -370,6 +476,7 @@ public class ActionExecutor(
                     };
                 }
                 fullDestPath = resolvedDest;
+                displacedBackupPath = displacedPath;
             }
 
             // Retry logic
@@ -381,7 +488,7 @@ public class ActionExecutor(
             // Return the appropriate path for next action
             var resultPath = action.ApplyToSourceFile ? fileInfo.FullName : fullDestPath;
 
-            return new ActionResult { Success = true, ResultPath = resultPath, TargetPath = fullDestPath, Type = ActionResultType.Success };
+            return new ActionResult { Success = true, ResultPath = resultPath, TargetPath = fullDestPath, DisplacedBackupPath = displacedBackupPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -430,8 +537,8 @@ public class ActionExecutor(
             var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, newName);
 
             // Handle conflicts
-            newPath = await ResolveConflictAsync(newPath, action.ConflictResolution);
-            if (newPath is null)
+            var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+            if (resolvedPath is null)
             {
                 return new ActionResult
                 {
@@ -440,10 +547,7 @@ public class ActionExecutor(
                     ErrorMessage = "Operation skipped due to conflict"
                 };
             }
-
-            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
-            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
-                await Task.Run(() => File.Delete(newPath));
+            newPath = resolvedPath;
 
             // Retry logic
             await RetryAsync(async () =>
@@ -451,7 +555,7 @@ public class ActionExecutor(
                 await Task.Run(() => File.Move(fileInfo.FullName, newPath));
             });
 
-            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, Type = ActionResultType.Success };
+            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, DisplacedBackupPath = displacedBackupPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -496,8 +600,8 @@ public class ActionExecutor(
             var newPath = Path.Combine(fileInfo.DirectoryName ?? string.Empty, $"{nameWithoutExt}.{newExtension}");
 
             // Handle conflicts
-            newPath = await ResolveConflictAsync(newPath, action.ConflictResolution);
-            if (newPath is null)
+            var (resolvedPath, displacedBackupPath) = await ResolveConflictAsync(newPath, action.ConflictResolution);
+            if (resolvedPath is null)
             {
                 return new ActionResult
                 {
@@ -506,10 +610,7 @@ public class ActionExecutor(
                     ErrorMessage = "Operation skipped due to conflict"
                 };
             }
-
-            // If overwriting, delete the destination file first since File.Move doesn't support overwrite
-            if (action.ConflictResolution == ConflictResolution.Overwrite && File.Exists(newPath))
-                await Task.Run(() => File.Delete(newPath));
+            newPath = resolvedPath;
 
             // Retry logic
             await RetryAsync(async () =>
@@ -517,7 +618,7 @@ public class ActionExecutor(
                 await Task.Run(() => File.Move(fileInfo.FullName, newPath));
             });
 
-            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, Type = ActionResultType.Success };
+            return new ActionResult { Success = true, ResultPath = newPath, TargetPath = newPath, DisplacedBackupPath = displacedBackupPath, Type = ActionResultType.Success };
         }
         catch (Exception ex)
         {
@@ -727,20 +828,36 @@ public class ActionExecutor(
         }
     }
 
-    private static async Task<string?> ResolveConflictAsync(string destinationPath, ConflictResolution strategy)
+    private static async Task<(string? ResolvedPath, string? DisplacedBackupPath)> ResolveConflictAsync(string destinationPath, ConflictResolution strategy)
     {
         if (!File.Exists(destinationPath))
-            return destinationPath;
+            return (destinationPath, null);
 
-        return strategy switch
+        switch (strategy)
         {
-            ConflictResolution.Skip => null,
-            ConflictResolution.Overwrite => destinationPath,
-            ConflictResolution.RenameNew => GenerateUniquePath(destinationPath),
-            ConflictResolution.RenameOld => await RenameExistingFileAsync(destinationPath),
-            ConflictResolution.Prompt => null, // Fail closed: prompt is not supported in batch execution; skip safely
-            _ => null
-        };
+            case ConflictResolution.Skip:
+                return (null, null);
+            case ConflictResolution.Overwrite:
+            {
+                var directory = Path.GetDirectoryName(destinationPath) ?? string.Empty;
+                var fileNameWithoutExt = Path.GetFileNameWithoutExtension(destinationPath);
+                var extension = Path.GetExtension(destinationPath);
+                var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+                var backupPath = Path.Combine(directory, $"{fileNameWithoutExt}_displaced_{timestamp}{extension}");
+                await RetryAsync(async () => await Task.Run(() => File.Move(destinationPath, backupPath)));
+                return (destinationPath, backupPath);
+            }
+            case ConflictResolution.RenameNew:
+                return (GenerateUniquePath(destinationPath), null);
+            case ConflictResolution.RenameOld:
+            {
+                var renamed = await RenameExistingFileAsync(destinationPath);
+                return (renamed.DestinationPath, renamed.BackupPath);
+            }
+            case ConflictResolution.Prompt:
+            default:
+                return (null, null);
+        }
     }
 
     private static string GenerateUniquePath(string originalPath)
@@ -762,7 +879,7 @@ public class ActionExecutor(
         return newPath;
     }
 
-    private static async Task<string> RenameExistingFileAsync(string destinationPath)
+    private static async Task<(string DestinationPath, string BackupPath)> RenameExistingFileAsync(string destinationPath)
     {
         var directory = Path.GetDirectoryName(destinationPath) ?? string.Empty;
         var fileNameWithoutExt = Path.GetFileNameWithoutExtension(destinationPath);
@@ -776,7 +893,7 @@ public class ActionExecutor(
             await Task.Run(() => File.Move(destinationPath, backupPath));
         });
 
-        return destinationPath;
+        return (destinationPath, backupPath);
     }
 
     private static readonly HashSet<string> ProtectedFolders = InitializeProtectedFolders();

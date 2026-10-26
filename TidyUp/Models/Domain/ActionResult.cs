@@ -9,6 +9,7 @@ public class ActionResult
     public string? ErrorMessage { get; set; }
     public string? ResultPath { get; set; }
     public string? TargetPath { get; set; }
+    public string? DisplacedBackupPath { get; set; }
     public ActionResultType Type { get; set; } = ActionResultType.Success;
 }
 

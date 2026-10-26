@@ -95,6 +95,21 @@ public class RollbackEngine : IRollbackEngine
                 };
             }
 
+            if (string.Equals(entry.Status, "Failed", StringComparison.OrdinalIgnoreCase))
+            {
+                return new RollbackOperationResult
+                {
+                    OperationId = operationId,
+                    BatchId = entry.BatchId,
+                    ActionType = entry.ActionType,
+                    OriginalPath = entry.OriginalPath,
+                    TargetPath = entry.TargetPath,
+                    Success = false,
+                    Message = "Operation failed during execution and cannot be rolled back.",
+                    ConflictReason = RollbackConflictReason.TargetMissing
+                };
+            }
+
             return entry.ActionType switch
             {
                 "Move" or "Rename" or "ChangeExtension" =>
@@ -363,6 +378,9 @@ public class RollbackEngine : IRollbackEngine
         {
             if (cancellationToken.IsCancellationRequested)
                 break;
+
+            if (!string.Equals(entry.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                continue;
 
             var opResult = await RollbackOperationAsync(entry.OperationId, cancellationToken);
             results.Add(opResult);

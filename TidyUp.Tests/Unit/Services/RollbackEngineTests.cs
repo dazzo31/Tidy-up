@@ -323,5 +323,135 @@ public class RollbackEngineTests : IDisposable
         secondRollback.ConflictReason.Should().Be(RollbackConflictReason.AlreadyRolledBack);
         secondRollback.Message.Should().Contain("already been rolled back");
     }
-}
 
+    [Fact]
+    public async Task ExecuteActionAsync_OnSuccess_JournalsCompletedEntryWithRuleMetadata()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("journal_meta.txt", "Rule metadata test content");
+        var destDir = _fileHelper.CreateTestDirectory("meta_dest");
+        var batchId = Guid.NewGuid();
+        var ruleId = Guid.NewGuid();
+        var ruleRevisionId = Guid.NewGuid();
+        var ruleName = "Organize Documents Rule";
+
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            RuleId = ruleId,
+            RuleName = ruleName
+        };
+
+        // Act
+        var result = await _actionExecutor.ExecuteActionAsync(
+            moveAction,
+            sourceFile,
+            counter: 1,
+            batchId: batchId,
+            ruleId: ruleId,
+            ruleName: ruleName,
+            ruleRevisionId: ruleRevisionId);
+
+        // Assert
+        result.Success.Should().BeTrue();
+
+        var entries = await _rollbackEngine.GetBatchEntriesAsync(batchId);
+        entries.Should().HaveCount(1);
+        var entry = entries[0];
+        entry.Status.Should().Be("Completed");
+        entry.RuleId.Should().Be(ruleId);
+        entry.RuleName.Should().Be(ruleName);
+        entry.RuleRevisionId.Should().Be(ruleRevisionId);
+        entry.PreActionHash.Should().NotBeNullOrWhiteSpace();
+        entry.PostActionHash.Should().NotBeNullOrWhiteSpace();
+        entry.PreActionHash.Should().Be(entry.PostActionHash);
+    }
+
+    [Fact]
+    public async Task ExecuteActionAsync_OnFailure_JournalsFailedEntryAndRejectsRollback()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("locked_fail.txt", "Locked test content");
+        var destDir = _fileHelper.CreateTestDirectory("locked_dest");
+        var batchId = Guid.NewGuid();
+        var ruleId = Guid.NewGuid();
+        var ruleName = "Failing Rule";
+
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            RuleId = ruleId,
+            RuleName = ruleName
+        };
+
+        // Lock the source file exclusively so ActionExecutor cannot move it
+        using (var lockStream = File.Open(sourceFile.FullName, FileMode.Open, FileAccess.ReadWrite, FileShare.None))
+        {
+            // Act
+            var result = await _actionExecutor.ExecuteActionAsync(
+                moveAction,
+                sourceFile,
+                counter: null,
+                batchId: batchId,
+                ruleId: ruleId,
+                ruleName: ruleName,
+                ruleRevisionId: null);
+
+            // Assert action failed
+            result.Success.Should().BeFalse();
+        }
+
+        // Assert failed journal entry was written
+        var entries = await _dbContext.OperationJournal
+            .Where(e => e.BatchId == batchId)
+            .ToListAsync();
+        entries.Should().HaveCount(1);
+        var entry = entries[0];
+        entry.Status.Should().Be("Failed");
+        entry.RuleId.Should().Be(ruleId);
+        entry.RuleName.Should().Be(ruleName);
+        entry.Details.Should().NotBeNullOrWhiteSpace();
+
+        // Attempting to rollback a failed entry must return failure safely
+        var rollbackResult = await _rollbackEngine.RollbackOperationAsync(entry.OperationId);
+        rollbackResult.Success.Should().BeFalse();
+        rollbackResult.Message.Should().Contain("failed during execution");
+    }
+
+    [Fact]
+    public async Task ExecuteActionAsync_WithOverwriteConflict_RecordsDisplacedBackupPathInDetails()
+    {
+        // Arrange
+        var sourceFile = _fileHelper.CreateTestFile("source_overwrite.txt", "New Source Content");
+        var destDir = _fileHelper.CreateTestDirectory("overwrite_dest");
+        var existingTargetPath = Path.Combine(destDir.FullName, "source_overwrite.txt");
+        File.WriteAllText(existingTargetPath, "Old Target Content");
+
+        var batchId = Guid.NewGuid();
+        var moveAction = new MoveFileAction
+        {
+            DestinationPath = destDir.FullName,
+            ConflictResolution = ConflictResolution.Overwrite
+        };
+
+        // Act
+        var result = await _actionExecutor.ExecuteActionAsync(
+            moveAction,
+            sourceFile,
+            counter: null,
+            batchId: batchId);
+
+        // Assert
+        result.Success.Should().BeTrue();
+        result.DisplacedBackupPath.Should().NotBeNullOrWhiteSpace();
+        File.Exists(result.DisplacedBackupPath).Should().BeTrue();
+        File.ReadAllText(result.DisplacedBackupPath!).Should().Be("Old Target Content");
+
+        var entries = await _rollbackEngine.GetBatchEntriesAsync(batchId);
+        entries.Should().HaveCount(1);
+        var entry = entries[0];
+        entry.Status.Should().Be("Completed");
+        entry.Details.Should().Contain("Displaced file backed up to: ");
+        entry.Details.Should().Contain(result.DisplacedBackupPath!);
+    }
+}
