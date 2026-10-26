@@ -1,3 +1,5 @@
+using TidyUp.Services.Lifecycle;
+using TidyUp.Services.State;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,14 +17,24 @@ public partial class MainWindow : Window
 {
     private MainWindowViewModel ViewModel => (MainWindowViewModel)DataContext;
     private readonly SettingsRepository? _settingsRepository;
+    private readonly IApplicationStateManager? _stateManager;
+    private readonly IWindowCloseCoordinator _closeCoordinator;
     private Rule? _draggedRule;
     private Point _startPoint;
 
-    public MainWindow(MainWindowViewModel viewModel, SettingsRepository? settingsRepository = null)
+    public Func<string, string, bool>? ConfirmationCallback { get; set; }
+
+    public MainWindow(
+        MainWindowViewModel viewModel,
+        SettingsRepository? settingsRepository = null,
+        IApplicationStateManager? stateManager = null,
+        IWindowCloseCoordinator? closeCoordinator = null)
     {
         InitializeComponent();
         DataContext = viewModel;
         _settingsRepository = settingsRepository;
+        _stateManager = stateManager;
+        _closeCoordinator = closeCoordinator ?? new WindowCloseCoordinator(App.AppSettings ?? new TidyUp.Models.AppSettings(), stateManager);
         
         RestoreWindowGeometry();
 
@@ -31,18 +43,32 @@ public partial class MainWindow : Window
         Closing += OnMainWindowClosing;
     }
 
-    private void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
+    public void OnMainWindowClosing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
-        if (ViewModel.IsRuleDirty)
+        var action = _closeCoordinator.EvaluateCloseAction(
+            ViewModel.IsRuleDirty,
+            () => ViewModel.ConfirmDiscardRuleEdits(),
+            ConfirmationCallback,
+            isExplicitExit: App.IsExiting);
+
+        switch (action)
         {
-            if (!ViewModel.ConfirmDiscardRuleEdits())
-            {
+            case WindowCloseAction.Cancel:
                 e.Cancel = true;
                 return;
-            }
-        }
 
-        SaveWindowGeometry();
+            case WindowCloseAction.MinimizeToTray:
+                e.Cancel = true;
+                SaveWindowGeometry();
+                Hide();
+                App.TrayIcon?.ShowBalloonTip("TidyUp", "Application minimized to system tray", Hardcodet.Wpf.TaskbarNotification.BalloonIcon.Info);
+                return;
+
+            case WindowCloseAction.CloseAndExit:
+                e.Cancel = false;
+                SaveWindowGeometry();
+                return;
+        }
     }
 
     protected override void OnStateChanged(EventArgs e)

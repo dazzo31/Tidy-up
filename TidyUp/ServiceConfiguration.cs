@@ -102,6 +102,7 @@ public static class ServiceConfiguration
         services.AddSingleton<IFolderValidator, FolderValidator>();
         services.AddSingleton<IMonitoredFolderCatalog, MonitoredFolderCatalog>();
         services.AddSingleton<TidyUp.Services.Monitoring.IMonitoringCoordinator, TidyUp.Services.Monitoring.MonitoringCoordinator>();
+        services.AddSingleton<TidyUp.Services.Lifecycle.IWindowCloseCoordinator, TidyUp.Services.Lifecycle.WindowCloseCoordinator>();
 
         // ViewModels  transient so each request gets a fresh instance
         services.AddTransient<MainWindowViewModel>();

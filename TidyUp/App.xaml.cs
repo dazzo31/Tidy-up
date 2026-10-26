@@ -23,6 +23,11 @@ public partial class App : Application
     private MainWindow? _mainWindow;
     private bool _isExiting;
     public static AppSettings? AppSettings { get; private set; }
+    public static IServiceProvider? ServiceProvider { get; private set; }
+    public static TaskbarIcon? TrayIcon => (Current as App)?._trayIcon;
+    public static bool IsExiting => (Current as App)?._isExiting ?? false;
+    public void SetIsExiting(bool isExiting) => _isExiting = isExiting;
+    public Func<string, string, bool>? ExitConfirmationCallback { get; set; }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
@@ -32,6 +37,7 @@ public partial class App : Application
         {
             // Configure services
             _serviceProvider = ServiceConfiguration.ConfigureServices();
+            ServiceProvider = _serviceProvider;
 
             // Ensure database is created and up to date
             try
@@ -161,11 +167,9 @@ public partial class App : Application
                 mainViewModel.SettingsViewModel.RunSetupWizardHandler = RunSetupWizardAsync;
             }
             
-            // Handle window close to minimize to tray
-            _mainWindow.Closing += MainWindow_Closing;
+            // Window close coordination is handled directly by MainWindow via IWindowCloseCoordinator
             
             _mainWindow.Show();
-            _mainWindow.WindowState = WindowState.Normal;
             _mainWindow.Activate();
             _mainWindow.Focus();
         }
@@ -221,10 +225,21 @@ public partial class App : Application
 
     #region Tray Icon Event Handlers
 
-    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    public void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
     {
+        // If closing was already cancelled (e.g. user declined to discard dirty edits or waiting for batch), keep window visible
+        if (e.Cancel)
+        {
+            return;
+        }
+
+        if (_isExiting)
+        {
+            return;
+        }
+
         // Check if we should minimize to tray instead of closing
-        if (AppSettings?.SystemTrayEnabled == true && AppSettings?.MinimizeToTray == true && !_isExiting)
+        if (AppSettings?.SystemTrayEnabled == true && AppSettings?.MinimizeToTray == true)
         {
             e.Cancel = true;
             _mainWindow?.Hide();
@@ -252,7 +267,10 @@ public partial class App : Application
         if (_mainWindow != null)
         {
             _mainWindow.Show();
-            _mainWindow.WindowState = WindowState.Normal;
+            if (_mainWindow.WindowState == WindowState.Minimized)
+            {
+                _mainWindow.WindowState = WindowState.Normal;
+            }
             _mainWindow.Activate();
         }
     }
@@ -299,11 +317,60 @@ public partial class App : Application
         }
     }
 
-    private void ExitApplication_Click(object sender, RoutedEventArgs e)
+    private async void ExitApplication_Click(object sender, RoutedEventArgs e)
     {
-        // Transient: persisting MinimizeToTray=false here would silently turn the user's setting off for good.
+        await RequestApplicationExitAsync();
+    }
+
+    public async Task<bool> RequestApplicationExitAsync(TimeSpan? timeout = null)
+    {
+        var stateManager = _serviceProvider?.GetService<TidyUp.Services.State.IApplicationStateManager>();
+        if (stateManager != null && 
+            (stateManager.CurrentState == TidyUp.Services.State.ApplicationLifecycleState.ExecutingBatch || stateManager.ActiveOperationCount > 0))
+        {
+            var effectiveTimeout = timeout ?? TimeSpan.FromSeconds(5);
+            using var cts = new CancellationTokenSource(effectiveTimeout);
+
+            try
+            {
+                while (stateManager.CurrentState == TidyUp.Services.State.ApplicationLifecycleState.ExecutingBatch || stateManager.ActiveOperationCount > 0)
+                {
+                    if (cts.IsCancellationRequested)
+                    {
+                        bool confirmForce = ExitConfirmationCallback != null
+                            ? ExitConfirmationCallback("File operations are still in progress. Force exit now?", "Exit TidyUp")
+                            : MessageBox.Show(
+                                "File operations are still in progress. Force exit now?",
+                                "Exit TidyUp",
+                                MessageBoxButton.YesNo,
+                                MessageBoxImage.Warning) == MessageBoxResult.Yes;
+
+                        if (!confirmForce)
+                        {
+                            return false;
+                        }
+                        break;
+                    }
+                    await Task.Delay(100, cts.Token);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        if (_mainWindow?.DataContext is MainWindowViewModel vm && vm.IsRuleDirty)
+        {
+            ShowMainWindow();
+            if (!vm.ConfirmDiscardRuleEdits())
+            {
+                return false;
+            }
+        }
+
         _isExiting = true;
         Shutdown();
+        return true;
     }
 
     #endregion
