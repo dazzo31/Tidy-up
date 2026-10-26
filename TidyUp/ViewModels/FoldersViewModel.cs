@@ -230,6 +230,11 @@ public partial class FoldersViewModel : ObservableObject
                 }
             };
 
+            if (state.NormalizedPath.StartsWith(@"\\"))
+            {
+                watcherStatusText = "Pending (Network Share)";
+            }
+
             var permissionStatusText = state.ValidationStatus switch
             {
                 FolderValidationStatus.Missing => "Directory does not exist",
@@ -572,7 +577,14 @@ public partial class FoldersViewModel : ObservableObject
 
             NewFolderPathInput = string.Empty;
             NewFolderExclusionsInput = string.Empty;
-            StatusMessage = $"Added monitored directory: {path}. Create a rule to start organizing files in this folder.";
+            if (path.StartsWith(@"\\"))
+            {
+                StatusMessage = $"Added monitored directory: {path}. Note: Remote UNC share monitoring is [Integration Pending] in this release.";
+            }
+            else
+            {
+                StatusMessage = $"Added monitored directory: {path}. Create a rule to start organizing files in this folder.";
+            }
         }
         catch (Exception ex)
         {

@@ -358,4 +358,54 @@ public class FoldersViewModelTests : IDisposable
 
         callbackPath.Should().Be(_tempTestDir);
     }
+
+    [Fact]
+    public async Task AddMonitoredFolderAsync_WhenNetworkShare_SetsIntegrationPendingNotice()
+    {
+        var catalogMock = new Mock<IMonitoredFolderCatalog>();
+        catalogMock.Setup(c => c.Folders).Returns(new ReadOnlyObservableCollection<MonitoredFolderState>(new ObservableCollection<MonitoredFolderState>()));
+        var viewModel = new FoldersViewModel(
+            _ruleRepoMock.Object,
+            null,
+            catalogMock.Object,
+            null,
+            null,
+            null);
+
+        viewModel.NewFolderPathInput = @"\\Server\Share\Documents";
+        await viewModel.AddMonitoredFolderAsync();
+
+        viewModel.StatusMessage.Should().Contain("[Integration Pending]");
+    }
+
+    [Fact]
+    public void SyncFoldersFromCatalog_WhenPathIsNetworkUnc_SetsWatcherStatusToIntegrationPending()
+    {
+        var catalogMock = new Mock<IMonitoredFolderCatalog>();
+        var uncFolder = new MonitoredFolderState
+        {
+            Id = Guid.NewGuid(),
+            NormalizedPath = @"\\Server\Share\Photos",
+            DisplayPath = @"\\Server\Share\Photos",
+            Exists = true,
+            HasReadPermission = true,
+            HasWritePermission = true,
+            ValidationStatus = FolderValidationStatus.Accessible,
+            WatcherHealth = TidyUp.Services.Monitoring.WatcherHealthStatus.Healthy,
+            LinkedRuleIds = []
+        };
+
+        var foldersList = new ObservableCollection<MonitoredFolderState> { uncFolder };
+        catalogMock.Setup(c => c.Folders).Returns(new ReadOnlyObservableCollection<MonitoredFolderState>(foldersList));
+
+        var viewModel = new FoldersViewModel(
+            _ruleRepoMock.Object,
+            null,
+            catalogMock.Object);
+
+        catalogMock.Raise(c => c.CatalogChanged += null, new FolderCatalogChangedEventArgs { Folders = foldersList });
+
+        viewModel.MonitoredFolders.Should().HaveCount(1);
+        viewModel.MonitoredFolders[0].WatcherStatus.Should().Be("Pending (Network Share)");
+    }
 }
