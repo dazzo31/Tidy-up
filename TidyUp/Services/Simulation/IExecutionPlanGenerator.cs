@@ -22,5 +22,13 @@ public interface IExecutionPlanGenerator
         bool includeSubfolders,
         IEnumerable<string>? exclusionPatterns = null,
         CancellationToken cancellationToken = default);
-}
 
+    /// <summary>
+    /// Generates an execution plan for a rule targeting a specific detected file.
+    /// </summary>
+    Task<ExecutionPlan> GeneratePlanForFileAsync(
+        Rule rule,
+        string filePath,
+        string sourceFolder,
+        CancellationToken cancellationToken = default);
+}

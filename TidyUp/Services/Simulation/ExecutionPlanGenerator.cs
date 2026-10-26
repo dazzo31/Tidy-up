@@ -80,6 +80,98 @@ public class ExecutionPlanGenerator : IExecutionPlanGenerator
             cancellationToken);
     }
 
+    public Task<ExecutionPlan> GeneratePlanForFileAsync(
+        Rule rule,
+        string filePath,
+        string sourceFolder,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(rule);
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        var plan = new ExecutionPlan
+        {
+            RuleId = rule.Id,
+            RuleName = rule.Name
+        };
+
+        if (!File.Exists(filePath))
+            return Task.FromResult(plan);
+
+        var fileInfo = new FileInfo(filePath);
+        if (!_ruleEngine.MatchesConditions(rule, fileInfo))
+            return Task.FromResult(plan);
+
+        plan.TotalScanned = 1;
+        plan.TotalMatched = 1;
+
+        var targetReservations = new Dictionary<string, PlannedFileAction>(StringComparer.OrdinalIgnoreCase);
+        string currentVirtualPath = fileInfo.FullName;
+        string currentVirtualName = fileInfo.Name;
+        Guid? previousActionId = null;
+        int fileCounter = 1;
+
+        foreach (var action in rule.Actions.OrderBy(a => a.Order))
+        {
+            action.RuleId ??= rule.Id;
+            action.RuleName ??= rule.Name;
+            var plannedAction = SimulateAction(
+                action,
+                rule.Name,
+                fileInfo,
+                currentVirtualPath,
+                currentVirtualName,
+                fileCounter,
+                targetReservations,
+                sourceFolder);
+
+            plannedAction.InitialSourcePath = fileInfo.FullName;
+            plannedAction.DependsOnActionId = previousActionId;
+            plannedAction.RuleId = rule.Id;
+            plannedAction.PlannedCounter = fileCounter;
+            if (!string.IsNullOrEmpty(plannedAction.TargetPath))
+            {
+                plannedAction.TargetFileName = Path.GetFileName(plannedAction.TargetPath);
+            }
+
+            plan.PlannedActions.Add(plannedAction);
+            previousActionId = plannedAction.Id;
+
+            switch (action)
+            {
+                case MoveFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                    currentVirtualPath = plannedAction.TargetPath;
+                    currentVirtualName = Path.GetFileName(currentVirtualPath);
+                    break;
+
+                case CopyFileAction copyAction:
+                    if (!copyAction.ApplyToSourceFile && !string.IsNullOrEmpty(plannedAction.TargetPath))
+                    {
+                        currentVirtualPath = plannedAction.TargetPath;
+                        currentVirtualName = Path.GetFileName(currentVirtualPath);
+                    }
+                    break;
+
+                case RenameFileAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                    currentVirtualPath = plannedAction.TargetPath;
+                    currentVirtualName = Path.GetFileName(currentVirtualPath);
+                    break;
+
+                case ChangeExtensionAction when !string.IsNullOrEmpty(plannedAction.TargetPath):
+                    currentVirtualPath = plannedAction.TargetPath;
+                    currentVirtualName = Path.GetFileName(currentVirtualPath);
+                    break;
+
+                case DeleteFileAction:
+                    currentVirtualPath = string.Empty;
+                    currentVirtualName = string.Empty;
+                    break;
+            }
+        }
+
+        return Task.FromResult(plan);
+    }
+
     private async Task<ExecutionPlan> GeneratePlanForFolderInternalAsync(
         Rule rule,
         string folderPath,

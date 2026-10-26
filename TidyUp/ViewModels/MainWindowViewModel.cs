@@ -187,6 +187,10 @@ public partial class MainWindowViewModel : ObservableObject
         try
         {
             await _ruleRepository.UpdateExecutionOrdersAsync(payload);
+            if (_monitoringCoordinator != null)
+            {
+                await _monitoringCoordinator.RefreshRulesAsync();
+            }
             StatusMessage = "Rule execution order updated successfully";
             return true;
         }
@@ -483,6 +487,7 @@ public partial class MainWindowViewModel : ObservableObject
 
     public IApplicationStateManager StateManager { get; }
     private readonly IWatcherHealthMonitor? _healthMonitor;
+    private readonly TidyUp.Services.Monitoring.IMonitoringCoordinator? _monitoringCoordinator;
     private string _activeAlertSummary = string.Empty;
 
     public MainWindowViewModel(
@@ -495,7 +500,8 @@ public partial class MainWindowViewModel : ObservableObject
         IRuleValidator? ruleValidator = null,
         IFolderPathNormalizer? pathNormalizer = null,
         IMonitoredFolderCatalog? folderCatalog = null,
-        IRuleSerializationService? ruleSerializationService = null)
+        IRuleSerializationService? ruleSerializationService = null,
+        TidyUp.Services.Monitoring.IMonitoringCoordinator? monitoringCoordinator = null)
     {
         _ruleRepository = ruleRepository;
         _importExportService = importExportService;
@@ -518,6 +524,9 @@ public partial class MainWindowViewModel : ObservableObject
 
         _folderCatalog = folderCatalog
             ?? (IMonitoredFolderCatalog?)serviceProvider.GetService(typeof(IMonitoredFolderCatalog));
+
+        _monitoringCoordinator = monitoringCoordinator
+            ?? (TidyUp.Services.Monitoring.IMonitoringCoordinator?)serviceProvider.GetService(typeof(TidyUp.Services.Monitoring.IMonitoringCoordinator));
 
         _rules.CollectionChanged += (s, e) => FilterRules();
         
@@ -948,6 +957,10 @@ public partial class MainWindowViewModel : ObservableObject
             UpdateRuleMetadata(SelectedRule);
             FilterRules();
             StateManager.NotifyRuleSaved();
+            if (_monitoringCoordinator != null)
+            {
+                await _monitoringCoordinator.RefreshRulesAsync();
+            }
             await DashboardViewModel.LoadDashboardDataAsync();
             await FoldersViewModel.LoadFoldersAsync();
             UpdateHealthAlerts();
@@ -1060,6 +1073,10 @@ public partial class MainWindowViewModel : ObservableObject
             await FoldersViewModel.LoadFoldersAsync();
             UpdateHealthAlerts();
             StatusMessage = "Rule deleted successfully";
+            if (_monitoringCoordinator != null)
+            {
+                await _monitoringCoordinator.RefreshRulesAsync();
+            }
         }
         catch (Exception ex)
         {

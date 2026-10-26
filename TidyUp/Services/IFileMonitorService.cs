@@ -52,6 +52,11 @@ public interface IFileMonitorService
     /// Resumes file monitoring and safely flushes all buffered events.
     /// </summary>
     Task ResumeAsync();
+
+    /// <summary>
+    /// Evaluates whether a file path falls within the monitored directory scope and exclusion patterns of a monitored folder.
+    /// </summary>
+    bool IsFileEligibleForFolder(string filePath, MonitoredFolder folder);
 }
 
 /// <summary>

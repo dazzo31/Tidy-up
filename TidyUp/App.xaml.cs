@@ -141,6 +141,17 @@ public partial class App : Application
                 }
             }
 
+            // Start background monitoring coordinator
+            try
+            {
+                var coordinator = _serviceProvider.GetRequiredService<TidyUp.Services.Monitoring.IMonitoringCoordinator>();
+                await coordinator.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to start monitoring coordinator: {ex.Message}");
+            }
+
             // Show main window
             _mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             MainWindow = _mainWindow;
@@ -191,6 +202,16 @@ public partial class App : Application
     {
         _trayIcon?.Dispose();
         
+        try
+        {
+            var coordinator = _serviceProvider?.GetService<TidyUp.Services.Monitoring.IMonitoringCoordinator>();
+            coordinator?.StopAsync().GetAwaiter().GetResult();
+            coordinator?.Dispose();
+        }
+        catch
+        {
+        }
+
         if (_serviceProvider is IDisposable disposable)
         {
             disposable.Dispose();
