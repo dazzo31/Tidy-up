@@ -1,10 +1,17 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `79b1ac2`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `9abbccd`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed (Tasks 22, 19, 20 Complete)  
-**Active Task & Current State:** `TASK-REM-20` (`DONE`) -> Phase 3 Gate Passed -> Next: Phase 4 Gate / `TASK-REM-03` (Permanent Deletion Authorization Decoupling)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-03` Complete)  
+**Active Task & Current State:** `TASK-REM-03` (`DONE`) -> Next: `TASK-REM-04` (Overwrite & Prompt Safe Staging & Displaced Backup)  
 **Completed Changes & Files:**
+- `TASK-REM-03` (SHA: `9abbccd`):
+  - `ExecutionAuthorizationContext.cs`: Added execution authorization context validating plan, action ID, permanent delete paths, and overwrite paths.
+  - `PlannedFileAction.cs`: Added `IsAuthorizedForPermanentDeletion` and `AuthorizationContext`.
+  - `ActionExecutor.cs`: Decoupled `allowPermanentFallback` from `ConfirmBeforeDelete` preference; authorized permanent deletion succeeds even when `ConfirmBeforeDelete == true`, while unauthorized deletions fail closed.
+  - `PreviewViewModel.cs`: Issues scoped execution authorization context upon safeguard modal confirmation.
+  - `SafeDeleteTests.cs`: Unit tests verify authorized permanent delete with `ConfirmBeforeDelete = true`, and unauthorized/mismatched fail-closed rejection. 714 tests passing.
+
 - `TASK-REM-20` (SHA: `79b1ac2`):
   - `IApplicationStateManager.cs` & `ApplicationStateManager.cs`: Added `TryAcquireBatchLease` and `ReleaseBatchLease`. State machine holds `ExecutingBatch` lifecycle state across all files during a batch; `NotifyOperationCompleted()` no longer prematurely transitions state back to `Idle` while an active batch lease is held.
   - `BatchProcessingCoordinator.cs`: Added atomic admission guard via `Interlocked.CompareExchange(ref _executingFlag, 1, 0)` rejecting concurrent batch executions; acquires exclusive batch lease at batch startup and releases lease in `finally` without leaking state or leaving application locked.

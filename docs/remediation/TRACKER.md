@@ -58,7 +58,7 @@
 ### Phase 4: Safety, Recovery & Outcomes
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-03` | Permanent deletion authorization decoupling | NOT_STARTED | Phase 3 Gate | — | Target: TU-19 | Scoped execution authorization context |
+| `TASK-REM-03` | Permanent deletion authorization decoupling | DONE | Phase 3 Gate | `9abbccd` | TU-19: scoped ExecutionAuthorizationContext, decoupled from ConfirmBeforeDelete preference, fails closed without auth, 714 tests pass | Proceed to `TASK-REM-04` |
 | `TASK-REM-04` | Overwrite & Prompt safe staging & displaced backup | NOT_STARTED | `TASK-REM-03` | — | Target: TU-17 | Staged atomic replace & displaced backup |
 | `TASK-REM-02` | Archive extraction safeguards & overwrite containment | NOT_STARTED | `TASK-REM-04` | — | Target: TU-18 | Safe archive recycling & manifest check |
 | `TASK-REM-05` | Monitored root boundary clamping for empty cleanup | NOT_STARTED | `TASK-REM-02` | — | Target: TU-32 | StopBoundary clamping at monitored root |
