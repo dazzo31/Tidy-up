@@ -10,10 +10,10 @@
 ## Canonical Task State Legend
 - `NOT_STARTED`: Task is in the queue, prerequisites not yet verified or execution not begun.
 - `IN_PROGRESS`: Actively undergoing implementation and testing under an explicit Task Lock.
-- `IMPLEMENTED_UNVERIFIED`: Code modifications made, pending automated regression and acceptance evidence.
+- `IMPLEMENTED_UNVERIFIED`: Code modifications made, 0d97a5d automated regression and acceptance evidence.
 - `BLOCKED_ENVIRONMENT`: Blocked by missing toolchain, permissions, or platform capabilities.
 - `BLOCKED_DEPENDENCY`: Blocked by a prerequisite task or unmerged architectural contract.
-- `BLOCKED_DECISION`: Blocked pending an unresolved material product/architecture choice.
+- `BLOCKED_DECISION`: Blocked 0d97a5d an unresolved material product/architecture choice.
 - `DONE`: All acceptance criteria and regression tests verified with concrete evidence.
 
 ---
@@ -39,7 +39,7 @@
 ### Phase 2: Truthful Read-Only Planning
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-12` | XAML converter & visibility binding repairs | **DONE** | Phase 1 Gate | pending | InverseBooleanToVisibilityConverter & NullToVisibilityConverter implemented and wired across Stage4, Wizard, and Preview, 676 tests pass | Proceed to `TASK-REM-13` |
+| `TASK-REM-12` | XAML converter & visibility binding repairs | **DONE** | Phase 1 Gate | 0d97a5d | InverseBooleanToVisibilityConverter & NullToVisibilityConverter implemented and wired across Stage4, Wizard, and Preview, 676 tests pass | Proceed to `TASK-REM-13` |
 | `TASK-REM-13` | Disabled rule dry-run simulation decoupling | NOT_STARTED | `TASK-REM-12` | — | Target: TU-05 | Preview matching without activation |
 | `TASK-REM-14` | Multi-action virtual path continuation & dependency model | NOT_STARTED | `TASK-REM-13` | — | Targets: TU-13, TU-14 | InitialOrigin & action dependencies |
 | `TASK-REM-15` | Target reservation & conflict resolution simulation | NOT_STARTED | `TASK-REM-14` | — | Target: TU-16 | Batch target ledger & RenameNew sim |

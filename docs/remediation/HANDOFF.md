@@ -1,6 +1,6 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ pending  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ 0d97a5d  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
 **Last Verified Phase Gate:** Phase 1 Gate Passed; Phase 2 in progress (`TASK-REM-12` completed)  
 **Active Task & Current State:** `TASK-REM-12` (`DONE`) -> Next: `TASK-REM-13` (Disabled rule dry-run simulation decoupling)  
