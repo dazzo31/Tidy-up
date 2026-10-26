@@ -1,3 +1,6 @@
+using TidyUp.Data.Repositories;
+using Microsoft.Extensions.DependencyInjection;
+using System.Diagnostics;
 using System.IO;
 using TidyUp.Models.Domain;
 using TidyUp.Models.Enums;
@@ -13,16 +16,22 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
 {
     private readonly IActionExecutor _actionExecutor;
     private readonly IApplicationStateManager? _stateManager;
+    private readonly IRuleRepository? _ruleRepository;
+    private readonly IServiceScopeFactory? _scopeFactory;
     private int _executingFlag;
 
     public bool IsExecuting => Volatile.Read(ref _executingFlag) == 1;
 
     public BatchProcessingCoordinator(
         IActionExecutor actionExecutor,
-        IApplicationStateManager? stateManager = null)
+        IApplicationStateManager? stateManager = null,
+        IRuleRepository? ruleRepository = null,
+        IServiceScopeFactory? scopeFactory = null)
     {
         _actionExecutor = actionExecutor ?? throw new ArgumentNullException(nameof(actionExecutor));
         _stateManager = stateManager;
+        _ruleRepository = ruleRepository;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task<BatchExecutionResult> ExecuteBatchAsync(
@@ -191,7 +200,55 @@ public class BatchProcessingCoordinator : IBatchProcessingCoordinator
             }
         }
 
+        // Update rule execution stats (LastRunDate and FilesProcessedCount)
+        await UpdateRuleStatisticsAsync(result.ItemResults);
+
         return result;
+    }
+
+    private async Task UpdateRuleStatisticsAsync(List<BatchItemExecutionResult> itemResults)
+    {
+        try
+        {
+            var successful = itemResults
+                .Where(r => r.Result is { Success: true } && r.Action.RuleId.HasValue && r.Action.RuleId.Value != Guid.Empty)
+                .ToList();
+
+            if (successful.Count == 0) return;
+
+            var groups = successful.GroupBy(r => r.Action.RuleId!.Value);
+            var now = DateTime.UtcNow;
+
+            if (_ruleRepository != null)
+            {
+                foreach (var g in groups)
+                {
+                    var distinctFiles = g.Select(r => r.Action.InitialSourcePath ?? r.Action.SourcePath)
+                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                        .Count();
+                    await _ruleRepository.RecordRuleExecutionAsync(g.Key, distinctFiles, now);
+                }
+            }
+            else if (_scopeFactory != null)
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var repo = scope.ServiceProvider.GetService<IRuleRepository>();
+                if (repo != null)
+                {
+                    foreach (var g in groups)
+                    {
+                        var distinctFiles = g.Select(r => r.Action.InitialSourcePath ?? r.Action.SourcePath)
+                            .Distinct(StringComparer.OrdinalIgnoreCase)
+                            .Count();
+                        await repo.RecordRuleExecutionAsync(g.Key, distinctFiles, now);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[BatchProcessingCoordinator] Failed to update rule execution stats: {ex.Message}");
+        }
     }
 }
 

@@ -213,6 +213,18 @@ public class RuleRepository(TidyUpDbContext context, IRuleValidator? ruleValidat
         }
     }
 
+    public async Task RecordRuleExecutionAsync(Guid ruleId, int distinctFilesProcessedCount, DateTime executionTime)
+    {
+        var entity = await context.Rules.FindAsync(ruleId);
+        if (entity != null)
+        {
+            entity.LastRunDate = executionTime;
+            entity.FilesProcessedCount += distinctFilesProcessedCount;
+            await context.SaveChangesAsync();
+            NotifyRulesChanged(ruleId, "ExecutionRecorded");
+        }
+    }
+
     private void CanonicalizeFolders(Rule rule)
     {
         if (rule.MonitoredFolders == null) return;

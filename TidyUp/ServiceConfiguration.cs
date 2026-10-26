@@ -85,7 +85,11 @@ public static class ServiceConfiguration
         services.AddSingleton<IRuleSummaryGenerator, RuleSummaryGenerator>();
         services.AddSingleton<IApplicationStateManager, ApplicationStateManager>();
         services.AddSingleton<IExecutionDiscrepancyAnalyzer, ExecutionDiscrepancyAnalyzer>();
-        services.AddSingleton<IBatchProcessingCoordinator, BatchProcessingCoordinator>();
+        services.AddSingleton<IOperationTelemetryService>(sp => new OperationTelemetryService(sp.GetRequiredService<IServiceScopeFactory>()));
+        services.AddSingleton<IBatchProcessingCoordinator>(sp => new BatchProcessingCoordinator(
+            sp.GetRequiredService<IActionExecutor>(),
+            sp.GetService<IApplicationStateManager>(),
+            scopeFactory: sp.GetRequiredService<IServiceScopeFactory>()));
         services.AddSingleton<ITrayIconService>(sp => new TrayIconService(
             sp.GetRequiredService<IFileMonitorService>(),
             sp.GetRequiredService<IWatcherHealthMonitor>(),

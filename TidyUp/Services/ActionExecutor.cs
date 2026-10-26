@@ -1,3 +1,4 @@
+using TidyUp.Services.Diagnostics;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.VisualBasic.FileIO;
@@ -19,11 +20,13 @@ public class ActionExecutor(
     IVariableEngine variableEngine,
     ISafeFileSystem? safeFileSystem = null,
     IFileLockDetector? fileLockDetector = null,
-    IRollbackEngine? rollbackEngine = null) : IActionExecutor
+    IRollbackEngine? rollbackEngine = null,
+    IOperationTelemetryService? telemetryService = null) : IActionExecutor
 {
     private readonly ISafeFileSystem _safeFileSystem = safeFileSystem ?? new WindowsShellFileOperations();
     private readonly IFileLockDetector _fileLockDetector = fileLockDetector ?? new FileLockDetector();
     private readonly IRollbackEngine? _rollbackEngine = rollbackEngine;
+    private readonly IOperationTelemetryService? _telemetryService = telemetryService;
     private const int MaxRetries = 3;
     private static readonly int[] RetryDelays = [100, 500, 2000];
 
@@ -134,6 +137,24 @@ public class ActionExecutor(
                     Status = "Completed",
                     Details = details
                 });
+
+                if (_telemetryService != null)
+                {
+                    await _telemetryService.RecordOperationAsync(new OperationTelemetryEvent
+                    {
+                        ActionId = Guid.NewGuid(),
+                        BatchId = effectiveBatchId,
+                        RuleId = ruleId,
+                        RuleName = ruleName ?? string.Empty,
+                        RuleRevisionId = ruleRevisionId?.ToString(),
+                        ActionType = actionTypeName,
+                        SourcePath = originalPath,
+                        TargetPath = postPath,
+                        Outcome = "Success",
+                        ErrorMessage = null,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
             }
             else
             {
@@ -151,6 +172,25 @@ public class ActionExecutor(
                     Status = "Failed",
                     Details = result.ErrorMessage
                 });
+
+                if (_telemetryService != null)
+                {
+                    var outcome = result.Type == ActionResultType.Warning ? "Warning" : "Error";
+                    await _telemetryService.RecordOperationAsync(new OperationTelemetryEvent
+                    {
+                        ActionId = Guid.NewGuid(),
+                        BatchId = effectiveBatchId,
+                        RuleId = ruleId,
+                        RuleName = ruleName ?? string.Empty,
+                        RuleRevisionId = ruleRevisionId?.ToString(),
+                        ActionType = actionTypeName,
+                        SourcePath = originalPath,
+                        TargetPath = result.TargetPath ?? result.ResultPath,
+                        Outcome = outcome,
+                        ErrorMessage = result.ErrorMessage,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
             }
         }
 
@@ -278,6 +318,24 @@ public class ActionExecutor(
                     Status = "Completed",
                     Details = details
                 });
+
+                if (_telemetryService != null)
+                {
+                    await _telemetryService.RecordOperationAsync(new OperationTelemetryEvent
+                    {
+                        ActionId = plannedAction.Id,
+                        BatchId = effectiveBatchId,
+                        RuleId = plannedAction.RuleId,
+                        RuleName = plannedAction.RuleName,
+                        RuleRevisionId = plannedAction.RuleRevisionId?.ToString(),
+                        ActionType = actionTypeName,
+                        SourcePath = originalPath,
+                        TargetPath = postPath,
+                        Outcome = "Success",
+                        ErrorMessage = null,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
             }
             else
             {
@@ -295,6 +353,25 @@ public class ActionExecutor(
                     Status = "Failed",
                     Details = result.ErrorMessage
                 });
+
+                if (_telemetryService != null)
+                {
+                    var outcome = result.Type == ActionResultType.Warning ? "Warning" : "Error";
+                    await _telemetryService.RecordOperationAsync(new OperationTelemetryEvent
+                    {
+                        ActionId = plannedAction.Id,
+                        BatchId = effectiveBatchId,
+                        RuleId = plannedAction.RuleId,
+                        RuleName = plannedAction.RuleName,
+                        RuleRevisionId = plannedAction.RuleRevisionId?.ToString(),
+                        ActionType = actionTypeName,
+                        SourcePath = originalPath,
+                        TargetPath = result.TargetPath ?? result.ResultPath,
+                        Outcome = outcome,
+                        ErrorMessage = result.ErrorMessage,
+                        Timestamp = DateTime.UtcNow
+                    });
+                }
             }
         }
 

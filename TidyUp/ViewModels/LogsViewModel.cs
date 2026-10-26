@@ -1,3 +1,4 @@
+using TidyUp.Services.Diagnostics;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -15,6 +16,7 @@ namespace TidyUp.ViewModels;
 public partial class LogsViewModel : ObservableObject
 {
     private readonly IActionLogRepository _logRepository;
+    private readonly IOperationTelemetryService? _telemetryService;
 
     [ObservableProperty]
     private ObservableCollection<ActionLogEntity> _logs = new();
@@ -55,9 +57,65 @@ public partial class LogsViewModel : ObservableObject
     [ObservableProperty]
     private int _warningCount;
 
-    public LogsViewModel(IActionLogRepository logRepository)
+    public LogsViewModel(
+        IActionLogRepository logRepository,
+        IOperationTelemetryService? telemetryService = null)
     {
         _logRepository = logRepository;
+        _telemetryService = telemetryService;
+
+        if (_telemetryService != null)
+        {
+            _telemetryService.OperationExecuted += OnOperationExecuted;
+        }
+    }
+
+    private void OnOperationExecuted(object? sender, OperationTelemetryEvent e)
+    {
+        void Update()
+        {
+            TotalCount++;
+            if (e.Outcome == "Success") SuccessCount++;
+            else if (e.Outcome == "Warning") WarningCount++;
+            else if (e.Outcome == "Error") ErrorCount++;
+
+            if (!string.IsNullOrWhiteSpace(e.RuleName) && !AvailableRules.Contains(e.RuleName))
+            {
+                AvailableRules.Add(e.RuleName);
+            }
+
+            bool matchesStatus = SelectedStatus == "All" || string.Equals(SelectedStatus, e.Outcome, StringComparison.OrdinalIgnoreCase);
+            bool matchesRule = SelectedRule == "All Rules" || string.Equals(SelectedRule, e.RuleName, StringComparison.OrdinalIgnoreCase);
+            bool matchesSearch = string.IsNullOrWhiteSpace(SearchText) ||
+                                 e.RuleName.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                 e.SourcePath.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ||
+                                 e.ActionType.Contains(SearchText, StringComparison.OrdinalIgnoreCase);
+
+            if (matchesStatus && matchesRule && matchesSearch)
+            {
+                Logs.Insert(0, new ActionLogEntity
+                {
+                    Id = e.ActionId,
+                    Timestamp = e.Timestamp,
+                    RuleId = e.RuleId ?? Guid.Empty,
+                    RuleName = string.IsNullOrWhiteSpace(e.RuleName) ? "Manual / System" : e.RuleName,
+                    FilePath = e.SourcePath,
+                    ActionPerformed = e.ActionType,
+                    ResultPath = e.TargetPath,
+                    Status = e.Outcome,
+                    ErrorMessage = e.ErrorMessage
+                });
+            }
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
+        }
     }
 
     [RelayCommand]

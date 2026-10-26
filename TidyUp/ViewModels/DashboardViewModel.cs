@@ -1,3 +1,4 @@
+using TidyUp.Services.Diagnostics;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Media;
@@ -181,6 +182,7 @@ public partial class DashboardViewModel : ObservableObject
     private readonly IWatcherHealthMonitor? _watcherHealthMonitor;
     private readonly IMonitoredFolderCatalog? _monitoredFolderCatalog;
     private readonly IFolderPathNormalizer _pathNormalizer;
+    private readonly IOperationTelemetryService? _telemetryService;
 
     public event Action<NavigationView>? RequestNavigate;
 
@@ -227,7 +229,8 @@ public partial class DashboardViewModel : ObservableObject
         IWatcherReconciler? watcherReconciler = null,
         IWatcherHealthMonitor? watcherHealthMonitor = null,
         IMonitoredFolderCatalog? monitoredFolderCatalog = null,
-        IFolderPathNormalizer? pathNormalizer = null)
+        IFolderPathNormalizer? pathNormalizer = null,
+        IOperationTelemetryService? telemetryService = null)
     {
         _ruleRepository = ruleRepository;
         _actionLogRepository = actionLogRepository;
@@ -236,6 +239,12 @@ public partial class DashboardViewModel : ObservableObject
         _watcherHealthMonitor = watcherHealthMonitor;
         _monitoredFolderCatalog = monitoredFolderCatalog;
         _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
+        _telemetryService = telemetryService;
+
+        if (_telemetryService != null)
+        {
+            _telemetryService.OperationExecuted += OnOperationExecuted;
+        }
 
         if (_monitoredFolderCatalog != null)
         {
@@ -244,6 +253,63 @@ public partial class DashboardViewModel : ObservableObject
         else if (_watcherHealthMonitor != null)
         {
             _watcherHealthMonitor.FolderHealthChanged += OnFolderHealthChanged;
+        }
+    }
+
+
+    private void OnOperationExecuted(object? sender, OperationTelemetryEvent e)
+    {
+        void Update()
+        {
+            TotalFilesProcessed++;
+            if (e.Outcome == "Success")
+            {
+                TotalSuccess++;
+            }
+            else if (e.Outcome == "Warning")
+            {
+                TotalWarnings++;
+            }
+            else if (e.Outcome == "Error")
+            {
+                TotalErrors++;
+            }
+
+            if (TotalFilesProcessed > 0)
+            {
+                var rate = (double)TotalSuccess / TotalFilesProcessed * 100.0;
+                SuccessRateFormatted = $"{rate:F1}%";
+            }
+
+            var recentItem = new RecentActivityItem
+            {
+                Id = e.ActionId,
+                Timestamp = e.Timestamp,
+                RuleName = string.IsNullOrWhiteSpace(e.RuleName) ? "Direct Action" : e.RuleName,
+                FilePath = e.SourcePath,
+                ActionPerformed = e.ActionType,
+                ResultPath = e.TargetPath,
+                Status = e.Outcome,
+                ErrorMessage = e.ErrorMessage
+            };
+
+            RecentActivity.Insert(0, recentItem);
+            while (RecentActivity.Count > 20)
+            {
+                RecentActivity.RemoveAt(RecentActivity.Count - 1);
+            }
+
+            LastActivityFormatted = "Just now";
+            StatusMessage = $"Executed {e.ActionType} on {System.IO.Path.GetFileName(e.SourcePath)}";
+        }
+
+        if (System.Windows.Application.Current?.Dispatcher is { } dispatcher && !dispatcher.CheckAccess())
+        {
+            dispatcher.InvokeAsync(Update);
+        }
+        else
+        {
+            Update();
         }
     }
 

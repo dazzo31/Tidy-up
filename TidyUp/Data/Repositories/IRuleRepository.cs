@@ -26,5 +26,5 @@ public interface IRuleRepository
     Task DeleteAsync(Guid id);
     Task<List<Rule>> GetEnabledRulesOrderedAsync();
     Task UpdateExecutionOrdersAsync(IEnumerable<(Guid RuleId, int Order)> orderings);
+    Task RecordRuleExecutionAsync(Guid ruleId, int distinctFilesProcessedCount, DateTime executionTime) => Task.CompletedTask;
 }
-
