@@ -1,3 +1,6 @@
+using TidyUp.Models.Folders;
+using TidyUp.Services.Folders;
+using TidyUp.Services;
 using System.Collections.ObjectModel;
 using System.IO;
 using TidyUp.Services.Watcher;
@@ -231,5 +234,128 @@ public class FoldersViewModelTests : IDisposable
 
         item.IsScanning.Should().BeFalse();
         viewModel.StatusMessage.Should().Contain("Cannot scan");
+    }
+    [Fact]
+    public async Task AddMonitoredFolderAsync_PersistsToCatalog_AndSurvivesReload()
+    {
+        var catalogMock = new Mock<IMonitoredFolderCatalog>();
+        catalogMock.Setup(c => c.Folders).Returns(new ReadOnlyObservableCollection<MonitoredFolderState>(new ObservableCollection<MonitoredFolderState>()));
+        var fileMonitorMock = new Mock<IFileMonitorService>();
+        var viewModel = new FoldersViewModel(
+            _ruleRepoMock.Object,
+            null,
+            catalogMock.Object,
+            null,
+            null,
+            fileMonitorMock.Object);
+
+        viewModel.NewFolderPathInput = _tempTestDir;
+        viewModel.NewFolderIncludeSubfolders = true;
+        viewModel.NewFolderExclusionsInput = "*.log, test";
+
+        await viewModel.AddMonitoredFolderAsync();
+
+        catalogMock.Verify(c => c.AddStandaloneFolderAsync(
+            _tempTestDir,
+            true,
+            It.Is<IEnumerable<string>>(ex => ex.Contains("*.log") && ex.Contains("test")),
+            default), Times.Once);
+
+        catalogMock.Verify(c => c.RefreshAsync(default), Times.Once);
+        viewModel.StatusMessage.Should().Contain("Added monitored directory");
+        viewModel.StatusMessage.Should().Contain("Create a rule");
+    }
+
+    [Fact]
+    public async Task TogglePauseWatcherAsync_DispatchesToFileMonitorService_AndPersistsToCatalog()
+    {
+        var catalogMock = new Mock<IMonitoredFolderCatalog>();
+        var fileMonitorMock = new Mock<IFileMonitorService>();
+        var viewModel = new FoldersViewModel(
+            _ruleRepoMock.Object,
+            null,
+            catalogMock.Object,
+            null,
+            null,
+            fileMonitorMock.Object);
+
+        var item = new MonitoredFolderItemViewModel
+        {
+            Path = _tempTestDir,
+            Exists = true,
+            HasReadPermission = true,
+            HasWritePermission = true,
+            IsPaused = false,
+            WatcherStatus = "Watching"
+        };
+
+        // 1. Pause
+        await viewModel.TogglePauseWatcherAsync(item);
+
+        item.IsPaused.Should().BeTrue();
+        item.WatcherStatus.Should().Be("Paused");
+        fileMonitorMock.Verify(m => m.PauseFolder(_tempTestDir), Times.Once);
+        catalogMock.Verify(c => c.SetFolderPausedAsync(_tempTestDir, true, default), Times.Once);
+
+        // 2. Resume
+        await viewModel.TogglePauseWatcherAsync(item);
+
+        item.IsPaused.Should().BeFalse();
+        item.WatcherStatus.Should().Be("Watching");
+        fileMonitorMock.Verify(m => m.ResumeFolder(_tempTestDir), Times.Once);
+        catalogMock.Verify(c => c.SetFolderPausedAsync(_tempTestDir, false, default), Times.Once);
+    }
+
+    [Fact]
+    public async Task TogglePauseWatcherAsync_RevertsOptimisticUI_WhenPersistenceFails()
+    {
+        var catalogMock = new Mock<IMonitoredFolderCatalog>();
+        catalogMock.Setup(c => c.SetFolderPausedAsync(It.IsAny<string>(), It.IsAny<bool>(), default))
+            .ThrowsAsync(new IOException("Simulated storage failure"));
+
+        var viewModel = new FoldersViewModel(
+            _ruleRepoMock.Object,
+            null,
+            catalogMock.Object,
+            null,
+            null,
+            null);
+
+        var item = new MonitoredFolderItemViewModel
+        {
+            Path = _tempTestDir,
+            Exists = true,
+            HasReadPermission = true,
+            HasWritePermission = true,
+            IsPaused = false,
+            WatcherStatus = "Watching"
+        };
+
+        await viewModel.TogglePauseWatcherAsync(item);
+
+        // Reverted!
+        item.IsPaused.Should().BeFalse();
+        item.WatcherStatus.Should().Be("Watching");
+        viewModel.StatusMessage.Should().Contain("Failed to change pause state");
+    }
+
+    [Fact]
+    public void EditLinkedRules_WhenFolderHasNoRules_InvokesCreateRuleCallback_OrShowsGuidance()
+    {
+        string? callbackPath = null;
+        var viewModel = new FoldersViewModel(_ruleRepoMock.Object)
+        {
+            RequestCreateRuleForFolderCallback = p => callbackPath = p
+        };
+
+        var item = new MonitoredFolderItemViewModel
+        {
+            Path = _tempTestDir,
+            LinkedRulesCount = 0
+        };
+
+        viewModel.EditLinkedRulesCommand.Execute(item);
+
+        callbackPath.Should().Be(_tempTestDir);
     }
 }

@@ -1,3 +1,4 @@
+using TidyUp.Services;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -19,6 +20,12 @@ namespace TidyUp.ViewModels;
 /// </summary>
 public partial class MonitoredFolderItemViewModel : ObservableObject
 {
+    [ObservableProperty]
+    private Guid _id = Guid.NewGuid();
+
+    [ObservableProperty]
+    private bool _isStandalone;
+
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsTransientLocation))]
     private string _path = string.Empty;
@@ -109,6 +116,7 @@ public partial class FoldersViewModel : ObservableObject
     private readonly IMonitoredFolderCatalog? _monitoredFolderCatalog;
     private readonly IFolderPathNormalizer _pathNormalizer;
     private readonly IWatcherReconciler? _watcherReconciler;
+    private readonly IFileMonitorService? _fileMonitorService;
 
     [ObservableProperty]
     private ObservableCollection<MonitoredFolderItemViewModel> _monitoredFolders = new();
@@ -159,19 +167,22 @@ public partial class FoldersViewModel : ObservableObject
 
     public Func<string?>? FolderPickerCallback { get; set; }
     public Action<Guid>? RequestEditRuleCallback { get; set; }
+    public Action<string>? RequestCreateRuleForFolderCallback { get; set; }
 
     public FoldersViewModel(
         IRuleRepository ruleRepository,
         IWatcherHealthMonitor? healthMonitor = null,
         IMonitoredFolderCatalog? monitoredFolderCatalog = null,
         IFolderPathNormalizer? pathNormalizer = null,
-        IWatcherReconciler? watcherReconciler = null)
+        IWatcherReconciler? watcherReconciler = null,
+        IFileMonitorService? fileMonitorService = null)
     {
         _ruleRepository = ruleRepository;
         _healthMonitor = healthMonitor;
         _monitoredFolderCatalog = monitoredFolderCatalog;
         _pathNormalizer = pathNormalizer ?? new FolderPathNormalizer();
         _watcherReconciler = watcherReconciler;
+        _fileMonitorService = fileMonitorService;
 
         if (_monitoredFolderCatalog != null)
         {
@@ -198,9 +209,10 @@ public partial class FoldersViewModel : ObservableObject
         }
     }
 
-    private void SyncFoldersFromCatalog(IEnumerable<MonitoredFolderState> catalogFolders)
+    private void SyncFoldersFromCatalog(IEnumerable<MonitoredFolderState>? catalogFolders)
     {
         MonitoredFolders.Clear();
+        if (catalogFolders == null) return;
         foreach (var state in catalogFolders.OrderBy(s => s.NormalizedPath))
         {
             var isPaused = state.WatcherHealth == WatcherHealthStatus.Paused;
@@ -231,8 +243,15 @@ public partial class FoldersViewModel : ObservableObject
                 }
             };
 
+            if (_fileMonitorService != null && _fileMonitorService.IsFolderPaused(state.NormalizedPath))
+            {
+                isPaused = true;
+            }
+
             var item = new MonitoredFolderItemViewModel
             {
+                Id = state.Id,
+                IsStandalone = state.IsStandalone,
                 Path = state.NormalizedPath,
                 Exists = state.Exists,
                 HasReadPermission = state.HasReadPermission,
@@ -502,7 +521,7 @@ public partial class FoldersViewModel : ObservableObject
     public bool CanAddMonitoredFolder => !string.IsNullOrWhiteSpace(NewFolderPathInput);
 
     [RelayCommand(CanExecute = nameof(CanAddMonitoredFolder))]
-    public void AddMonitoredFolder()
+    public async Task AddMonitoredFolderAsync()
     {
         if (string.IsNullOrWhiteSpace(NewFolderPathInput))
         {
@@ -523,24 +542,42 @@ public partial class FoldersViewModel : ObservableObject
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
 
-        var item = new MonitoredFolderItemViewModel
+        try
         {
-            Path = path,
-            IncludeSubfolders = NewFolderIncludeSubfolders,
-            ExclusionPatternsText = string.Join(", ", exclusions),
-            ExclusionPatterns = new ObservableCollection<string>(exclusions),
-            LinkedRulesCount = 0,
-            LinkedRulesSummary = "No rules linked yet"
-        };
+            if (_monitoredFolderCatalog != null)
+            {
+                await _monitoredFolderCatalog.AddStandaloneFolderAsync(path, NewFolderIncludeSubfolders, exclusions);
+                await _monitoredFolderCatalog.RefreshAsync();
+                SyncFoldersFromCatalog(_monitoredFolderCatalog.Folders);
+            }
+            else
+            {
+                var item = new MonitoredFolderItemViewModel
+                {
+                    Path = path,
+                    IncludeSubfolders = NewFolderIncludeSubfolders,
+                    ExclusionPatternsText = string.Join(", ", exclusions),
+                    ExclusionPatterns = new ObservableCollection<string>(exclusions),
+                    LinkedRulesCount = 0,
+                    LinkedRulesSummary = "No rules linked yet",
+                    IsStandalone = true
+                };
 
-        InspectPath(item);
-        MonitoredFolders.Add(item);
-        UpdateStats();
-        FilterFolders();
+                InspectPath(item);
+                MonitoredFolders.Add(item);
+            }
 
-        NewFolderPathInput = string.Empty;
-        NewFolderExclusionsInput = string.Empty;
-        StatusMessage = $"Added monitored directory: {path}";
+            UpdateStats();
+            FilterFolders();
+
+            NewFolderPathInput = string.Empty;
+            NewFolderExclusionsInput = string.Empty;
+            StatusMessage = $"Added monitored directory: {path}. Create a rule to start organizing files in this folder.";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Failed to add folder '{path}': {ex.Message}";
+        }
     }
 
     [RelayCommand]
@@ -627,20 +664,65 @@ public partial class FoldersViewModel : ObservableObject
     }
 
     [RelayCommand]
-    public void TogglePauseWatcher(MonitoredFolderItemViewModel? folder)
+    public async Task TogglePauseWatcherAsync(MonitoredFolderItemViewModel? folder)
     {
         if (folder == null) return;
-        folder.IsPaused = !folder.IsPaused;
-        folder.WatcherStatus = folder.IsPaused ? "Paused" : (folder.IsHealthy ? "Watching" : "Degraded");
-        folder.RefreshStatus();
-        StatusMessage = $"Watcher for '{folder.Path}' is now {folder.WatcherStatus}.";
+
+        var previousPaused = folder.IsPaused;
+        var newPaused = !previousPaused;
+
+        try
+        {
+            // Optimistic update
+            folder.IsPaused = newPaused;
+            folder.WatcherStatus = folder.IsPaused ? "Paused" : (folder.IsHealthy ? "Watching" : "Degraded");
+            folder.RefreshStatus();
+
+            if (_fileMonitorService != null)
+            {
+                if (newPaused)
+                    _fileMonitorService.PauseFolder(folder.Path);
+                else
+                    _fileMonitorService.ResumeFolder(folder.Path);
+            }
+
+            if (_monitoredFolderCatalog != null)
+            {
+                await _monitoredFolderCatalog.SetFolderPausedAsync(folder.Path, newPaused);
+            }
+            else if (_healthMonitor != null)
+            {
+                _healthMonitor.SetFolderPaused(folder.Path, newPaused);
+            }
+
+            StatusMessage = $"Watcher for '{folder.Path}' is now {folder.WatcherStatus}.";
+        }
+        catch (Exception ex)
+        {
+            // Revert optimistic update on failure
+            folder.IsPaused = previousPaused;
+            folder.WatcherStatus = folder.IsPaused ? "Paused" : (folder.IsHealthy ? "Watching" : "Degraded");
+            folder.RefreshStatus();
+            StatusMessage = $"Failed to change pause state for '{folder.Path}': {ex.Message}";
+        }
     }
 
     [RelayCommand]
     public void EditLinkedRules(MonitoredFolderItemViewModel? folder)
     {
-        if (folder == null || folder.LinkedRuleIds.Count == 0) return;
-        RequestEditRuleCallback?.Invoke(folder.LinkedRuleIds[0]);
+        if (folder == null) return;
+        if (folder.LinkedRuleIds.Count > 0)
+        {
+            RequestEditRuleCallback?.Invoke(folder.LinkedRuleIds[0]);
+        }
+        else if (RequestCreateRuleForFolderCallback != null)
+        {
+            RequestCreateRuleForFolderCallback(folder.Path);
+        }
+        else
+        {
+            StatusMessage = $"No rules are currently linked to '{folder.Path}'. Create a new rule to monitor this folder.";
+        }
     }
 }
 

@@ -54,6 +54,21 @@ public interface IFileMonitorService
     Task ResumeAsync();
 
     /// <summary>
+    /// Pauses file monitoring for a specific folder path.
+    /// </summary>
+    void PauseFolder(string folderPath);
+
+    /// <summary>
+    /// Resumes file monitoring for a specific folder path.
+    /// </summary>
+    void ResumeFolder(string folderPath);
+
+    /// <summary>
+    /// Checks whether file monitoring is paused for a specific folder path.
+    /// </summary>
+    bool IsFolderPaused(string folderPath);
+
+    /// <summary>
     /// Evaluates whether a file path falls within the monitored directory scope and exclusion patterns of a monitored folder.
     /// </summary>
     bool IsFileEligibleForFolder(string filePath, MonitoredFolder folder);

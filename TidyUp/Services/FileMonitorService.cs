@@ -27,6 +27,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
     private readonly ConcurrentQueue<(string FilePath, string SourceFolder)> _pausedEventQueue = new();
     private volatile bool _isPaused;
     private readonly SemaphoreSlim _lifecycleLock = new(1, 1);
+    private readonly ConcurrentDictionary<string, byte> _pausedFolders = new(StringComparer.OrdinalIgnoreCase);
     private CancellationToken _applicationStoppingToken;
     private CancellationTokenSource? _runCts;
     private List<Rule> _rules = new();
@@ -60,6 +61,32 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         {
             _watcherHealthMonitor.FolderHealthChanged += OnFolderHealthChanged;
         }
+    }
+
+    public void PauseFolder(string folderPath)
+    {
+        var canonical = CanonicalizePath(folderPath);
+        if (!string.IsNullOrEmpty(canonical))
+        {
+            _pausedFolders[canonical] = 0;
+            _watcherHealthMonitor?.SetFolderPaused(canonical, true);
+        }
+    }
+
+    public void ResumeFolder(string folderPath)
+    {
+        var canonical = CanonicalizePath(folderPath);
+        if (!string.IsNullOrEmpty(canonical))
+        {
+            _pausedFolders.TryRemove(canonical, out _);
+            _watcherHealthMonitor?.SetFolderPaused(canonical, false);
+        }
+    }
+
+    public bool IsFolderPaused(string folderPath)
+    {
+        var canonical = CanonicalizePath(folderPath);
+        return !string.IsNullOrEmpty(canonical) && _pausedFolders.ContainsKey(canonical);
     }
 
     public void Pause()
@@ -336,6 +363,9 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
 
         watcher.FileDetected += async (s, path) =>
         {
+            if (IsFolderPaused(canonicalPath))
+                return;
+
             if (IsFileEligibleForAnyFolder(path, folders))
             {
                 await OnFileDetectedAsync(path, canonicalPath);
@@ -370,7 +400,7 @@ public class FileMonitorService : IFileMonitorService, IWatcherReconciler, IDisp
         foreach (var group in folderGroups)
         {
             var canonicalPath = group.Key;
-            if (!Directory.Exists(canonicalPath))
+            if (!Directory.Exists(canonicalPath) || IsFolderPaused(canonicalPath))
                 continue;
 
             bool includeSubfolders = group.Any(f => f.IncludeSubfolders);

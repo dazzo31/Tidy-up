@@ -10,6 +10,8 @@ namespace TidyUp.Models.Folders;
 /// </summary>
 public class MonitoredFolderState
 {
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public bool IsStandalone { get; init; }
     public string NormalizedPath { get; init; } = string.Empty;
     public string DisplayPath { get; init; } = string.Empty;
     public bool Exists { get; init; }

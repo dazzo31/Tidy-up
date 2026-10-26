@@ -43,5 +43,29 @@ public interface IMonitoredFolderCatalog : IDisposable
     /// Looks up a monitored folder by path (normalized automatically).
     /// </summary>
     MonitoredFolderState? GetFolder(string path);
+
+    /// <summary>
+    /// Persists a standalone monitored folder to the catalog.
+    /// </summary>
+    Task<MonitoredFolderState> AddStandaloneFolderAsync(
+        string path,
+        bool includeSubfolders = true,
+        IEnumerable<string>? exclusionPatterns = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes a configured standalone monitored folder from the catalog.
+    /// </summary>
+    Task<bool> RemoveStandaloneFolderAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Sets the persistent paused state for a monitored folder.
+    /// </summary>
+    Task SetFolderPausedAsync(string path, bool isPaused, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks whether a folder path is explicitly paused in the catalog.
+    /// </summary>
+    bool IsFolderExplicitlyPaused(string path);
 }
 

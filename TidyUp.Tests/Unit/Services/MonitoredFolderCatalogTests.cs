@@ -1,3 +1,4 @@
+using TidyUp.Configuration;
 using FluentAssertions;
 using Moq;
 using TidyUp.Data.Repositories;
@@ -288,6 +289,136 @@ public class MonitoredFolderCatalogTests : IDisposable
         dashboardVm.MonitoredFolders[0].IncludeSubfolders.Should().Be(foldersVm.MonitoredFolders[0].IncludeSubfolders).And.BeTrue();
         dashboardVm.MonitoredFolders[0].ExclusionPatterns.Should().BeEquivalentTo(foldersVm.MonitoredFolders[0].ExclusionPatterns);
     }
+    [Fact]
+    public async Task AddStandaloneFolderAsync_PersistsToDisk_AndSurvivesCatalogReconstruction()
+    {
+        var paths = new TidyUpPaths(_tempFolder);
+        var validator = new FolderValidator();
+        var standaloneFolder = Path.Combine(_tempFolder, "StandaloneDir");
+        Directory.CreateDirectory(standaloneFolder);
+
+        _ruleRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Rule>());
+
+        Guid stableId;
+        using (var catalog1 = new MonitoredFolderCatalog(
+            _ruleRepoMock.Object,
+            _normalizer,
+            validator,
+            _healthMonitorMock.Object,
+            paths))
+        {
+            var added = await catalog1.AddStandaloneFolderAsync(
+                standaloneFolder,
+                includeSubfolders: true,
+                new[] { "*.bak", "cache" });
+
+            added.Should().NotBeNull();
+            added.IsStandalone.Should().BeTrue();
+            added.TotalRuleCount.Should().Be(0);
+            added.IncludeSubfolders.Should().BeTrue();
+            added.ExclusionPatterns.Should().BeEquivalentTo(new[] { "*.bak", "cache" });
+            stableId = added.Id;
+            stableId.Should().NotBeEmpty();
+        }
+
+        // Recreate catalog from same disk paths (simulating app restart)
+        using (var catalog2 = new MonitoredFolderCatalog(
+            _ruleRepoMock.Object,
+            _normalizer,
+            validator,
+            _healthMonitorMock.Object,
+            paths))
+        {
+            await catalog2.RefreshAsync();
+
+            catalog2.Folders.Should().ContainSingle();
+            var reloaded = catalog2.Folders[0];
+            reloaded.Id.Should().Be(stableId);
+            reloaded.IsStandalone.Should().BeTrue();
+            reloaded.TotalRuleCount.Should().Be(0);
+            reloaded.IncludeSubfolders.Should().BeTrue();
+            reloaded.ExclusionPatterns.Should().BeEquivalentTo(new[] { "*.bak", "cache" });
+            reloaded.WatcherHealth.Should().Be(WatcherHealthStatus.Healthy);
+        }
+    }
+
+    [Fact]
+    public async Task SetFolderPausedAsync_PersistsPausedState_AcrossCatalogReconstruction()
+    {
+        var paths = new TidyUpPaths(_tempFolder);
+        var validator = new FolderValidator();
+        var testFolder = Path.Combine(_tempFolder, "WatchDir");
+        Directory.CreateDirectory(testFolder);
+
+        var rule = new Rule
+        {
+            Name = "Active Rule",
+            IsEnabled = true,
+            MonitoredFolders = { new MonitoredFolder { Path = testFolder, IncludeSubfolders = true } }
+        };
+        _ruleRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Rule> { rule });
+
+        using (var catalog1 = new MonitoredFolderCatalog(
+            _ruleRepoMock.Object,
+            _normalizer,
+            validator,
+            _healthMonitorMock.Object,
+            paths))
+        {
+            await catalog1.RefreshAsync();
+            catalog1.Folders.Should().ContainSingle();
+            catalog1.Folders[0].WatcherHealth.Should().Be(WatcherHealthStatus.Healthy);
+
+            // Pause folder explicitly
+            await catalog1.SetFolderPausedAsync(testFolder, true);
+            catalog1.Folders[0].WatcherHealth.Should().Be(WatcherHealthStatus.Paused);
+            catalog1.IsFolderExplicitlyPaused(testFolder).Should().BeTrue();
+        }
+
+        // Reconstruct catalog (simulating app restart)
+        using (var catalog2 = new MonitoredFolderCatalog(
+            _ruleRepoMock.Object,
+            _normalizer,
+            validator,
+            _healthMonitorMock.Object,
+            paths))
+        {
+            await catalog2.RefreshAsync();
+
+            catalog2.Folders.Should().ContainSingle();
+            var reloaded = catalog2.Folders[0];
+            reloaded.WatcherHealth.Should().Be(WatcherHealthStatus.Paused);
+            catalog2.IsFolderExplicitlyPaused(testFolder).Should().BeTrue();
+
+            // Resume folder
+            await catalog2.SetFolderPausedAsync(testFolder, false);
+            catalog2.Folders[0].WatcherHealth.Should().Be(WatcherHealthStatus.Healthy);
+            catalog2.IsFolderExplicitlyPaused(testFolder).Should().BeFalse();
+        }
+    }
+
+    [Fact]
+    public async Task RemoveStandaloneFolderAsync_RemovesFromDiskAndCatalog()
+    {
+        var paths = new TidyUpPaths(_tempFolder);
+        var validator = new FolderValidator();
+        var standaloneFolder = Path.Combine(_tempFolder, "TempStandalone");
+        Directory.CreateDirectory(standaloneFolder);
+
+        _ruleRepoMock.Setup(r => r.GetAllAsync()).ReturnsAsync(new List<Rule>());
+
+        using var catalog = new MonitoredFolderCatalog(
+            _ruleRepoMock.Object,
+            _normalizer,
+            validator,
+            _healthMonitorMock.Object,
+            paths);
+
+        await catalog.AddStandaloneFolderAsync(standaloneFolder);
+        catalog.Folders.Should().ContainSingle();
+
+        var removed = await catalog.RemoveStandaloneFolderAsync(standaloneFolder);
+        removed.Should().BeTrue();
+        catalog.Folders.Should().BeEmpty();
+    }
 }
-
-
