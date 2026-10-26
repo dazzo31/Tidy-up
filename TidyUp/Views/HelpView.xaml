@@ -124,6 +124,7 @@
                             <TextBlock Text="• {FileSize} - File size in bytes" Margin="0,4"/>
                             <TextBlock Text="• {FileSizeKB} - File size in kilobytes" Margin="0,4"/>
                             <TextBlock Text="• {FileSizeMB} - File size in megabytes" Margin="0,4"/>
+                            <TextBlock Text="• {Counter} - Incremental sequence counter (e.g., '001')" Margin="0,4"/>
                         </StackPanel>
                         
                         <TextBlock Text="Date &amp; Time" FontSize="18" FontWeight="SemiBold" Margin="0,16,0,8"/>

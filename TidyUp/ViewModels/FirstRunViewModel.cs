@@ -176,7 +176,7 @@ public partial class FirstRunViewModel : ObservableObject
             // Add move action with variable-based path
             sampleRule.Actions.Add(new MoveFileAction
             {
-                DestinationPath = Path.Combine(documentsPath, "{FileExtension}", "{Year}-{Month}"),
+                DestinationPath = Path.Combine(documentsPath, "{extension}", "{now_year}-{now_month}"),
                 ConflictResolution = ConflictResolution.RenameNew,
                 Order = 0
             });

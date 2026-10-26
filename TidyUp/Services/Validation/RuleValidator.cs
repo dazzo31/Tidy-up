@@ -73,11 +73,17 @@ public class RuleValidator(IVariableEngine? variableEngine = null) : IRuleValida
         {
             if (action is MoveFileAction moveAction)
             {
+                ValidateVariables(moveAction.DestinationPath, rule, nameof(moveAction.DestinationPath), result);
                 ValidateDestinationAction(moveAction.DestinationPath, rule, action, result);
             }
             else if (action is CopyFileAction copyAction)
             {
+                ValidateVariables(copyAction.DestinationPath, rule, nameof(copyAction.DestinationPath), result);
                 ValidateDestinationAction(copyAction.DestinationPath, rule, action, result);
+            }
+            else if (action is RenameFileAction renameAction)
+            {
+                ValidateVariables(renameAction.NamePattern, rule, nameof(renameAction.NamePattern), result);
             }
         }
 
@@ -153,6 +159,29 @@ public class RuleValidator(IVariableEngine? variableEngine = null) : IRuleValida
                     });
                 }
             }
+        }
+    }
+
+    private void ValidateVariables(
+        string? template,
+        Rule rule,
+        string propertyName,
+        RuleValidationResult result)
+    {
+        if (string.IsNullOrWhiteSpace(template))
+            return;
+
+        var unknownVars = _variableEngine.GetUnknownVariables(template);
+        foreach (var unknownVar in unknownVars)
+        {
+            result.Errors.Add(new RuleValidationError
+            {
+                RuleName = rule.Name,
+                RuleId = rule.Id,
+                PropertyName = propertyName,
+                ErrorMessage = $"Template contains unrecognized variable token '{{{unknownVar}}}'.",
+                ErrorCode = RuleValidationErrorCode.UnknownVariableToken
+            });
         }
     }
 

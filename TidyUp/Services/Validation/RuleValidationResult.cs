@@ -16,7 +16,8 @@ public enum RuleValidationErrorCode
     PathTooLong,
     IdenticalSourceAndDestination,
     DestinationIsSubfolderOfMonitoredSource,
-    CrossRuleCycleDetected
+    CrossRuleCycleDetected,
+    UnknownVariableToken
 }
 
 /// <summary>
