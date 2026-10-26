@@ -90,7 +90,7 @@
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
 | `TASK-REM-37` | Dark theme glyph & empty state contrast polish | DONE | Phase 6 Gate | `d0f9ef3` | AccessibleEmptyStateBadge style; central glyph Win11AccentBrush (7.04:1 contrast ratio against Win11SubtleSurfaceBrush in dark mode), Win11TextPrimary/SecondaryBrush text, Win11CodeText on Win11CodeSurface; StyleGuard and 774 tests pass | Proceed to `TASK-REM-38` |
-| `TASK-REM-38` | Full Windows acceptance test execution & composition root | NOT_STARTED | `TASK-REM-37` | — | Target: Acceptance Matrix | End-to-end scenarios on temp fixtures |
+| `TASK-REM-38` | Full Windows acceptance test execution & composition root | DONE | `TASK-REM-37` | `1243465` | Full Windows acceptance test execution; verified ServiceConfiguration composition root (resolves all 31 domain services and 14 ViewModels); validated end-to-end Simulate -> Apply -> Rollback lifecycle on temp disk fixtures; 777 tests pass | Phase 7 Gate Passed → Proceed to Phase 8 (`TASK-REM-39`) |
 
 ### Phase 8: Candidate Packaging & Handoff
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |

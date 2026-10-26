@@ -1,10 +1,16 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ d0f9ef3  
+**Repository / Branch / Current SHA:** TidyUp on main @ 1243465  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 6 Gate Passed; Phase 7 in progress  
-**Active Task & Current State:** TASK-REM-37 (DONE) -> Next: TASK-REM-38 (Full Windows acceptance test execution & composition root validation)  
+**Last Verified Phase Gate:** Phase 7 Gate Passed; Ready for Phase 8 (Candidate Packaging & Handoff)  
+**Active Task & Current State:** TASK-REM-38 (DONE) -> Next: Phase 8 / TASK-REM-39 (Release candidate packaging, provenance & handoff)  
 **Completed Changes & Files:**
+- TASK-REM-38 (SHA: 1243465):
+  - ServiceConfiguration.cs: Protected `IThemeService` instantiation against null `Application.Current` during headless test execution; resolved parameter fallback in `RuleConflictsViewModel` (defaulting to clean `new MultiRuleConflictReport()`) and `RuleRevisionDiffViewModel` (defaulting `ruleId` to `default`), enabling 100% resolution of all 31 registered services/repositories and 14 ViewModels from DI.
+  - UiWorkflowEndToEndIntegrationTests.cs: Added automated composition root validation test (`CompositionRoot_ResolvesAllServicesAndViewModels_CleanlyFromServiceConfiguration`) verifying database initialization, migration, settings loading, and DI graph resolution with 0 missing dependencies.
+  - Added end-to-end full lifecycle acceptance test (`EndToEnd_FullLifecycle_SimulateRule_ApplyBatch_And_Rollback_OnDiskFixtures`) verifying dry-run simulation, batch execution, telemetry streaming to `ActionLogEntity`, `Rule.FilesProcessedCount` updates, and atomic rollback on isolated disk fixtures (`TestDirectoryFixture`).
+  - Added background monitoring acceptance test (`EndToEnd_MonitoringCoordinator_BackgroundPipeline_AcceptanceScenario`) verifying `IMonitoringCoordinator` startup, event handling, safe execution pipeline, and shutdown.
+  - docs/release-verification-1.2.0.md: Fully updated verification report reflecting 777 passing tests, composition root audit, and acceptance results.
 - TASK-REM-37 (SHA: d0f9ef3):
   - AccessibilityStyles.xaml: Added `AccessibleEmptyStateBadge` style with 64x64 dimensions, 32px corner radius, `Win11SubtleSurfaceBrush` fill, and `Win11SubtleBorderBrush` 1px border for high-contrast delineation against dark cards.
   - EmptyStateControl.xaml & EmptyStateControl.xaml.cs: Updated empty state template to use `AccessibleEmptyStateBadge`; set central glyph default foreground to `{DynamicResource Win11AccentBrush}` (providing 7.04:1 contrast ratio against `#2B2B2B` subtle surface in dark mode, well above 4.5:1 WCAG AA text and 3:1 graphical thresholds); set title to `Win11TextPrimaryBrush` (14.15:1); set description to `Win11TextSecondaryBrush` (WCAG AA compliant without opacity reduction); set technical details to `Win11CodeTextBrush` on `Win11CodeSurfaceBrush`; exposed bindable `IconForeground` property for optional overrides.
