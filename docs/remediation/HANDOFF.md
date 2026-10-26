@@ -1,11 +1,13 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 565e1d9  
+**Repository / Branch / Current SHA:** TidyUp on main @ c9f7505  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
 **Last Verified Phase Gate:** Phase 8 Gate Passed — Remediation Program Complete (Phases 0 through 8)  
-**Active Task & Current State:** TASK-REM-39 (DONE) -> Release candidate handoff awaiting user tag/publish authorization  
+**Active Task & Current State:** TASK-REM-39 (DONE) -> Release published  
 **Completed Changes & Files:**
-- TASK-REM-39 (SHA: 565e1d9):
+- TASK-REM-39 (SHA: c9f7505):
+  - TidyUp/TidyUp.csproj: Bumped version to 1.2.1.
+  - publish/packages/: Built `TidyUp-1.2.1-win-x64.zip` and `TidyUp-1.2.1-win-x64-standalone.zip`.
   - TidyUp/Views/RuleEditor/Stages/Stage1FoldersView.xaml: Promoted `Browse...` to primary raised button with `FolderOpen` icon, changed manual path entry button to outlined `Add Path`, and added direct `Browse for Folder` action button to `EmptyStateControl`.
   - TidyUp/Controls/ActionEditorControl.xaml: Unified destination path browse buttons to primary raised `[ 📁 Browse... ]` (`MaterialDesignRaisedButton`) matching Step 1, with companion `[ {x} Variable ]` button across `MoveFileAction`, `CopyFileAction`, `ExtractArchiveAction`, `RenameFileAction`, and `RunCommandAction`; unified delete button to `TrashCanOutline` with `Win11ErrorBrush`.
   - TidyUp/Controls/ConditionEditorControl.xaml: Added `Plus` icon to `Add Condition` (`MaterialDesignRaisedButton`) and `FolderPlus` icon to `Add Group` (`MaterialDesignOutlinedButton`); unified group remove button to `TrashCanOutline` with `Win11ErrorBrush`.
