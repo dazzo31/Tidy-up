@@ -63,7 +63,7 @@
 | `TASK-REM-02` | Archive extraction safeguards & overwrite containment | DONE | `TASK-REM-04` | `f118035` | TU-18: safe archive recycling, overwrite collision detection in simulation, safeguard confirmation risk evaluation, 721 tests pass | Proceed to `TASK-REM-05` |
 | `TASK-REM-05` | Monitored root boundary clamping for empty cleanup | DONE | `TASK-REM-02` | `68fdedd` | TU-32: strict stop boundary clamping at monitored root in RemoveEmptyFoldersAsync, root preservation verified, 723 tests pass | Proceed to `TASK-REM-01` |
 | `TASK-REM-01` | Truthful rollback & recovery contract | DONE | `TASK-REM-05` | `761fcfc` | TU-20, TU-38: explicit RollbackOutcome enum, delete returns ManualRestoreRequired without marking RolledBack, CanRollback disabled for permanent delete, 727 tests pass | Proceed to `TASK-REM-23` |
-| `TASK-REM-23` | Authoritative discrepancy reporting from batch results | NOT_STARTED | `TASK-REM-01` | — | Target: TU-23 | Correlate by ActionId, not UI rows |
+| `TASK-REM-23` | Authoritative discrepancy reporting from batch results | DONE | `TASK-REM-01` | `993f832` | TU-23: feed BatchItemExecutionResult into analyzer, correlate by ActionId, report actual renamed paths, 729 tests pass | Proceed to `TASK-REM-21` |
 | `TASK-REM-21` | Post-execution selection & Apply button predicate | NOT_STARTED | `TASK-REM-23` | — | Target: TU-24 | PendingApprovedCount auto-disables Apply |
 
 ### Phase 5: Application Monitoring & Lifecycle

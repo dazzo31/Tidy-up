@@ -1,10 +1,14 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `761fcfc`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `993f832`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-01` Complete)  
-**Active Task & Current State:** `TASK-REM-01` (`DONE`) -> Next: `TASK-REM-23` (Authoritative Discrepancy Reporting from Batch Results)  
+**Last Verified Phase Gate:** Phase 3 Gate Passed; Phase 4 In Progress (`TASK-REM-23` Complete)  
+**Active Task & Current State:** `TASK-REM-23` (`DONE`) -> Next: `TASK-REM-21` (Post-Execution Selection & Apply Button Eligibility Predicate)  
 **Completed Changes & Files:**
+- `TASK-REM-23` (SHA: `993f832`):
+  - `IExecutionDiscrepancyAnalyzer.cs` & `ExecutionDiscrepancyAnalyzer.cs`: Added `AnalyzeFromResults` overload accepting `IEnumerable<BatchItemExecutionResult>`, correlating actions by `PlannedFileAction.Id` (Guid) instead of collapsing duplicates by `SourcePath`. Captures actual renamed target paths in discrepancy reports.
+  - `PreviewViewModel.cs`: Feeds actual `batchResult.ItemResults` directly into `_discrepancyAnalyzer.AnalyzeFromResults` instead of fabricating synthetic `ActionResult` records from UI properties. Updates viewmodel target paths upon physical execution completion.
+  - `ExecutionDiscrepancyAnalyzerTests.cs`: Unit tests prove correlation by Action ID with identical source paths and verification of actual renamed destination paths. 729 tests passing.
 - `TASK-REM-01` (SHA: `761fcfc`):
   - `RollbackEngine.cs`: Enforced truthful rollback contract by populating `RollbackOutcome` across all operations (`Restored`, `ManualRestoreRequired`, `NotRecoverable`, `Failed`). `RollbackDeleteAsync` returns `ManualRestoreRequired` with instructions for Recycle Bin files and `NotRecoverable` for permanently deleted files, never falsely claiming restoration.
   - `HistoryViewModel.cs`: `HistoryRowItemViewModel.CanRollback` disables Undo for `ExtractArchive`, `RunCommand`, and permanent deletion entries. `RollbackOperationAsync` transitions status to "Manual Action Required" instead of "RolledBack" when `Outcome == ManualRestoreRequired`.
