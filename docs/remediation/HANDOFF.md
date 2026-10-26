@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ dbc0650  
+**Repository / Branch / Current SHA:** TidyUp on main @ ae0380f  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 5 Gate Passed; Phase 6 In Progress (TASK-REM-35 Complete)  
-**Active Task & Current State:** TASK-REM-35 (DONE) -> Next: TASK-REM-36 (Component vs feature honest matrix & unwired stubs)  
+**Last Verified Phase Gate:** Phase 6 Gate Passed; Ready for Phase 7 (Visual & Integrated Acceptance)  
+**Active Task & Current State:** TASK-REM-36 (DONE) -> Next: Phase 7 Gate / TASK-REM-37 (Dark theme glyph & empty state contrast polish)  
 **Completed Changes & Files:**
+- TASK-REM-36 (SHA: ae0380f):
+  - ScheduleSettingsView.xaml & RuleRevisionDiffView.xaml: Added explicit `[Integration Pending]` badges and honest disclaimer notices to headers disclosing that scheduled monitoring, quiet hours, power throttling, and automated rule revision snapshots are integration-pending background components.
+  - FoldersViewModel.cs: Flags remote UNC network shares (`\\server\share`) with `"Pending (Network Share)"` watcher status rather than misleadingly indicating "Watching"; displays `[Integration Pending]` notification upon adding a network directory.
+  - docs/FEATURE_MATRIX.md & docs/remediation/FEATURE_MATRIX.md: Systematically updated feature matrix to truthfully distinguish verified runtime features from integration-pending components (network share monitoring, scheduled execution loop, rule revision history, duplicate file detection workflow).
+  - FoldersViewModelTests.cs: Unit tests verify `[Integration Pending]` notice on network folder addition and catalog synchronization. 772 tests passing.
 - TASK-REM-35 (SHA: dbc0650):
   - AppSettings.cs & SettingsView.xaml: Locked `MaxConcurrentOperations` to 1 (enforced serial per ADR-01) with disabled controls and honest explanatory text. Contained `NetworkFolderPollingIntervalSeconds` with `[Integration Pending]` badge and disabled state. Made `DatabaseBackupPath` editable with directory path hint and "Browse..." button.
   - FileMonitorService.cs: Injected `AppSettings` and wired `DebounceDelayMs` into watcher debounce timer.

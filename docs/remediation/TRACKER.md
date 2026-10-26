@@ -84,7 +84,7 @@
 | `TASK-REM-33` | Context-sensitive filtered history export | DONE | `TASK-REM-32` | `74bd9b9` | TU-37: ExportToCsvAsync and ExportToJsonAsync support filteredOnly: true/false using BuildFilteredQuery across all pages; formula injection mitigation in EscapeCsv; 765 tests pass | Proceed to `TASK-REM-06` |
 | `TASK-REM-06` | Genuine database maintenance & vacuum | DONE | `TASK-REM-33` | `0608e7b` | TU-27: IDbIntegrityChecker.VacuumDatabaseAsync executes PRAGMA wal_checkpoint(TRUNCATE) and VACUUM, reports exact bytes reclaimed and duration, 767 tests pass | Proceed to `TASK-REM-35` |
 | `TASK-REM-35` | Settings surface audit & inert control containment | DONE | `TASK-REM-06` | `dbc0650` | TU-26: MaxConcurrentOperations locked to 1 (serial ADR-01); NetworkFolderPollingIntervalSeconds contained with [Integration Pending]; DatabaseBackupPath made editable with Browse; FileLock/Debounce/ScanBatchSize/RecycleBin/DestructiveConfirmations wired to runtime; 770 tests pass | Proceed to `TASK-REM-36` |
-| `TASK-REM-36` | Component vs feature honest matrix & unwired stubs | NOT_STARTED | `TASK-REM-35` | — | Target: TU-33 | Disclose network & scheduling bounds |
+| `TASK-REM-36` | Component vs feature honest matrix & unwired stubs | DONE | `TASK-REM-35` | `ae0380f` | TU-33: Disclosed [Integration Pending] badges in ScheduleSettingsView, RuleRevisionDiffView, and FoldersView (UNC network shares); updated FEATURE_MATRIX.md honestly distinguishing verified from pending features; 772 tests pass | Phase 6 Gate Passed → Proceed to Phase 7 (`TASK-REM-37`) |
 
 ### Phase 7: Visual & Integrated Acceptance
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
