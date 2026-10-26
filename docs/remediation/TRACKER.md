@@ -34,6 +34,7 @@
 | `TASK-REM-09` | Rule list drag-and-drop order persistence | **DONE** | `TASK-REM-08` | `ae9ffd4` | Atomic priority reorder in SQLite, UI drag gating, rollback on failure, 637 tests pass | Proceed to `TASK-REM-10` |
 | `TASK-REM-10` | Unified schema-aware rule serialization & import gate | **DONE** | `TASK-REM-09` | `55d01b2` | Consolidated on RuleSerializationService, disabled-on-import invariant, atomic batch commit, 647 tests pass | Proceed to `TASK-REM-11` |
 | `TASK-REM-34` | Atomic settings persistence & corrupt profile recovery | **DONE** | `TASK-REM-11` | `3d6b720` | Atomic temp write & File.Replace with .bak, corrupt timestamp preservation, backup recovery, concurrency guard, 661 tests pass | Proceed to `TASK-REM-28` |
+| `TASK-REM-28` | Typed AppSettings DI registration & service config | **DONE** | `TASK-REM-34` | `d871dce` | AppSettings typed DI singleton, injected into TrayIconService & ToastNotificationService, SystemTrayEnabled honored, fail-safe notifications, state sync, 667 tests pass | Phase 1 Gate Passed $\to$ Proceed to Phase 2 (`TASK-REM-12`) |
 
 ### Phase 2: Truthful Read-Only Planning
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
