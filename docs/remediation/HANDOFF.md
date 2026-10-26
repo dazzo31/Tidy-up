@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 18afd1d  
+**Repository / Branch / Current SHA:** TidyUp on main @ dee8400  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (TASK-REM-07 Complete)  
-**Active Task & Current State:** TASK-REM-07 (DONE) -> Next: TASK-REM-29 (Window Lifecycle & Close/Minimize Conflict Resolution)  
+**Last Verified Phase Gate:** Phase 4 Gate Passed; Phase 5 In Progress (TASK-REM-29 Complete)  
+**Active Task & Current State:** TASK-REM-29 (DONE) -> Next: TASK-REM-30 (Aggregate Tray Icon Health & Native Handle Management)  
 **Completed Changes & Files:**
+- TASK-REM-29 (SHA: dee8400):
+  - IWindowCloseCoordinator.cs & WindowCloseCoordinator.cs: Implemented unified window close coordinator eliminating event-handler races between MainWindow and App. Evaluates close actions (CloseAndExit, MinimizeToTray, Cancel) across active batches, dirty drafts, explicit exit, and tray preferences.
+  - App.xaml.cs: On startup, preserves restored WindowState (e.g. Maximized) without forcing WindowState.Normal; RequestApplicationExitAsync polls IApplicationStateManager to wait for active batch completion with timeout protection; static TrayIcon and IsExiting properties exposed for coordination.
+  - MainWindow.xaml.cs: Injected IWindowCloseCoordinator into MainWindow.OnMainWindowClosing; aborts closing when user declines discard or waits for batch, preserving window visibility; minimizes to tray only when permitted by coordinator.
+  - WindowLifecycleTests.cs: Unit tests verify dirty discard cancellation, batch wait prompt, minimize-to-tray gating, explicit exit overrides, and shutdown timeout protection. 755 tests passing.
 - TASK-REM-07 (SHA: 18afd1d):
   - MonitoredFolderCatalog.cs & IMonitoredFolderCatalog.cs: Implemented persistent standalone monitored folder catalog storage in monitored_folders.json with stable GUID identifiers, user exclusions, and recursion preferences. Standalone folders survive catalog refreshes and process restarts without requiring attached rules. Added persistent folder pause overrides surviving restart.
   - IFileMonitorService.cs & FileMonitorService.cs: Added PauseFolder, ResumeFolder, and IsFolderPaused methods. Watchers ignore and suppress file detection events for paused folders, and automated scans skip paused directories.
