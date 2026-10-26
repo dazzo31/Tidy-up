@@ -126,7 +126,7 @@
 
                     <!-- Error State -->
                     <Border Padding="12" CornerRadius="6" Background="{DynamicResource Win11ErrorBackgroundBrush}" Margin="0,4,0,0"
-                            Visibility="{Binding ValidationResult.IsValid, Converter={StaticResource InverseBooleanConverter}}">
+                            Visibility="{Binding ValidationResult.IsValid, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="AlertCircle" Foreground="{DynamicResource Win11ErrorBrush}" Width="22" Height="22" VerticalAlignment="Center" Margin="0,0,8,0"/>
@@ -177,7 +177,7 @@
                                              Visibility="{Binding IsDryRunning, Converter={StaticResource BooleanToVisibilityConverter}}"
                                              Margin="0,0,6,0"/>
                                 <materialDesign:PackIcon Kind="TestTube" VerticalAlignment="Center" Margin="0,0,4,0"
-                                                         Visibility="{Binding IsDryRunning, Converter={StaticResource InverseBooleanConverter}}"/>
+                                                         Visibility="{Binding IsDryRunning, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
                                 <TextBlock Text="Simulate Now" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
@@ -186,7 +186,7 @@
                     <!-- Dry-Run Results (if available) -->
                     <Border Grid.Row="1" Margin="0,8,0,0" Padding="12" CornerRadius="6"
                             Background="{DynamicResource MaterialDesignToolBarBackground}"
-                            Visibility="{Binding ExecutionPlan, Converter={StaticResource StringToVisibilityConverter}, FallbackValue=Collapsed}">
+                            Visibility="{Binding ExecutionPlan, Converter={StaticResource NullToVisibilityConverter}, FallbackValue=Collapsed}">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="Simulation Results: " FontWeight="Bold"/>

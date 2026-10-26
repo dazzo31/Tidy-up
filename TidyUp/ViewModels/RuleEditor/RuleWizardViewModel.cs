@@ -98,6 +98,13 @@ public partial class RuleWizardViewModel : ObservableObject
     [ObservableProperty]
     private ExecutionPlan? _executionPlan;
 
+    public bool HasExecutionPlan => ExecutionPlan != null;
+
+    partial void OnExecutionPlanChanged(ExecutionPlan? value)
+    {
+        OnPropertyChanged(nameof(HasExecutionPlan));
+    }
+
     [ObservableProperty]
     private bool _isDryRunning;
 

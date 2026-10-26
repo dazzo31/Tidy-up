@@ -230,7 +230,7 @@
 
                 <!-- Next Button -->
                 <Button Grid.Column="3" Command="{Binding NextStageCommand}"
-                        Visibility="{Binding IsReviewStage, Converter={StaticResource InverseBooleanConverter}}"
+                        Visibility="{Binding IsReviewStage, Converter={StaticResource InverseBooleanToVisibilityConverter}}"
                         Style="{StaticResource MaterialDesignRaisedButton}">
                     <StackPanel Orientation="Horizontal">
                         <TextBlock Text="Next" VerticalAlignment="Center"/>

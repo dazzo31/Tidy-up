@@ -1,46 +1,31 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ d871dce  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ pending  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 1 Gate Passed (`TASK-REM-28` completed) -> Proceeding to Phase 2  
-**Active Task & Current State:** `TASK-REM-28` (`DONE`) -> Next: `TASK-REM-12` (XAML converter & visibility binding repairs)  
+**Last Verified Phase Gate:** Phase 1 Gate Passed; Phase 2 in progress (`TASK-REM-12` completed)  
+**Active Task & Current State:** `TASK-REM-12` (`DONE`) -> Next: `TASK-REM-13` (Disabled rule dry-run simulation decoupling)  
 **Completed Changes & Files:**
-- `SettingsRepository.cs`:
-  - Added `CurrentSettings` synchronous property exposing the shared singleton settings, ensuring non-blocking lazy loading or reuse of preloaded settings.
-  - Added `SetShared(AppSettings settings)` to synchronize or update the shared singleton without stranding instances.
-- `ServiceConfiguration.cs`:
-  - Registered `SettingsRepository` and `AppSettings` as a typed singleton (`services.AddSingleton<AppSettings>(sp => sp.GetRequiredService<SettingsRepository>().CurrentSettings)`).
-  - Supported optional `initialSettings` parameter in `ConfigureServices(paths, initialSettings)` for explicit composition-root testing and deterministic wiring.
-  - Wired `AppSettings` into `TrayIconService` and `ToastNotificationService` explicitly via factory registrations.
-- `TrayIconService.cs`:
-  - Injected `AppSettings` and `IApplicationStateManager`.
-  - Respects `SystemTrayEnabled`: `Initialize()` collapses `TaskbarIcon.Visibility` and skips status updates when disabled.
-  - `ShowBalloonTip()` and `UpdateStatus()` suppress balloon notifications and icon rendering when `SystemTrayEnabled == false`.
-  - Dynamically responds to `AppSettings.PropertyChanged` for `SystemTrayEnabled`.
-  - `PauseMonitoringAsync()` and `ResumeMonitoringAsync()` transition `IApplicationStateManager` to `MonitoringPaused` and `MonitoringRunning` with synchronized tray status badges.
-- `ToastNotificationService.cs`:
-  - Injected `AppSettings` and `ITrayIconService`.
-  - Respects `ToastNotificationsEnabled` and `QuietMode`.
-  - Enforces `ShowSuccessNotifications == false` and `ShowErrorNotifications == false` suppression.
-  - Wrapped `ShowNotification` in fail-safe error isolation so notification/shell failures cannot crash caller operations.
-- `App.xaml.cs`:
-  - Propagates default settings to `SettingsRepository.SetShared(AppSettings)` if loading throws during startup.
-  - Respects `SystemTrayEnabled` on startup: skips tray resource initialization if disabled.
-  - In `MainWindow_Closing`, only intercepts close to minimize to tray if both `SystemTrayEnabled == true` and `MinimizeToTray == true`.
-- `TrayIconAndToastNotificationTests.cs`:
-  - Added unit and composition-root tests:
-    - `ToastNotificationService_SuppressesSuccess_WhenShowSuccessNotificationsFalse`
-    - `ToastNotificationService_SuppressesError_WhenShowErrorNotificationsFalse`
-    - `ToastNotificationService_NeverThrows_WhenNotificationHandlerOrTrayFails`
-    - `TrayIconService_WhenSystemTrayDisabled_SuppressesBalloonTips`
-    - `TrayIconService_PauseAndResume_UpdatesStatusAndCoordinatesMonitor` (verifies `ApplicationStateManager` synchronization)
-    - `DI_CompositionRoot_RegistersAppSettingsSingleton`
-    - `DI_CompositionRoot_WithPreconfiguredSettings_SuppliesSameInstanceToServices`
-  - All 13 tests in test class pass.
-- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-28` as `DONE` and `TU-28` as `FIXED_VERIFIED`.
+- `InverseBooleanToVisibilityConverter.cs`:
+  - Created implementation of `IValueConverter` converting boolean values to `Visibility` (returns `Visibility.Collapsed` when true, `Visibility.Visible` when false).
+- `NullToVisibilityConverter.cs`:
+  - Created implementation of `IValueConverter` converting reference nullity to `Visibility` (returns `Visibility.Visible` when non-null, `Visibility.Collapsed` when null).
+- `App.xaml`:
+  - Registered `InverseBooleanToVisibilityConverter` and `NullToVisibilityConverter` in application resources.
+- `Stage4ReviewView.xaml`:
+  - Fixed Next button, error panel, and simulation indicator visibility bindings to use `InverseBooleanToVisibilityConverter`.
+  - Bound dry-run results panel to `ExecutionPlan` via `NullToVisibilityConverter`, correctly showing simulation results table when plan is generated.
+- `RuleWizardView.xaml`:
+  - Fixed Next button visibility binding to use `InverseBooleanToVisibilityConverter`.
+- `PreviewView.xaml`:
+  - Fixed explain-drawer condition failure icon visibility binding to use `InverseBooleanToVisibilityConverter`.
+- `RuleWizardViewModel.cs`:
+  - Added `HasExecutionPlan => ExecutionPlan != null` and raised `PropertyChanged` on `OnExecutionPlanChanged`.
+- `VisibilityConverterTests.cs`:
+  - Added unit tests for `InverseBooleanToVisibilityConverter`, `NullToVisibilityConverter`, and `RuleWizardViewModel.HasExecutionPlan`.
+- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-12` as `DONE` and `TU-06`, `TU-07` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 667 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 676 passed, 0 failed, 0 skipped (3.0s).
 - Zero compilation errors across solution.
 
 **Evidence Paths & Tested SHA:**
@@ -57,5 +42,5 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Stage and commit `TASK-REM-28`.
-- Lock `TASK-REM-12` in Phase 2 (XAML converter & visibility binding repairs).
+- Stage and commit `TASK-REM-12`.
+- Lock `TASK-REM-13` in Phase 2 (Disabled rule dry-run simulation decoupling).
