@@ -46,7 +46,7 @@
 | `TASK-REM-16` | Preservation of subfolder directory hierarchy | **DONE** | `TASK-REM-15` | `9cd74c5` | Relative root calculation with confinement, CopyAction UI binding, MonitoredSourceRoot on domain model & planned action, 692 tests pass | Proceed to `TASK-REM-17` |
 | `TASK-REM-17` | Responsive background enumeration & partial scan disclosure | **DONE** | `TASK-REM-16` | `bcd694c` | Resilient background folder enumeration, per-folder exception containment, IsIncomplete disclosure banner, generation IDs & cancellation, 696 tests pass | Proceed to `TASK-REM-18` |
 | `TASK-REM-18` | Preview cache invalidation & explicit refresh triggers | **DONE** | `TASK-REM-17` | `c8165c1` | Stale plan invalidation on rule switch/save/discard, RefreshPreviewCommand, PlanHeaderInfo, Refresh button in header, 700 tests pass | Proceed to `TASK-REM-27` |
-| `TASK-REM-27` | Scan command semantic harmonization | NOT_STARTED | `TASK-REM-18` | — | Target: TU-04 | Harmonize Folders/Dashboard scan |
+| `TASK-REM-27` | Scan command semantic harmonization | **DONE** | `TASK-REM-18` | `87ca750` | Reconciler unified across Folders & Dashboard, IsScanning visual feedback & progress bar, CanScan gating, 703 tests pass | Phase 2 Gate Passed $\to$ Proceed to Phase 3 (`TASK-REM-22`) |
 
 ### Phase 3: Durable Execution Foundation
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |

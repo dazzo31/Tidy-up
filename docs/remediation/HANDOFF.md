@@ -1,30 +1,28 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `c8165c1`  
+**Repository / Branch / Current SHA:** `TidyUp` on `main` @ `87ca750`  
 **Plan Revision & Location:** Revision 2 (`docs/REMEDIATION_TASK_CATALOG_v1.2.0.md`)  
-**Last Verified Phase Gate:** Phase 1 Gate Passed; Phase 2 in progress (`TASK-REM-18` completed)  
-**Active Task & Current State:** `TASK-REM-18` (`DONE`) -> Next: `TASK-REM-27` (Scan Command Semantic Harmonization)  
+**Last Verified Phase Gate:** Phase 2 Gate Passed (Tasks 12, 13, 14, 15, 16, 17, 18, 27 Complete)  
+**Active Task & Current State:** `TASK-REM-27` (`DONE`) -> Next: Phase 3 Gate / `TASK-REM-22` (Two-Phase Durable Journaling & Rule Metadata Tracking)  
 **Completed Changes & Files:**
-- `PreviewViewModel.cs`:
-  - Added `ClearPlan()` method that safely cancels active simulation CTS, sets `ExecutionPlan = null`, clears `AllItems`, and resets state.
-  - Added `RefreshPreviewCommand` allowing users to re-run simulation directly from the Preview workspace without returning to Rules.
-  - Added `PlanHeaderInfo` exposing rule identity, generation timestamp, and action count for the active plan.
+- `FoldersViewModel.cs`:
+  - Added `_isScanning` observable property with `CanScan` / `ScanTooltip` notification dispatch to `MonitoredFolderItemViewModel`.
+  - Injected `IWatcherReconciler? watcherReconciler = null` into `FoldersViewModel`.
+  - Updated `ScanFolderNowAsync` to set `folder.IsScanning = true`, delegate to `_watcherReconciler.ReconcileFolderAsync`, enumerate matching files on disk, report count via `StatusMessage`, and safely reset `IsScanning = false` in `finally`.
 - `MainWindowViewModel.cs`:
-  - Wired `PreviewViewModel.ClearPlan()` on `SelectedRule` setter change, `SaveDraftAsync` success, and `DiscardActiveEdits`.
-  - Updated `TestRuleAsync` to clear stale plans before simulating the current active rule draft.
-- `PreviewView.xaml`:
-  - Bound `PageHeader.Subtitle` to `PlanHeaderInfo`.
-  - Added "Refresh Preview" button to header breakdown toolbar.
-- `PreviewViewModelTests.cs` & `MainWindowRulesListTests.cs`:
-  - Added unit tests for `ClearPlan()`, `RefreshPreviewCommand`, `PlanHeaderInfo`, and plan invalidation on rule selection changes.
-- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-18` as `DONE` and `TU-12` as `FIXED_VERIFIED`.
+  - Injected `IWatcherReconciler` into fallback instantiation of `FoldersViewModel`.
+- `FoldersView.xaml`:
+  - Added indeterminate circular `ProgressBar` bound to `IsScanning` with `BooleanToVisibilityConverter`.
+- `FoldersViewModelTests.cs` & `FolderScanAvailabilityTests.cs`:
+  - Added unit tests for watcher reconciler delegation, unreadable folder scan prevention, and `IsScanning` / `CanScan` property notifications.
+- `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-27` as `DONE` and `TU-04` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 700 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 703 passed, 0 failed, 0 skipped (3.0s).
 - Zero compilation errors or styling guard warnings across solution.
 
 **Evidence Paths & Tested SHA:**
-- SHA: `c8165c1`
+- SHA: `87ca750`
 - Tracking: `docs/remediation/TRACKER.md`
 - Finding Matrix: `docs/remediation/FINDING_MATRIX.md`
 
@@ -37,5 +35,4 @@
 - `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
 
 **Exact Next Command or Implementation Action:**
-- Commit doc updates.
-- Lock `TASK-REM-27` in Phase 2 (Scan Command Semantic Harmonization — `TU-04`).
+- Phase 2 complete. Await user review/confirmation to proceed to Phase 3 (`TASK-REM-22`: Two-Phase Durable Journaling & Rule Metadata Tracking).
