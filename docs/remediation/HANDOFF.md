@@ -1,10 +1,16 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ 1243465  
+**Repository / Branch / Current SHA:** TidyUp on main @ 0fa39f8  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 7 Gate Passed; Ready for Phase 8 (Candidate Packaging & Handoff)  
-**Active Task & Current State:** TASK-REM-38 (DONE) -> Next: Phase 8 / TASK-REM-39 (Release candidate packaging, provenance & handoff)  
+**Last Verified Phase Gate:** Phase 8 Gate Passed — Remediation Program Complete (Phases 0 through 8)  
+**Active Task & Current State:** TASK-REM-39 (DONE) -> Release candidate handoff awaiting user tag/publish authorization  
 **Completed Changes & Files:**
+- TASK-REM-39 (SHA: 0fa39f8):
+  - scripts/Package-Release.ps1: Automated release packaging script generating win-x64 framework-dependent (`TidyUp-1.2.1-rc.1-win-x64.zip`) and self-contained single-file (`TidyUp-1.2.1-rc.1-win-x64-standalone.zip`) archives with SHA-256 manifest.
+  - scripts/Test-PackagedBinary.ps1: Automated smoke test validating packaged binaries against clean temporary profiles (`TIDYUP_APPDATA`), confirming SQLite database migration (size 110,592 bytes), responsive process execution, and clean shutdown.
+  - publish/packages/SHA256SUMS.txt: Checksum manifest for candidate release archives.
+  - docs/release-verification-1.2.1.md: Complete release verification report with build/test gate results (777 tests passed, 0 vulnerabilities), packaging provenance, and smoke test evidence.
+  - CHANGELOG.md: Added comprehensive `[1.2.1-rc.1]` entry detailing all 44 resolved findings across Phases 0–8.
 - TASK-REM-38 (SHA: 1243465):
   - ServiceConfiguration.cs: Protected `IThemeService` instantiation against null `Application.Current` during headless test execution; resolved parameter fallback in `RuleConflictsViewModel` (defaulting to clean `new MultiRuleConflictReport()`) and `RuleRevisionDiffViewModel` (defaulting `ruleId` to `default`), enabling 100% resolution of all 31 registered services/repositories and 14 ViewModels from DI.
   - UiWorkflowEndToEndIntegrationTests.cs: Added automated composition root validation test (`CompositionRoot_ResolvesAllServicesAndViewModels_CleanlyFromServiceConfiguration`) verifying database initialization, migration, settings loading, and DI graph resolution with 0 missing dependencies.
@@ -145,21 +151,22 @@
 - `docs/remediation/TRACKER.md` & `FINDING_MATRIX.md`: Marked `TASK-REM-27` as `DONE` and `TU-04` as `FIXED_VERIFIED`.
 
 **Last Executed Checks & Actual Results:**
-- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 757 passed, 0 failed, 0 skipped (3.0s).
+- `dotnet test .\Tidy-up\TidyUp.sln -c Release`: Passed! 777 passed, 0 failed, 0 skipped.
+- `powershell -File .\Tidy-up\scripts\Test-PackagedBinary.ps1 -PublishPath .\Tidy-up\publish\win-x64-framework-dependent\TidyUp.exe`: PASSED! (PID: 50848, DB: 110,592 bytes).
+- `powershell -File .\Tidy-up\scripts\Test-PackagedBinary.ps1 -PublishPath .\Tidy-up\publish\win-x64-self-contained\TidyUp.exe`: PASSED! (PID: 59408, DB: 110,592 bytes).
 - Zero compilation errors or styling guard warnings across solution.
 
 **Evidence Paths & Tested SHA:**
-- SHA: `e198ea1`
+- SHA: `0fa39f8` (candidate code commit)
 - Tracking: `docs/remediation/TRACKER.md`
-- Finding Matrix: `docs/remediation/FINDING_MATRIX.md`
+- Verification Document: `docs/release-verification-1.2.1.md`
+- Checksums: `publish/packages/SHA256SUMS.txt`
+- Changelog: `CHANGELOG.md`
 
-**Unresolved Blocker or Product Decision:** None.
+**Unresolved Blocker or Product Decision:** None. Historical `v1.2.0` tag (SHA `43811ca`) preserved; awaiting user authorization before tagging/pushing `v1.2.1-rc.1` / `v1.2.1`.
 
-**Temporary Containment Still Active:**
-- `TU-17`: Prompt conflict resolution fails closed/skips safely.
-- `TU-20`: Undo Delete displays guidance without marking record "RolledBack".
-- `TU-32`: Empty directory cleanup will not climb above immediate parent without boundary path.
-- `TU-38`: Undo button disabled on irreversible ExtractArchive and RunCommand rows.
+**Temporary Containment Still Active:** None. All Phase 0–8 remediation tasks complete.
 
 **Exact Next Command or Implementation Action:**
-- Phase 5 complete. Await user review/confirmation to proceed to Phase 6 (`TASK-REM-31`: Operation stream convergence for Dashboard & Logs).
+- Phase 8 packaging and verification complete.
+- Stop and present candidate release handoff to user. Await explicit user authorization before tagging (`git tag v1.2.1-rc.1`) or pushing.

@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1-rc.1] - 2026-10-26
+
+### Summary
+Comprehensive remediation and stability release resolving all 44 cataloged architectural, data safety, lifecycle, UI/UX, and visual contrast findings across Phases 0–8. Features durable execution journaling, truthful simulation and rollback, safe overwrite staging, background monitoring lifecycle coordination, atomic settings persistence, WCAG AA dark theme contrast, composition root validation, and automated win-x64 release packaging. **777 automated tests passing with 0 failures.**
+
+### Fixed
+- **Permanent deletion authorization decoupled from user confirmation (`TU-19`, `TASK-REM-03`):** Scoped `ExecutionAuthorizationContext` validates explicit deletion approval independently from `ConfirmBeforeDelete` preferences, preventing data loss and failing closed on unauthorized deletions.
+- **Safe overwrite staging and displaced backups (`TU-17`, `TASK-REM-04`):** File mutations on overwrite stage displaced backups of existing destination files before mutation; if mutation fails, the displaced file is restored automatically. Prompt conflict strategy fails closed safely without data loss.
+- **Truthful rollback and recovery contract (`TU-20`, `TU-38`, `TASK-REM-01`):** `RollbackOutcome` explicitly distinguishes restored items from manual restore requirements; permanent deletion returns `ManualRestoreRequired`/`NotRecoverable` rather than claiming successful undo; Undo button is disabled for irreversible actions.
+- **Archive extraction safeguards (`TU-18`, `TASK-REM-02`):** Extraction recycles existing archives safely via `ISafeFileSystem` instead of permanent deletion, checks for destination collisions during simulation, and evaluates safeguard confirmation risk.
+- **Monitored root boundary clamping for empty cleanup (`TU-32`, `TASK-REM-05`):** Empty folder cleanup strictly clamps recursive ascent at the monitored root boundary, preserving the monitored directory even when completely emptied.
+- **Watcher cancellation token lifecycle & restart resilience (`TU-34`, `TASK-REM-25`):** Separated application stopping token from run-loop tokens and serialized lifecycle transitions, ensuring file monitoring resumes cleanly after rule updates.
+- **Multilateral watcher scope merging (`TU-35`, `TASK-REM-26`):** Unified watcher configurations across overlapping folders so recursive rules monitor subdirectories without interfering with shallow sibling rules or exclusion filters.
+- **Window close/minimize conflict resolution (`TU-41`, `TASK-REM-29`):** `WindowCloseCoordinator` eliminates event-handler races between `MainWindow` and `App`, honors close-to-tray/minimize settings, respects cancellation, and waits for active batches before exiting.
+- **Aggregate tray icon health & handle leak prevention (`TU-43`, `TASK-REM-30`):** Multi-folder health aggregation tracks individual folder states, prevents healthy folders from masking errors, and cleans up native `HICON` handles via `DestroyIcon` P/Invoke.
+- **Immutable planned parameters & sequence preservation (`TU-15`, `TASK-REM-19`):** Planned `{counter}` values and destination paths are frozen during simulation and preserved during execution, preventing counter drift on partial selections.
+- **Atomic batch execution lease (`TU-44`, `TASK-REM-20`):** Exclusive batch lease eliminates UI state flickering between files and rejects concurrent batch execution attempts.
+- **Stale preview invalidation & refresh triggers (`TU-13`, `TASK-REM-18`):** Stale plans are automatically invalidated on rule save/discard/selection, and an explicit Refresh button with plan header metadata is provided.
+- **Post-execution Apply gating (`TU-24`, `TASK-REM-21`):** Applied changes automatically disable the Apply button and update status to prevent re-execution of completed actions.
+- **Authoritative discrepancy reporting (`TU-23`, `TASK-REM-23`):** Execution results are correlated by `ActionId` rather than collapsing by source path, reporting actual renamed target paths accurately.
+- **Subfolder directory hierarchy preservation (`TU-12`, `TASK-REM-16`):** Preserves relative folder hierarchies relative to monitored roots with path confinement validation.
+- **History pagination command notifications (`TU-36`, `TASK-REM-32`):** `NotifyCanExecuteChanged` wired across page controls and data load events for proper button enablement.
+- **Dark theme glyph & empty state contrast (`TASK-REM-37`):** `AccessibleEmptyStateBadge` style sets central glyphs to `Win11AccentBrush` (7.04:1 contrast ratio against `#2B2B2B` subtle surface, meeting WCAG AA requirements).
+- **Settings surface audit & inert control containment (`TU-26`, `TASK-REM-35`):** Locked concurrent operations to 1 (ADR-01), added directory browser for backups, contained inert network polling with `[Integration Pending]`, and wired debounce/batch-size options.
+- **Component vs feature honesty (`TU-33`, `TASK-REM-36`):** Disclosed pending integrations in Schedule, Diff, and Folders views; updated `FEATURE_MATRIX.md` to truthfully reflect production status.
+
+### Added
+- **Release candidate packaging workflow (`TASK-REM-39`):** `scripts/Package-Release.ps1` builds framework-dependent and self-contained single-file win-x64 zip archives with SHA-256 checksums in `publish/packages/`.
+- **Packaged binary runtime smoke verification (`TASK-REM-39`):** `scripts/Test-PackagedBinary.ps1` validates packaged executables on isolated temporary profiles, verifying clean database migration and process responsiveness.
+- **Application monitoring coordinator (`TU-01`, `TASK-REM-24`):** Background `MonitoringCoordinator` activated on startup, dispatching live file watcher events safely to `BatchProcessingCoordinator`.
+- **Persistent standalone folder catalog (`TU-02`, `TU-03`, `TASK-REM-07`):** Monitored folders and pause overrides are persisted in `monitored_folders.json` and survive process restarts.
+- **Two-phase durable journaling (`TU-21`, `TASK-REM-22`):** Records execution operations with `RuleId`, `RuleName`, `RuleRevisionId`, and displaced backup paths in SQLite before and after mutation.
+- **Operation telemetry stream convergence (`TU-22`, `TASK-REM-31`):** Execution events stream directly to SQLite `ActionLogEntity`, live dashboard metrics, logs view, and distinct file counts.
+- **Context-sensitive filtered history export (`TU-37`, `TASK-REM-33`):** Supports filtered CSV/JSON exports streaming across all matching pages with spreadsheet formula injection defense.
+- **Genuine database maintenance (`TU-27`, `TASK-REM-06`):** `VacuumDatabaseAsync` executes `PRAGMA wal_checkpoint(TRUNCATE)` and `VACUUM`, reporting exact reclaimed bytes and duration.
+- **Composition root verification (`TASK-REM-38`):** Full DI resolution verification of all 31 services and 14 ViewModels, plus end-to-end Simulate $\to$ Apply $\to$ Rollback acceptance testing on disk fixtures.
+
+---
+
 ## [1.2.0] - 2026-10-17
 
 ### Summary
