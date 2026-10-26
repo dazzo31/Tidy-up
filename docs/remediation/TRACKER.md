@@ -89,7 +89,7 @@
 ### Phase 7: Visual & Integrated Acceptance
 | Task ID | Title / Focus | State | Dependencies | Current SHA | Evidence / Notes | Next Action |
 | :--- | :--- | :---: | :--- | :---: | :--- | :--- |
-| `TASK-REM-37` | Dark theme glyph & empty state contrast polish | NOT_STARTED | Phase 6 Gate | — | Target: Review Visuals | Empty state icons >= 4.5:1 in dark mode |
+| `TASK-REM-37` | Dark theme glyph & empty state contrast polish | DONE | Phase 6 Gate | `d0f9ef3` | AccessibleEmptyStateBadge style; central glyph Win11AccentBrush (7.04:1 contrast ratio against Win11SubtleSurfaceBrush in dark mode), Win11TextPrimary/SecondaryBrush text, Win11CodeText on Win11CodeSurface; StyleGuard and 774 tests pass | Proceed to `TASK-REM-38` |
 | `TASK-REM-38` | Full Windows acceptance test execution & composition root | NOT_STARTED | `TASK-REM-37` | — | Target: Acceptance Matrix | End-to-end scenarios on temp fixtures |
 
 ### Phase 8: Candidate Packaging & Handoff

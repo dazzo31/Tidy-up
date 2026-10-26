@@ -1,10 +1,15 @@
 # TidyUp v1.2.0 Remediation: Active Handoff Record
 
-**Repository / Branch / Current SHA:** TidyUp on main @ ae0380f  
+**Repository / Branch / Current SHA:** TidyUp on main @ d0f9ef3  
 **Plan Revision & Location:** Revision 2 (docs/REMEDIATION_TASK_CATALOG_v1.2.0.md)  
-**Last Verified Phase Gate:** Phase 6 Gate Passed; Ready for Phase 7 (Visual & Integrated Acceptance)  
-**Active Task & Current State:** TASK-REM-36 (DONE) -> Next: Phase 7 Gate / TASK-REM-37 (Dark theme glyph & empty state contrast polish)  
+**Last Verified Phase Gate:** Phase 6 Gate Passed; Phase 7 in progress  
+**Active Task & Current State:** TASK-REM-37 (DONE) -> Next: TASK-REM-38 (Full Windows acceptance test execution & composition root validation)  
 **Completed Changes & Files:**
+- TASK-REM-37 (SHA: d0f9ef3):
+  - AccessibilityStyles.xaml: Added `AccessibleEmptyStateBadge` style with 64x64 dimensions, 32px corner radius, `Win11SubtleSurfaceBrush` fill, and `Win11SubtleBorderBrush` 1px border for high-contrast delineation against dark cards.
+  - EmptyStateControl.xaml & EmptyStateControl.xaml.cs: Updated empty state template to use `AccessibleEmptyStateBadge`; set central glyph default foreground to `{DynamicResource Win11AccentBrush}` (providing 7.04:1 contrast ratio against `#2B2B2B` subtle surface in dark mode, well above 4.5:1 WCAG AA text and 3:1 graphical thresholds); set title to `Win11TextPrimaryBrush` (14.15:1); set description to `Win11TextSecondaryBrush` (WCAG AA compliant without opacity reduction); set technical details to `Win11CodeTextBrush` on `Win11CodeSurfaceBrush`; exposed bindable `IconForeground` property for optional overrides.
+  - StatusCard.xaml: Updated icon badge border to use `Win11SubtleSurfaceBrush` and `Win11SubtleBorderBrush` with 1px border thickness.
+  - ThemePaletteTests.cs: Added `("Win11AccentBrush", "Win11SubtleSurfaceBrush")` to `ReadablePairs`; added `EmptyStateElements_MeetWcagAa_AndNonTextContrast` theory testing WCAG AA contrast across light and dark palettes for default badge, error badge, title, description, and technical code details. 774 tests passing.
 - TASK-REM-36 (SHA: ae0380f):
   - ScheduleSettingsView.xaml & RuleRevisionDiffView.xaml: Added explicit `[Integration Pending]` badges and honest disclaimer notices to headers disclosing that scheduled monitoring, quiet hours, power throttling, and automated rule revision snapshots are integration-pending background components.
   - FoldersViewModel.cs: Flags remote UNC network shares (`\\server\share`) with `"Pending (Network Share)"` watcher status rather than misleadingly indicating "Watching"; displays `[Integration Pending]` notification upon adding a network directory.
